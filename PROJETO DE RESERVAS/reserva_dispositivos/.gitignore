@@ -1,0 +1,20 @@
+# Ignorar dependências do Node.js
+# Esta é a pasta mais importante a ser ignorada.
+# Ela pode ser recriada a qualquer momento com o comando "npm install".
+node_modules/
+
+# Ignorar o arquivo do banco de dados de desenvolvimento
+# É uma boa prática não versionar o banco de dados local.
+reservas.db
+
+# Arquivos de log que podem ser gerados
+npm-debug.log*
+*.log
+
+# Arquivos de sistema operacional que não fazem parte do projeto
+.DS_Store
+Thumbs.db
+
+# Arquivos de ambiente (para senhas e segredos)
+# Nós ainda não temos um, mas é fundamental já ignorar este tipo de arquivo.
+.env
