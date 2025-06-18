@@ -2,31 +2,59 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reserva de Chromebooks</title>
-    <style>
-        body { font-family: sans-serif; }
+    <style> /* Estilos básicos para legibilidade */
+        body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
+        .error { color: red; font-weight: bold; border: 1px solid red; padding: 10px; margin-bottom: 20px;}
     </style>
 </head>
 <body>
     <h1>Sistema de Reserva de Chromebooks</h1>
     
-    <h2>Disponibilidade: <%= disponiveis %> de 174</h2>
+    <% if (typeof erro !== 'undefined' && erro) { %>
+      <div class="error"><%= erro %></div>
+    <% } %>
+
+    <h2>Disponibilidade por Carrinho</h2>
+    <table>
+      <thead>
+        <tr><th>Carrinho</th><th>Localização</th><th>Disponíveis</th></tr>
+      </thead>
+      <tbody>
+        <% carrinhos.forEach(c => { %>
+          <tr>
+            <td><%= c.nome %></td>
+            <td><%= c.localizacao %></td>
+            <td><%= c.disponiveis %> / <%= c.capacidade %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
     <hr>
 
     <h2>Fazer uma Nova Reserva</h2>
     <form action="/reservar" method="POST">
         <div>
-            <label for="nome_professor">Digite seu Nome:</label>
+            <label for="carrinho">De qual carrinho você quer reservar?</label>
+            <select id="carrinho" name="carrinho_id" required>
+                <option value="">-- Escolha um carrinho --</option>
+                <% carrinhos.forEach(c => { %>
+                  <option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %> (<%= c.disponiveis %> disponíveis)</option>
+                <% }) %>
+            </select>
+        </div>
+        <br>
+        <div>
+            <label for="nome_professor">Seu Nome:</label>
             <input type="text" id="nome_professor" name="nome_professor" required>
         </div>
         <br>
         <div>
             <label for="quantidade">Quantidade de Chromebooks:</label>
-            <input type="number" id="quantidade" name="quantidade" required>
+            <input type="number" id="quantidade" name="quantidade" required min="1">
         </div>
         <br>
         <div>
@@ -40,45 +68,38 @@
         </div>
         <br>
         <div>
-            <label for="sala">Digite a sala:</label>
+            <label for="sala">Para qual sala?</label>
             <input type="text" id="sala" name="sala" required>
         </div>
         <br>
         <button type="submit">Fazer Reserva</button>
     </form>
-
     <hr>
 
     <h2>Reservas Ativas</h2>
-   <table>
-    <thead>
+    <table>
+      <thead>
         <tr>
-            <th>Professor</th>
-            <th>Qtde</th>
-            <th>Retirada</th>
-            <th>Devolução</th>
-            <th>Sala</th>
-            <th>Status</th>
-            <th>Ações</th> </tr>
-    </thead>
-    <tbody>
+          <th>Professor</th><th>Qtde</th><th>Carrinho</th><th>Retirada</th><th>Devolução</th><th>Sala</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
         <% reservas.forEach(reserva => { %>
-            <tr>
-                <td><%= reserva.nome_professor %></td>
-                <td><%= reserva.quantidade %></td>
-                <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
-                <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
-                <td><%= reserva.sala %></td>
-                <td><%= reserva.status %></td>
-                <td>
-                    <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
-                        <button type="submit">Concluir</button>
-                    </form>
-                </td>
-            </tr>
+          <tr>
+            <td><%= reserva.nome_professor %></td>
+            <td><%= reserva.quantidade %></td>
+            <td><%= reserva.nome_carrinho %></td>
+            <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
+            <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
+            <td><%= reserva.sala %></td>
+            <td>
+              <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
+                <button type="submit">Concluir</button>
+              </form>
+            </td>
+          </tr>
         <% }) %>
-    </tbody>
-</table>
-
+      </tbody>
+    </table>
 </body>
 </html>
