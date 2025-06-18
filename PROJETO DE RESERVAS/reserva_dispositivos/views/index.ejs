@@ -19,20 +19,20 @@
     <% } %>
 
     <h2>Disponibilidade por Carrinho</h2>
-    <table>
-      <thead>
-        <tr><th>Carrinho</th><th>Localização</th><th>Disponíveis</th></tr>
-      </thead>
-      <tbody>
-        <% carrinhos.forEach(c => { %>
-          <tr>
-            <td><%= c.nome %></td>
-            <td><%= c.localizacao %></td>
-            <td><%= c.disponiveis %> / <%= c.capacidade %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+<table>
+  <thead>
+    <tr><th>Carrinho</th><th>Localização</th><th>Capacidade Total</th></tr>
+  </thead>
+  <tbody>
+    <% carrinhos.forEach(c => { %>
+      <tr>
+        <td><%= c.nome %></td>
+        <td><%= c.localizacao %></td>
+        <td><%= c.capacidade %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
     <hr>
 
     <h2>Fazer uma Nova Reserva</h2>
@@ -72,6 +72,8 @@
             <input type="text" id="sala" name="sala" required>
         </div>
         <br>
+        <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
+        <br>
         <button type="submit">Fazer Reserva</button>
     </form>
     <hr>
@@ -101,5 +103,6 @@
         <% }) %>
       </tbody>
     </table>
+    <script src="/front-end.js"></script>
 </body>
 </html>
