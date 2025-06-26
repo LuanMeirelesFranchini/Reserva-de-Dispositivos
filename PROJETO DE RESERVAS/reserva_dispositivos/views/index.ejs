@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Reserva de Chromebooks</title>
-    <style> /* Estilos básicos para legibilidade */
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
         body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
@@ -19,20 +20,20 @@
     <% } %>
 
     <h2>Disponibilidade por Carrinho</h2>
-<table>
-  <thead>
-    <tr><th>Carrinho</th><th>Localização</th><th>Capacidade Total</th></tr>
-  </thead>
-  <tbody>
-    <% carrinhos.forEach(c => { %>
-      <tr>
-        <td><%= c.nome %></td>
-        <td><%= c.localizacao %></td>
-        <td><%= c.capacidade %></td>
-      </tr>
-    <% }) %>
-  </tbody>
-</table>
+    <table>
+      <thead>
+        <tr><th>Carrinho</th><th>Localização</th><th>Capacidade Total</th></tr>
+      </thead>
+      <tbody>
+        <% carrinhos.forEach(c => { %>
+          <tr>
+            <td><%= c.nome %></td>
+            <td><%= c.localizacao %></td>
+            <td><%= c.capacidade %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
     <hr>
 
     <h2>Fazer uma Nova Reserva</h2>
@@ -42,7 +43,7 @@
             <select id="carrinho" name="carrinho_id" required>
                 <option value="">-- Escolha um carrinho --</option>
                 <% carrinhos.forEach(c => { %>
-                  <option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %> (<%= c.disponiveis %> disponíveis)</option>
+                  <option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option>
                 <% }) %>
             </select>
         </div>
@@ -59,12 +60,12 @@
         <br>
         <div>
             <label for="retirada">Data e Hora de Retirada:</label>
-            <input type="datetime-local" id="retirada" name="data_retirada" required>
+            <input type="text" id="retirada" name="data_retirada" required placeholder="Selecione data e hora...">
         </div>
         <br>
         <div>
             <label for="devolucao">Data e Hora de Devolução:</label>
-            <input type="datetime-local" id="devolucao" name="data_devolucao" required>
+            <input type="text" id="devolucao" name="data_devolucao" required placeholder="Selecione data e hora...">
         </div>
         <br>
         <div>
@@ -73,36 +74,11 @@
         </div>
         <br>
         <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
-        <br>
         <button type="submit">Fazer Reserva</button>
     </form>
-    <hr>
-
-    <h2>Reservas Ativas</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Professor</th><th>Qtde</th><th>Carrinho</th><th>Retirada</th><th>Devolução</th><th>Sala</th><th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% reservas.forEach(reserva => { %>
-          <tr>
-            <td><%= reserva.nome_professor %></td>
-            <td><%= reserva.quantidade %></td>
-            <td><%= reserva.nome_carrinho %></td>
-            <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
-            <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
-            <td><%= reserva.sala %></td>
-            <td>
-              <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
-                <button type="submit">Concluir</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+    
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
     <script src="/front-end.js"></script>
 </body>
 </html>

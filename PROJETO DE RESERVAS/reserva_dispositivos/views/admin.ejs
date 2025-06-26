@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Reservas</title>
+    <style> /* Estilos podem ser os mesmos ou diferentes */
+        body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Painel do Administrador - Reservas Ativas</h1>
+    <p>Apenas administradores devem ter acesso a esta página.</p>
+    <hr>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Professor</th><th>Qtde</th><th>Carrinho</th><th>Retirada</th><th>Devolução</th><th>Sala</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% reservas.forEach(reserva => { %>
+          <tr>
+            <td><%= reserva.nome_professor %></td>
+            <td><%= reserva.quantidade %></td>
+            <td><%= reserva.nome_carrinho %></td>
+            <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
+            <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
+            <td><%= reserva.sala %></td>
+            <td>
+              <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
+                <button type="submit">Concluir</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+</body>
+</html>
