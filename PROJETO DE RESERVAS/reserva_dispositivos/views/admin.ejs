@@ -1,43 +1,76 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Reservas</title>
-    <style> /* Estilos podem ser os mesmos ou diferentes */
-        body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão - Sistema de Reservas</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>Painel do Administrador - Reservas Ativas</h1>
-    <p>Apenas administradores devem ter acesso a esta página.</p>
-    <hr>
+    <main class="container">
+        <header class="logo-header">
+            <img src="/images/logo.png" alt="Logo do Colégio">
+            <h1>Visualizar Reservas</h1>
+            <div style="margin-left: auto; text-align: right;">
+                <p style="margin: 0;">Sessão iniciada como: <%= user.nome.split(' ')[0] %> (<%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>)</p>
+                <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
+            </div>
+        </header>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Professor</th><th>Qtde</th><th>Carrinho</th><th>Retirada</th><th>Devolução</th><th>Sala</th><th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% reservas.forEach(reserva => { %>
-          <tr>
-            <td><%= reserva.nome_professor %></td>
-            <td><%= reserva.quantidade %></td>
-            <td><%= reserva.nome_carrinho %></td>
-            <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
-            <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
-            <td><%= reserva.sala %></td>
-            <td>
-              <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
-                <button type="submit">Concluir</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+        <!-- MUDANÇA: A navegação agora é inteligente e baseada no papel do utilizador -->
+        <nav>
+            <ul>
+                <li><a href="/">Fazer Nova Reserva</a></li>
+                <li><strong>Gerir Reservas</strong></li>
+                <!-- Este link só aparece se o utilizador for 'admin' -->
+                <% if (user.role === 'admin') { %>
+                    <li><a href="/admin/users">Gerir Utilizadores</a></li>
+                <% } %>
+            </ul>
+        </nav>
+
+        <p>Abaixo estão todas as reservas ativas no sistema.</p>
+        
+        <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Professor</th>
+                  <th>Qtde</th>
+                  <th>Carrinho</th>
+                  <th>Retirada</th>
+                  <th>Devolução</th>
+                  <th>Sala</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (reservas.length > 0) { %>
+                    <% reservas.forEach(reserva => { %>
+                      <tr>
+                        <td><%= reserva.nome_professor %></td>
+                        <td><%= reserva.quantidade %></td>
+                        <td><%= reserva.nome_carrinho %></td>
+                        <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
+                        <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
+                        <td><%= reserva.sala %></td>
+                        <td>
+                          <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
+                            <button type="submit" class="secondary outline">Concluir</button>
+                          </form>
+                        </td>
+                      </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="7" style="text-align: center;">Nenhuma reserva ativa no momento.</td>
+                    </tr>
+                <% } %>
+              </tbody>
+            </table>
+        </div>
+    </main>
 </body>
 </html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Reservas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <main class="container" style="max-width: 500px; text-align: center; margin-top: 5rem;">
+        <header class="logo-header" style="justify-content: center;">
+            <img src="/images/logo.png" alt="Logo do Colégio">
+        </header>
+
+        <hgroup>
+            <h1>Sistema de Reservas</h1>
+            <h2>Por favor, acesse com sua conta Google La Salle.</h2>
+        </hgroup>
+
+        <a href="/auth/google" role="button" class="contrast">
+            <svg aria-hidden="true" class="icon-google" width="18" height="18" viewBox="0 0 18 18"><path d="M16.51 8.25H9v3.48h4.34c-.18 1.12-.7 2.07-1.54 2.68v2.13h2.74c1.6-1.48 2.53-3.7 2.53-6.29 0-.5-.04-.99-.12-1.48z" fill="#4285F4"></path><path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.74-2.13c-.8.54-1.84.88-3.22.88-2.48 0-4.58-1.68-5.34-3.95H.91v2.2C2.43 15.98 5.48 18 9 18z" fill="#34A853"></path><path d="M3.66 10.71a5.46 5.46 0 0 1 0-3.42V5.09H.91a9.01 9.01 0 0 0 0 7.82l2.75-2.2z" fill="#FBBC05"></path><path d="M9 3.58c1.32 0 2.5.45 3.44 1.34l2.43-2.43A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .91 5.09l2.75 2.2C4.42 5.26 6.52 3.58 9 3.58z" fill="#EA4335"></path></svg>
+            Entrar com Google
+        </a>
+
+        <% if (typeof erro !== 'undefined' && erro) { %>
+          <p style="color: #c62828; margin-top: 1rem;"><strong><%= erro %></strong></p>
+        <% } %>
+    </main>
+</body>
+</html>
