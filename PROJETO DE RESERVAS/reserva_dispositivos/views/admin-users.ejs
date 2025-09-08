@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="dark">
+<html lang="pt-br" data-theme="white">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
 <body>
     <main class="container">
         <header class="logo-header">
-            <img src="/images/logo.png" alt="Logo do Colégio">
+            <img src="/images/logo_azul.png" alt="Logo do Colégio">
             <h1>Painel do Administrador</h1>
             <div style="margin-left: auto; text-align: right;">
                 <p style="margin: 0;">Sessão iniciada como: <%= user.nome.split(' ')[0] %></p>
@@ -21,12 +21,13 @@
         <nav>
             <ul>
                 <li><a href="/">Fazer Nova Reserva</a></li>
-                <li><a href="/admin">Gerir Reservas</a></li>
+                <li><a href="/admin">Gerenciar Reservas</a></li>
                 <li><strong>Gerir Utilizadores</strong></li>
+                 <li><a href="/admin/history">Histórico de Reservas</a></li>
             </ul>
         </nav>
 
-        <p>Abaixo estão todos os utilizadores que já iniciaram sessão no sistema.</p>
+        <p>Usúarios que efetuaram login no sistema</p>
         
         <div style="overflow-x: auto;">
             <!-- MUDANÇA 1: Adicionada a classe "users-table" -->

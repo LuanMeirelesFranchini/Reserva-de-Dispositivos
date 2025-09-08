@@ -1,4 +1,3 @@
-// Carrega as variáveis do .env - DEVE SER A PRIMEIRA LINHA!
 require('dotenv').config();
 
 const sqlite3 = require('sqlite3').verbose();
@@ -11,7 +10,6 @@ const db = new sqlite3.Database('./reservas.db', (err) => {
 
 const saltRounds = 10;
 
-// Função para fechar o banco de dados, chamada no final de tudo
 const closeDb = () => {
     db.close((err) => {
         if (err) return console.error("Erro ao fechar o banco:", err.message);
@@ -20,12 +18,30 @@ const closeDb = () => {
 };
 
 db.serialize(() => {
-    // Passo 1: Criar tabelas (usuários, carrinhos, reservas)
+    // Criação de tabelas (usuários, carrinhos, reservas)
     db.run(`CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL UNIQUE, senha_hash TEXT, role TEXT NOT NULL DEFAULT 'professor')`);
     db.run(`CREATE TABLE IF NOT EXISTS carrinhos (id INTEGER PRIMARY KEY, nome TEXT NOT NULL, localizacao TEXT NOT NULL, capacidade INTEGER NOT NULL)`);
     db.run(`CREATE TABLE IF NOT EXISTS reservas (id INTEGER PRIMARY KEY, quantidade INTEGER NOT NULL, data_retirada TEXT NOT NULL, data_devolucao TEXT NOT NULL, sala TEXT NOT NULL, status TEXT NOT NULL, carrinho_id INTEGER NOT NULL, usuario_id INTEGER NOT NULL, FOREIGN KEY (carrinho_id) REFERENCES carrinhos(id), FOREIGN KEY (usuario_id) REFERENCES usuarios(id))`);
 
-    // Passo 2: Inserir dados dos carrinhos
+    // --- NOVA TABELA PARA AS REGRAS DE RESERVAS RECORRENTES ---
+    db.run(`
+        CREATE TABLE IF NOT EXISTS reservas_recorrentes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            carrinho_id INTEGER NOT NULL,
+            quantidade INTEGER NOT NULL,
+            sala TEXT NOT NULL,
+            dia_semana INTEGER NOT NULL, -- 0: Domingo, 1: Segunda, ..., 6: Sábado
+            hora_inicio TEXT NOT NULL,   -- Formato "HH:MM"
+            hora_fim TEXT NOT NULL,      -- Formato "HH:MM"
+            data_inicio_recorrencia TEXT NOT NULL, -- Formato "YYYY-MM-DD"
+            data_fim_recorrencia TEXT NOT NULL,   -- Formato "YYYY-MM-DD"
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+            FOREIGN KEY (carrinho_id) REFERENCES carrinhos(id)
+        )
+    `);
+
+    // Inserir dados dos carrinhos
     const carrinhos = [
         { nome: 'Carrinho 1', localizacao: 'Bloco A - 1º Andar', capacidade: 35 },
         { nome: 'Carrinho 2', localizacao: 'Bloco A - 2º Andar', capacidade: 35 },
@@ -38,7 +54,7 @@ db.serialize(() => {
     stmt.finalize();
     console.log("Tabelas e carrinhos criados/verificados.");
 
-    // Passo 3: Garantir que o utilizador admin exista e tenha o papel correto
+    // Garantir que o utilizador admin exista e tenha o papel correto
     const adminEmail = process.env.INITIAL_ADMIN_EMAIL;
     if (!adminEmail) {
         console.error("ERRO: A variável INITIAL_ADMIN_EMAIL não foi definida no ficheiro .env!");
@@ -50,23 +66,14 @@ db.serialize(() => {
             console.error("Erro ao procurar utilizador admin:", err.message);
             return closeDb();
         }
-
-        // Se o utilizador com aquele e-mail JÁ EXISTE...
         if (user) {
-            // ...apenas garantimos que ele é um admin.
             db.run("UPDATE usuarios SET role = 'admin' WHERE email = ?", [adminEmail], (err) => {
-                if (err) {
-                    console.error("Erro ao ATUALIZAR utilizador para admin:", err.message);
-                } else {
-                    console.log(`Utilizador ${adminEmail} verificado e definido como admin.`);
-                }
-                closeDb(); // Fecha o banco após a operação
+                if (err) console.error("Erro ao ATUALIZAR utilizador para admin:", err.message);
+                else console.log(`Utilizador ${adminEmail} verificado e definido como admin.`);
+                closeDb();
             });
-        } 
-        // Se o utilizador NÃO EXISTE...
-        else {
-            // ...nós o criamos como admin.
-            const adminSenha = "admin123"; // Senha fictícia
+        } else {
+            const adminSenha = "admin123";
             bcrypt.hash(adminSenha, saltRounds, (err, hash) => {
                 if (err) {
                     console.error("Erro ao gerar hash:", err.message);
@@ -74,12 +81,9 @@ db.serialize(() => {
                 }
                 db.run(`INSERT INTO usuarios (nome, email, senha_hash, role) VALUES (?, ?, ?, ?)`, 
                     ['Administrador Padrão', adminEmail, hash, 'admin'], (err) => {
-                    if (err) {
-                        console.error("Erro ao INSERIR utilizador admin:", err.message);
-                    } else {
-                        console.log(`Utilizador admin padrão (${adminEmail}) criado com sucesso.`);
-                    }
-                    closeDb(); // Fecha o banco após a operação
+                    if (err) console.error("Erro ao INSERIR utilizador admin:", err.message);
+                    else console.log(`Utilizador admin padrão (${adminEmail}) criado com sucesso.`);
+                    closeDb();
                 });
             });
         }

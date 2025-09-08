@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão - Sistema de Reservas</title>
-    
+    <title>Histórico de Reservas</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
 </head>
@@ -19,19 +18,18 @@
             </div>
         </header>
 
-        <!-- MUDANÇA: Adicionado o link para o Histórico -->
         <nav>
             <ul>
                 <li><a href="/">Fazer Nova Reserva</a></li>
-                <li><strong>Gerenciar Reservas</strong></li>
+                <li><a href="/admin">Gerenciar Reservas</a></li>
                 <% if (user.role === 'admin') { %>
                     <li><a href="/admin/users">Gerir Utilizadores</a></li>
                 <% } %>
-                <li><a href="/admin/history">Histórico de Reservas</a></li>
+                <li><strong>Histórico de Reservas</strong></li>
             </ul>
         </nav>
 
-        <p>Reservas ativas no sistema.</p>
+        <p>Reservas concluídas e ativas no sistema</p>
         
         <div style="overflow-x: auto;">
             <table>
@@ -43,7 +41,7 @@
                   <th>Retirada</th>
                   <th>Devolução</th>
                   <th>Sala</th>
-                  <th>Ações</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -53,19 +51,15 @@
                         <td><%= reserva.nome_professor %></td>
                         <td><%= reserva.quantidade %></td>
                         <td><%= reserva.nome_carrinho %></td>
-                        <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
-                        <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
+                        <td><%= new Date(reserva.data_retirada).toLocaleString('pt-BR') %></td>
+                        <td><%= new Date(reserva.data_devolucao).toLocaleString('pt-BR') %></td>
                         <td><%= reserva.sala %></td>
-                        <td>
-                          <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
-                            <button type="submit" class="secondary outline">Concluir</button>
-                          </form>
-                        </td>
+                        <td><span style="color: #a5d6a7;"><%= reserva.status %></span></td>
                       </tr>
                     <% }) %>
                 <% } else { %>
                     <tr>
-                        <td colspan="7" style="text-align: center;">Nenhuma reserva ativa no momento.</td>
+                        <td colspan="7" style="text-align: center;">Nenhuma reserva no histórico.</td>
                     </tr>
                 <% } %>
               </tbody>

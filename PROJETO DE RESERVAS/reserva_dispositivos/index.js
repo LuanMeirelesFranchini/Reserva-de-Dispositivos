@@ -52,7 +52,6 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-// --- Middlewares de Proteção de Rotas (Nossos "Guardas") ---
 function isAuthenticated(req, res, next) {
     if (req.isAuthenticated()) return next();
     res.redirect('/login');
@@ -70,11 +69,7 @@ function isAdmin(req, res, next) {
     res.status(403).send("<h1>Acesso Negado</h1>");
 }
 
-// ==================================================================
-// --- ROTAS DA APLICAÇÃO ---
-// ==================================================================
-
-// --- Rotas de Autenticação ---
+// --- ROTAS DE AUTENTICAÇÃO ---
 app.get('/login', (req, res) => res.render('login', { erro: req.query.error || '' }));
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/auth/google/callback', passport.authenticate('google', { successRedirect: '/', failureRedirect: '/login?error=true' }));
@@ -85,7 +80,7 @@ app.get('/logout', (req, res, next) => {
     });
 });
 
-// --- Rota Principal ---
+// --- ROTA PRINCIPAL ---
 app.get('/', isAuthenticated, async (req, res) => {
     try {
         const carrinhos = await new Promise((r,j)=>db.all("SELECT * FROM carrinhos",[],(e,rows)=>e?j(e):r(rows)));
@@ -100,7 +95,7 @@ app.get('/', isAuthenticated, async (req, res) => {
     }
 });
 
-// --- Rotas de Gestão e Administração ---
+// --- ROTAS DE GESTÃO E ADMINISTRAÇÃO ---
 app.get('/admin', canManageReservations, async (req, res) => {
   try {
     const sql = `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r JOIN carrinhos c ON r.carrinho_id = c.id JOIN usuarios u ON r.usuario_id = u.id WHERE r.status = 'Ativa' ORDER BY r.data_retirada ASC`;
@@ -108,6 +103,24 @@ app.get('/admin', canManageReservations, async (req, res) => {
     res.render('admin', { reservas, user: req.user });
   } catch (err) {
     res.status(500).send("Erro ao carregar a página de admin: " + err.message);
+  }
+});
+
+// NOVA ROTA PARA O HISTÓRICO DE RESERVAS
+app.get('/admin/history', canManageReservations, async (req, res) => {
+  try {
+    const sql = `
+      SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor 
+      FROM reservas r 
+      JOIN carrinhos c ON r.carrinho_id = c.id 
+      JOIN usuarios u ON r.usuario_id = u.id 
+      WHERE r.status = 'Concluída' 
+      ORDER BY r.data_devolucao DESC
+    `;
+    const reservas = await new Promise((r,j)=>db.all(sql,[],(e,rows)=>e?j(e):r(rows)));
+    res.render('admin-history', { reservas, user: req.user });
+  } catch (err) {
+    res.status(500).send("Erro ao carregar o histórico de reservas: " + err.message);
   }
 });
 
@@ -147,76 +160,8 @@ app.post('/admin/delete/:id', isAdmin, (req, res) => {
 });
 
 // --- ROTAS DE AÇÕES E API ---
-app.post('/reservar', isAuthenticated, async (req, res) => {
-    const { carrinho_id, quantidade, data_retirada, data_devolucao, sala } = req.body;
-    const quantidadeNum = parseInt(quantidade, 10);
-    const usuario_id = req.user.id;
-    try {
-        const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
-        const capacidadeTotal = carrinho.capacidade;
-        const reservasAtivas = await new Promise((r,j)=>db.all("SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa'",[carrinho_id],(e,rows)=>e?j(e):r(rows)));
-        let picoDeUso = 0;
-        const inicioNovaReserva = new Date(data_retirada);
-        const fimNovaReserva = new Date(data_devolucao);
-        for(let t=inicioNovaReserva.getTime(); t<fimNovaReserva.getTime(); t+=60000){
-            let u=0;
-            for(const R of reservasAtivas){
-                let i=new Date(R.data_retirada).getTime(),f=new Date(R.data_devolucao).getTime();
-                if(t>=i&&t<f) u+=R.quantidade;
-            }
-            if(u>picoDeUso) picoDeUso=u;
-        }
-        const disponiveisNoHorario = capacidadeTotal - picoDeUso;
-        if(quantidadeNum > disponiveisNoHorario){
-            const msg=`Erro: Você tentou reservar ${quantidadeNum}, mas só há ${disponiveisNoHorario} disponíveis.`;
-            return res.redirect('/?erro='+encodeURIComponent(msg));
-        }
-        const sqlInsert = `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        await new Promise((r,j)=>db.run(sqlInsert,[carrinho_id,quantidadeNum,usuario_id,data_retirada,data_devolucao,sala,"Ativa"],function(e){if(e)j(e);else r(this)}));
-        res.redirect('/?sucesso=' + encodeURIComponent('Sua reserva foi feita com sucesso!'));
-    } catch (err) {
-        res.status(500).send("Erro ao processar reserva: " + err.message);
-    }
-});
-
-app.post('/reservas/concluir/:id', canManageReservations, (req, res) => {
-    const idParaConcluir = req.params.id;
-    const sql = `UPDATE reservas SET status = 'Concluída' WHERE id = ?`;
-    db.run(sql, [idParaConcluir], (err) => {
-        if (err) return res.status(500).send("Erro ao concluir a reserva.");
-        res.redirect('/admin');
-    });
-});
-
-app.get('/api/availability', isAuthenticated, async (req, res) => {
-    const { carrinho_id, data_retirada, data_devolucao } = req.query;
-    if (!carrinho_id || !data_retirada || !data_devolucao) {
-        return res.status(400).json({ error: 'Parâmetros faltando.' });
-    }
-    const inicioNovaReserva = new Date(data_retirada);
-    const fimNovaReserva = new Date(data_devolucao);
-    if (isNaN(inicioNovaReserva) || isNaN(fimNovaReserva) || fimNovaReserva <= inicioNovaReserva) {
-        return res.status(400).json({ error: 'Datas inválidas.' });
-    }
-    try {
-        const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
-        if (!carrinho) return res.status(404).json({error:'Carrinho não encontrado.'});
-        const capacidadeTotal = carrinho.capacidade;
-        const reservasAtivas = await new Promise((r,j)=>db.all("SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa'",[carrinho_id],(e,rows)=>e?j(e):r(rows)));
-        let picoDeUso = 0;
-        for(let t=inicioNovaReserva.getTime(); t<fimNovaReserva.getTime(); t+=60000){
-            let u=0;
-            for(const R of reservasAtivas){
-                let i=new Date(R.data_retirada).getTime(),f=new Date(R.data_devolucao).getTime();
-                if(t>=i&&t<f) u+=R.quantidade;
-            }
-            if(u>picoDeUso) picoDeUso=u;
-        }
-        const disponiveisNoHorario = capacidadeTotal - picoDeUso;
-        res.json({disponiveis:disponiveisNoHorario});
-    } catch (err) {
-        res.status(500).json({ error: "Erro interno no servidor." });
-    }
-});
+app.post('/reservar', isAuthenticated, async (req, res) => { const { carrinho_id, quantidade, data_retirada, data_devolucao, sala } = req.body; const quantidadeNum = parseInt(quantidade, 10); const usuario_id = req.user.id; try { const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row))); const capacidadeTotal=carrinho.capacidade; const reservasAtivas=await new Promise((r,j)=>db.all("SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa'",[carrinho_id],(e,rows)=>e?j(e):r(rows))); let picoDeUso=0; const inicioNovaReserva=new Date(data_retirada),fimNovaReserva=new Date(data_devolucao); for(let t=inicioNovaReserva.getTime();t<fimNovaReserva.getTime();t+=60000){let u=0;for(const R of reservasAtivas){let i=new Date(R.data_retirada).getTime(),f=new Date(R.data_devolucao).getTime();if(t>=i&&t<f)u+=R.quantidade}if(u>picoDeUso)picoDeUso=u} const disponiveisNoHorario=capacidadeTotal-picoDeUso; if(quantidadeNum>disponiveisNoHorario){const msg=`Erro: Você tentou reservar ${quantidadeNum}, mas só há ${disponiveisNoHorario} disponíveis.`;return res.redirect('/?erro='+encodeURIComponent(msg))} const sqlInsert = `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`; await new Promise((r,j)=>db.run(sqlInsert,[carrinho_id,quantidadeNum,usuario_id,data_retirada,data_devolucao,sala,"Ativa"],function(e){if(e)j(e);else r(this)})); res.redirect('/?sucesso=' + encodeURIComponent('Sua reserva foi feita com sucesso!')); } catch (err) { res.status(500).send("Erro ao processar reserva: " + err.message); }});
+app.post('/reservas/concluir/:id', canManageReservations, (req, res) => { const idParaConcluir = req.params.id; const sql = `UPDATE reservas SET status = 'Concluída' WHERE id = ?`; db.run(sql, [idParaConcluir], (err) => { if (err) return res.status(500).send("Erro ao concluir a reserva."); res.redirect('/admin'); });});
+app.get('/api/availability', isAuthenticated, async (req, res) => { const { carrinho_id, data_retirada, data_devolucao } = req.query; if (!carrinho_id || !data_retirada || !data_devolucao) { return res.status(400).json({ error: 'Parâmetros faltando.' }); } const inicioNovaReserva = new Date(data_retirada); const fimNovaReserva = new Date(data_devolucao); if (isNaN(inicioNovaReserva) || isNaN(fimNovaReserva) || fimNovaReserva <= inicioNovaReserva) { return res.status(400).json({ error: 'Datas inválidas.' }); } try { const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row))); if (!carrinho) return res.status(404).json({error:'Carrinho não encontrado.'}); const capacidadeTotal=carrinho.capacidade; const reservasAtivas=await new Promise((r,j)=>db.all("SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa'",[carrinho_id],(e,rows)=>e?j(e):r(rows))); let picoDeUso=0; for(let t=inicioNovaReserva.getTime();t<fimNovaReserva.getTime();t+=60000){let u=0;for(const R of reservasAtivas){let i=new Date(R.data_retirada).getTime(),f=new Date(R.data_devolucao).getTime();if(t>=i&&t<f)u+=R.quantidade}if(u>picoDeUso)picoDeUso=u} const disponiveisNoHorario=capacidadeTotal-picoDeUso; res.json({disponiveis:disponiveisNoHorario}); } catch (err) { res.status(500).json({ error: "Erro interno no servidor." }); }});
 
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}.`));

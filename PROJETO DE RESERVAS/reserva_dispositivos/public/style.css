@@ -9,6 +9,17 @@
 .logo-header img {
     max-height: 60px;
     width: auto;
+     flex-shrink: 0; /* Impede que o logo encolha se não houver espaço */
+}
+.logo-header h1 {
+    flex-grow: 1; /* Faz o título expandir e ocupar o espaço vazio */
+    text-align: center; /* Centraliza o texto dentro do espaço expandido */
+    margin: 0; /* Remove margens padrão para um alinhamento perfeito */
+}
+/* --- MUDANÇA: Estilo para as informações do utilizador --- */
+.user-info {
+    text-align: right;
+    flex-shrink: 0; /* Impede que este bloco encolha */
 }
 
 /* --- Controlo de Largura e Centralização --- */
