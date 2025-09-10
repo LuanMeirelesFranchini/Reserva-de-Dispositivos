@@ -31,7 +31,7 @@
 
         <!-- MUDANÇA: Usando um acordeão para separar os dois tipos de reserva -->
         <details open>
-            <summary role="button">Fazer uma Nova Reserva</summary>
+            <summary role="button"class="outline" color="">Fazer uma Nova Reserva</summary>
             <form action="/reservar" method="POST">
                 <label for="carrinho">De qual carrinho quer reservar?</label>
                 <select id="carrinho" name="carrinho_id" required><option value="" disabled selected>-- Escolha um carrinho --</option><% carrinhos.forEach(c => { %><option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option><% }) %></select>
@@ -44,12 +44,18 @@
                 <label for="sala">Para qual sala?</label>
                 <input type="text" id="sala" name="sala" required>
                 <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
+        
+            <fieldset>
+                <label for="add-to-calendar">
+                    <input type="checkbox" id="add-to-calendar" name="addToCalendar" value="true">
+                    Adicionar este evento diretamente em minha Agenda
+            </fieldset>
                 <button type="submit">Reservar</button>
             </form>
         </details>
 
         <details>
-            <summary role="button" class="secondary">Criar uma Reserva fixa</summary>
+            <summary role="button" class="outline">Criar uma Reserva fixa</summary>
             <form action="/reservar-recorrente" method="POST">
                 <label for="carrinho_rec">De qual carrinho quer reservar?</label>
                 <select id="carrinho_rec" name="carrinho_id" required><option value="" disabled selected>-- Escolha um carrinho --</option><% carrinhos.forEach(c => { %><option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option><% }) %></select>
@@ -84,7 +90,13 @@
                     <label for="data_fim_rec">Válido até:</label>
                     <input type="date" id="data_fim_rec" name="data_fim_recorrencia" required>
                 </div>
-                
+            
+            <fieldset>
+                <label for="add-to-calendar">
+                    <input type="checkbox" id="add-to-calendar" name="addToCalendar" value="true">
+                    Adicionar este evento diretamente em minha Agenda
+                </label>
+            </fieldset>
                 <button type="submit">Criar Reserva</button>
             </form>
         </details>
