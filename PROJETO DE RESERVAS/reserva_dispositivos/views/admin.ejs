@@ -14,7 +14,7 @@
             <img src="/images/logo_azul.png" alt="Logo do Colégio">
             <h1>Painel de Gestão</h1>
             <div style="margin-left: auto; text-align: right;">
-                <p style="margin: 0;">Sessão iniciada como: <%= user.nome.split(' ')[0] %> (<%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>)</p>
+                <p style="margin: 0;"><%= user.nome.split(' ')[0] %> (<%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>)</p>
                 <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
             </div>
         </header>
