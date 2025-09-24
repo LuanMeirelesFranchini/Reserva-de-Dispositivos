@@ -1,6 +1,8 @@
 # Ignorar a pasta
 node_modules/
 
+# Ignorar Banco de Dados
+reservas.db
 
 # Arquivos de log que podem ser gerados
 npm-debug.log*
