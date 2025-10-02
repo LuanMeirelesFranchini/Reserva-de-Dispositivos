@@ -2,10 +2,9 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURAÇÃO DO FLATPCIKR ---
-    // Criamos um objeto com as configurações que queremos para o nosso calendário.
     const configFlatpickr = {
         enableTime: true,           // Permite selecionar a hora
-        dateFormat: "Y-m-d H:i",    // Formato que o backend espera (ex: 2025-06-23 16:30)
+        dateFormat: "d-m-Y H:i",    // Formato que o backend espera (ex: 2025-06-23 16:30)
         time_24hr: true,            // Usa o formato de 24 horas
         locale: "pt",               // Aplica a tradução para português que carregamos no HTML
     };
@@ -23,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dataDevolucaoInput = document.getElementById('devolucao');
     const disponibilidadeResultEl = document.getElementById('disponibilidade-resultado');
 
-    // A função para verificar a disponibilidade continua a mesma.
+    // Função para verificar a disponibilidade de chromes na data especificada.
     async function verificarDisponibilidade() {
         const carrinhoId = carrinhoSelect.value;
         const dataRetirada = dataRetiradaInput.value;

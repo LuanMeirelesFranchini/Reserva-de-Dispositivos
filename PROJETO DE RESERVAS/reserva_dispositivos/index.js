@@ -470,6 +470,88 @@ app.get('/admin/history', canManageReservations, async (req, res) => {
     }
 });
 
+app.get('/api/availability', isAuthenticated, async (req, res) => {
+    const { carrinho_id, data_retirada, data_devolucao } = req.query;
+    if (!carrinho_id || !data_retirada || !data_devolucao) {
+        return res.status(400).json({ error: 'Parâmetros faltando.' });
+    }
+
+    const inicioNovaReserva = new Date(data_retirada);
+    const fimNovaReserva = new Date(data_devolucao);
+
+    if (isNaN(inicioNovaReserva) || isNaN(fimNovaReserva) || fimNovaReserva <= inicioNovaReserva) {
+        return res.status(400).json({ error: 'Datas inválidas.' });
+    }
+
+    try {
+        const carrinho = await new Promise((resolve, reject) => {
+            db.get("SELECT capacidade FROM carrinhos WHERE id = ?", [carrinho_id], (err, row) => {
+                if (err) reject(err); else resolve(row);
+            });
+        });
+
+        if (!carrinho) return res.status(404).json({ error: 'Carrinho não encontrado.' });
+        
+        const capacidadeTotal = carrinho.capacidade;
+
+        // Combina reservas pontuais e recorrentes para a verificação
+        const reservasAtivas = await new Promise((resolve, reject) => {
+            db.all("SELECT * FROM reservas WHERE carrinho_id = ? AND status = 'Ativa'", [carrinho_id], (err, rows) => {
+                if (err) reject(err); else resolve(rows);
+            });
+        });
+
+        const regrasRecorrentes = await new Promise((resolve, reject) => {
+            db.all("SELECT * FROM reservas_recorrentes WHERE carrinho_id = ?", [carrinho_id], (err, rows) => {
+                if (err) reject(err); else resolve(rows);
+            });
+        });
+
+        let picoDeUso = 0;
+        for (let t = inicioNovaReserva.getTime(); t < fimNovaReserva.getTime(); t += 60000) {
+            let emUsoNesteMinuto = 0;
+            const tempoAtual = new Date(t);
+
+            // Verifica conflito com reservas pontuais
+            for (const r of reservasAtivas) {
+                if (t >= new Date(r.data_retirada).getTime() && t < new Date(r.data_devolucao).getTime()) {
+                    emUsoNesteMinuto += r.quantidade;
+                }
+            }
+
+            // Verifica conflito com reservas recorrentes
+            for (const regra of regrasRecorrentes) {
+                const diaDaSemanaAtual = tempoAtual.getDay();
+                if (diaDaSemanaAtual === parseInt(regra.dia_semana, 10)) {
+                    const dataFinalRegra = new Date(regra.data_final);
+                    if (tempoAtual <= dataFinalRegra) {
+                        const [hInicio, mInicio] = regra.hora_inicio.split(':');
+                        const [hFim, mFim] = regra.hora_fim.split(':');
+                        
+                        const inicioRegraNoDia = new Date(tempoAtual);
+                        inicioRegraNoDia.setHours(hInicio, mInicio, 0, 0);
+
+                        const fimRegraNoDia = new Date(tempoAtual);
+                        fimRegraNoDia.setHours(hFim, mFim, 0, 0);
+
+                        if (t >= inicioRegraNoDia.getTime() && t < fimRegraNoDia.getTime()) {
+                            emUsoNesteMinuto += regra.quantidade;
+                        }
+                    }
+                }
+            }
+            if (emUsoNesteMinuto > picoDeUso) picoDeUso = emUsoNesteMinuto;
+        }
+
+        const disponiveisNoHorario = capacidadeTotal - picoDeUso;
+        res.json({ disponiveis: disponiveisNoHorario < 0 ? 0 : disponiveisNoHorario });
+
+    } catch (err) {
+        console.error("Erro na API /api/availability:", err);
+        res.status(500).json({ error: "Erro interno no servidor." });
+    }
+});
+
 
 // --- Inicia servidor ---
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));

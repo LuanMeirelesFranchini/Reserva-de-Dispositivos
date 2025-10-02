@@ -2,7 +2,7 @@
 <html lang="pt-br" data-theme="white">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reserva de Chromebooks</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
@@ -22,14 +22,36 @@
             </div>
         </header>
     
-        <% if (typeof erro !== 'undefined' && erro) { %><article style="background-color: #ffebee; border-color: #e57373;"><p style="color: #c62828;"><%= erro %></p></article><% } %>
-        <% if (typeof sucesso !== 'undefined' && sucesso) { %><article style="background-color: #e8f5e9; border-color: #81c784;"><p style="color: #2e7d32;"><%= sucesso %></p></article><% } %>
+        <% if (typeof erro !== 'undefined' && erro) { %><article style="background-color: #ffebee; border-color: #e57373;">
+            <p style="color: #c62828;"><%= erro %></p>
+        </article>
+            <% } %>
+        <% if (typeof sucesso !== 'undefined' && sucesso) { %>
+            <article style="background-color: #e8f5e9; border-color: #81c784;">
+                <p style="color: #2e7d32;"><%= sucesso %></p>
+            </article><% } %>
         
         <h2>Disponibilidade por Carrinho</h2>
-        <div style="overflow-x: auto;"><table><thead><tr><th>Carrinho</th><th>Localização</th><th>Capacidade Total</th></tr></thead><tbody><% carrinhos.forEach(c => { %><tr><td><%= c.nome %></td><td><%= c.localizacao %></td><td><%= c.capacidade %></td></tr><% }) %></tbody></table></div>
+        <div style="overflow-x: auto;"><table>
+            <thead>
+                <tr>
+                    <th>Carrinho</th>
+                    <th>Localização</th>
+                    <th>Capacidade Total</th>
+                </tr>
+            </thead>
+            <tbody><% carrinhos.forEach(c => { %>
+                <tr>
+                    <td><%= c.nome %></td>
+                    <td><%= c.localizacao %></td>
+                    <td><%= c.capacidade %></td>
+                </tr><% }) %>
+            </tbody>
+        </table>
+    </div>
         <hr>
 
-        <!-- MUDANÇA: Usando um acordeão para separar os dois tipos de reserva -->
+        <!-- Separamos os dois tipos de reserva -->
         <details open>
             <summary role="button"class="outline" color="">Fazer uma Nova Reserva</summary>
             <form action="/reservar" method="POST">
