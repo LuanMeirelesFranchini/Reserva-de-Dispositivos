@@ -53,25 +53,25 @@
 
         <!-- Separamos os dois tipos de reserva -->
         <details open>
-            <summary role="button"class="outline" color="">Fazer uma Nova Reserva</summary>
+            <summary role="button"class="outline">Fazer uma Nova Reserva</summary>
             <form action="/reservar" method="POST">
                 <label for="carrinho">De qual carrinho quer reservar?</label>
-                <select id="carrinho" name="carrinho_id" required><option value="" disabled selected>-- Escolha um carrinho --</option><% carrinhos.forEach(c => { %><option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option><% }) %></select>
+                <select id="carrinho" name="carrinho_id" required><option value="" disabled selected>Escolha um carrinho</option><% carrinhos.forEach(c => { %><option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option><% }) %></select>
                 <label for="quantidade">Quantidade:</label>
-                <input type="number" id="quantidade" name="quantidade" required min="1">
+                <input type="number" id="quantidade" name="quantidade" required min="1" require max="35" require placeholder="Respeite a quantidade máxima do carrinho">
                 <div class="grid">
                     <label for="retirada">Data e Hora de Retirada:<input type="text" id="retirada" name="data_retirada" required placeholder="Selecione data e hora..."></label>
                     <label for="devolucao">Data e Hora de Devolução:<input type="text" id="devolucao" name="data_devolucao" required placeholder="Selecione data e hora..."></label>
                 </div>
                 <label for="sala">Para qual sala?</label>
-                <input type="text" id="sala" name="sala" required>
+                <input type="text" id="sala" name="sala" required placeholder="Ex: Sala 15 - 231M">
                 <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
         
-                <button type="submit">Reservar</button>
+                <button type="submit" width>Reservar</button>
             </form>
         </details>
 
-        <details>
+        <!-- <details>
             <summary role="button" class="outline">Criar uma Reserva fixa</summary>
             <form action="/reservar-recorrente" method="POST">
                 <label for="carrinho_rec">De qual carrinho quer reservar?</label>
@@ -111,7 +111,7 @@
  
                 <button type="submit">Criar Reserva</button>
             </form>
-        </details>
+        </details> -->
     </main>
     
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

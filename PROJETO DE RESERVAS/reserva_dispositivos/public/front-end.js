@@ -4,6 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURAÇÃO DO FLATPCIKR ---
     const configFlatpickr = {
         enableTime: true,           // Permite selecionar a hora
+        minTime: "07:00",           // Hora mínima permitida
+        maxtime:"19:00",           // Hora máxima permitida
+        minDate: "today",        // Data mínima é hoje
+        minuteIncrement: 30,        // Incrementos de 30 minutos
+        maxDate: new Date().fp_incr(30), // Data máxima é 30 dias a partir de hoje
         dateFormat: "d-m-Y H:i",    // Formato que o backend espera (ex: 2025-06-23 16:30)
         time_24hr: true,            // Usa o formato de 24 horas
         locale: "pt",               // Aplica a tradução para português que carregamos no HTML
