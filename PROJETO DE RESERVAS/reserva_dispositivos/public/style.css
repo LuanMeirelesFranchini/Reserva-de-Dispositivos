@@ -54,3 +54,7 @@ form {
 .users-table .col-email { width: 35%; }
 .users-table .col-papel { width: 10%; }
 .users-table .col-acoes { width: 25%; }
+
+.teste2 td {
+    white-space: nowrap;
+}

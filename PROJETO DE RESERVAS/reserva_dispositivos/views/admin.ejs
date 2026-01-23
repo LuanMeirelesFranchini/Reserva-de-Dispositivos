@@ -19,7 +19,6 @@
             </div>
         </header>
 
-        <!-- MUDANÇA: Adicionado o link para o Histórico -->
         <nav>
             <ul>
                 <li><a href="/">Fazer Nova Reserva</a></li>
@@ -32,6 +31,7 @@
         </nav>
 
         <p>Reservas ativas no sistema.</p>
+
         
         <div style="overflow-x: auto;">
             <table>
@@ -40,6 +40,7 @@
                   <th>Professor</th>
                   <th>Qtde</th>
                   <th>Carrinho</th>
+                  <th>Reserva</th>
                   <th>Retirada</th>
                   <th>Devolução</th>
                   <th>Sala</th>
@@ -47,18 +48,32 @@
                 </tr>
               </thead>
               <tbody>
+
+                <% function formatarData(dataIso){
+                  const data = new Date(dataIso);
+                  const dia = String(data.getDate()).padStart(2, '0');
+                  const mes = String(data.getMonth()+1).padStart(2, '0');
+                  const ano = data.getFullYear();
+                  const hora = String(data.getHours()).padStart(2, '0');
+                  const minuto = String(data.getMinutes()).padStart(2, '0');
+                  return `${hora}:${minuto}  ${dia}/${mes}/${ano}`;
+                }
+                %>
+              
                 <% if (reservas.length > 0) { %>
                     <% reservas.forEach(reserva => { %>
-                      <tr>
-                        <td><%= reserva.nome_professor %></td>
-                        <td><%= reserva.quantidade %></td>
-                        <td><%= reserva.nome_carrinho %></td>
-                        <td><%= reserva.data_retirada.replace('T', ' às ') %></td>
-                        <td><%= reserva.data_devolucao.replace('T', ' às ') %></td>
-                        <td><%= reserva.sala %></td>
+                      <tr class="teste2">
+                        <td ><%= reserva.nome_professor %></td>
+                        <td ><%= reserva.quantidade %></td>
+                        <td ><%= reserva.nome_carrinho %></td>
+                        <td ><%= formatarData(reserva.data_reserva)%></td>
+                        <td ><%= formatarData(reserva.data_retirada)%></td>
+                        <td ><%= formatarData(reserva.data_devolucao)%></td>
+                        <td ><%= reserva.sala %></td>
+                        
                         <td>
                           <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
-                            <button type="submit" class="secondary outline">Concluir</button>
+                            <button type="submit" class="primary">Concluir</button>
                           </form>
                         </td>
                       </tr>
@@ -74,3 +89,8 @@
     </main>
 </body>
 </html>
+<script>
+
+       const dataAtual = data_reserva - 3600000; 
+
+</script>

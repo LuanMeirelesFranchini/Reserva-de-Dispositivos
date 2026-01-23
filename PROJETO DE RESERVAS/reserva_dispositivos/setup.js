@@ -58,6 +58,7 @@ db.serialize(() => {
                         quantidade INTEGER NOT NULL,
                         data_retirada TEXT NOT NULL,
                         data_devolucao TEXT NOT NULL,
+                        data_reserva TEXT NOT NULL DEFAULT (datetime('now','localtime')),
                         sala TEXT NOT NULL,
                         status TEXT NOT NULL,
                         carrinho_id INTEGER NOT NULL,

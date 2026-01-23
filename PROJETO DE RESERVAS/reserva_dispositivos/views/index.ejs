@@ -51,14 +51,13 @@
     </div>
         <hr>
 
-        <!-- Separamos os dois tipos de reserva -->
         <details open>
             <summary role="button"class="outline">Fazer uma Nova Reserva</summary>
             <form action="/reservar" method="POST">
                 <label for="carrinho">De qual carrinho quer reservar?</label>
                 <select id="carrinho" name="carrinho_id" required><option value="" disabled selected>Escolha um carrinho</option><% carrinhos.forEach(c => { %><option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option><% }) %></select>
                 <label for="quantidade">Quantidade:</label>
-                <input type="number" id="quantidade" name="quantidade" required min="1" require max="35" require placeholder="Respeite a quantidade máxima do carrinho">
+                <input type="number" id="quantidade" name="quantidade" required min="1" max="35"placeholder="Respeite a quantidade máxima do carrinho">
                 <div class="grid">
                     <label for="retirada">Data e Hora de Retirada:<input type="text" id="retirada" name="data_retirada" required placeholder="Selecione data e hora..."></label>
                     <label for="devolucao">Data e Hora de Devolução:<input type="text" id="devolucao" name="data_devolucao" required placeholder="Selecione data e hora..."></label>
@@ -117,5 +116,14 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
     <script src="/front-end.js"></script>
+    <script>
+        document.getElementById('quantidade').addEventListener("input", function(){
+          //  const min = 1;
+            const max = 35;
+            if (this.value>max) this.value = max;
+          //  if (this.value<min) this.value = min;
+        });
+    </script>
+    <script></script>
 </body>
 </html>
