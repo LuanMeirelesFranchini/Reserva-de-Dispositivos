@@ -158,6 +158,40 @@ app.get('/', isAuthenticated, async (req, res) => {
     }
 });
 
+// NOVO: Painel "Minhas Reservas"
+app.get('/minhas-reservas', isAuthenticated, async (req, res) => {
+    try {
+        const sql = `SELECT r.*, c.nome as nome_carrinho 
+                     FROM reservas r 
+                     JOIN carrinhos c ON r.carrinho_id = c.id 
+                     WHERE r.usuario_id = ? AND r.status = 'Ativa'
+                     ORDER BY r.data_retirada ASC`;
+        const reservas = await new Promise((r, j) => db.all(sql, [req.user.id], (e, rows) => e ? j(e) : r(rows)));
+        res.render('minhas-reservas', { reservas, user: req.user });
+    } catch (err) {
+        res.status(500).send("Erro ao carregar suas reservas.");
+    }
+});
+
+// NOVO: Rota de Cancelamento pelo Professor
+app.post('/reservas/cancelar/:id', isAuthenticated, async (req, res) => {
+    const reservaId = req.params.id;
+    try {
+        // Verifica se a reserva pertence ao usuário (ou se ele é admin)
+        const reserva = await new Promise((r, j) => db.get("SELECT usuario_id FROM reservas WHERE id = ?", [reservaId], (e, row) => e ? j(e) : r(row)));
+        
+        if (!reserva || (reserva.usuario_id !== req.user.id && req.user.role !== 'admin')) {
+            return res.status(403).send("Você não tem permissão para cancelar esta reserva.");
+        }
+
+        await new Promise((r, j) => db.run("UPDATE reservas SET status = 'Cancelada' WHERE id = ?", [reservaId], e => e ? j(e) : r()));
+        res.redirect('/minhas-reservas?sucesso=Reserva cancelada com sucesso.');
+    } catch (err) {
+        res.status(500).send("Erro ao cancelar reserva.");
+    }
+});
+
+
 app.get('/admin', canManageReservations, async (req, res) => {
     try {
         const sql = `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r 

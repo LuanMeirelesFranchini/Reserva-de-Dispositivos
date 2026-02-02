@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Reservas - La Salle</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <main class="container">
+        <header class="logo-header">
+            <img src="/images/logo_azul.png" alt="Logo do Colégio">
+            <h1>Minhas Reservas</h1>
+            <div style="margin-left: auto; text-align: right;">
+                <p style="margin: 0;">Olá, <%= user.nome.split(' ')[0] %></p>
+                <a href="/" style="margin-right: 10px;">Fazer Nova Reserva</a>
+                <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
+            </div>
+        </header>
+
+        <% if (reservas.length === 0) { %>
+            <article>
+                <p>Você não possui reservas ativas no momento.</p>
+                <a href="/" role="button">Fazer minha primeira reserva</a>
+            </article>
+        <% } else { %>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Carrinho</th>
+                            <th>Quantidade</th>
+                            <th>Retirada</th>
+                            <th>Devolução</th>
+                            <th>Sala</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% reservas.forEach(reserva => { %>
+                            <tr>
+                                <td><%= reserva.nome_carrinho %></td>
+                                <td><%= reserva.quantidade %></td>
+                                <td><%= reserva.data_retirada.replace('T', ' ') %></td>
+                                <td><%= reserva.data_devolucao.replace('T', ' ') %></td>
+                                <td><%= reserva.sala %></td>
+                                <td>
+                                    <form action="/reservas/cancelar/<%= reserva.id %>" method="POST" onsubmit="return confirm('Deseja realmente cancelar esta reserva?');" style="margin: 0;">
+                                        <button type="submit" class="contrast outline" style="padding: 5px 10px;">Cancelar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </main>
+</body>
+</html>
