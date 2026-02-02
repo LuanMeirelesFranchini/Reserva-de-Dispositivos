@@ -22,108 +22,101 @@
             </div>
         </header>
     
-        <% if (typeof erro !== 'undefined' && erro) { %><article style="background-color: #ffebee; border-color: #e57373;">
+        <% if (typeof erro !== 'undefined' && erro) { %>
+        <article style="background-color: #ffebee; border-color: #e57373;">
             <p style="color: #c62828;"><%= erro %></p>
         </article>
-            <% } %>
+        <% } %>
+        
         <% if (typeof sucesso !== 'undefined' && sucesso) { %>
-            <article style="background-color: #e8f5e9; border-color: #81c784;">
-                <p style="color: #2e7d32;"><%= sucesso %></p>
-            </article><% } %>
+        <article style="background-color: #e8f5e9; border-color: #81c784;">
+            <p style="color: #2e7d32;"><%= sucesso %></p>
+        </article>
+        <% } %>
         
         <h2>Disponibilidade por Carrinho</h2>
-        <div style="overflow-x: auto;"><table>
-            <thead>
-                <tr>
-                    <th>Carrinho</th>
-                    <th>Localização</th>
-                    <th>Capacidade Total</th>
-                </tr>
-            </thead>
-            <tbody><% carrinhos.forEach(c => { %>
-                <tr>
-                    <td><%= c.nome %></td>
-                    <td><%= c.localizacao %></td>
-                    <td><%= c.capacidade %></td>
-                </tr><% }) %>
-            </tbody>
-        </table>
-    </div>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Carrinho</th>
+                        <th>Localização</th>
+                        <th>Capacidade Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% carrinhos.forEach(c => { %>
+                    <tr>
+                        <td><%= c.nome %></td>
+                        <td><%= c.localizacao %></td>
+                        <td><%= c.capacidade %></td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
         <hr>
 
         <details open>
-            <summary role="button"class="outline">Fazer uma Nova Reserva</summary>
-            <form action="/reservar" method="POST">
+            <summary role="button" class="outline">Fazer uma Nova Reserva</summary>
+            <!-- ID "formReserva" adicionado aqui -->
+            <form id="formReserva" action="/reservar" method="POST">
                 <label for="carrinho">De qual carrinho quer reservar?</label>
-                <select id="carrinho" name="carrinho_id" required><option value="" disabled selected>Escolha um carrinho</option><% carrinhos.forEach(c => { %><option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option><% }) %></select>
-                <label for="quantidade">Quantidade:</label>
-                <input type="number" id="quantidade" name="quantidade" required min="1" max="35"placeholder="Respeite a quantidade máxima do carrinho">
-                <div class="grid">
-                    <label for="retirada">Data e Hora de Retirada:<input type="text" id="retirada" name="data_retirada" required placeholder="Selecione data e hora..."></label>
-                    <label for="devolucao">Data e Hora de Devolução:<input type="text" id="devolucao" name="data_devolucao" required placeholder="Selecione data e hora..."></label>
-                </div>
-                <label for="sala">Para qual sala?</label>
-                <input type="text" id="sala" name="sala" required placeholder="Ex: Sala 15 - 231M">
-                <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
-        
-                <button type="submit" width>Reservar</button>
-            </form>
-        </details>
-
-        <!-- <details>
-            <summary role="button" class="outline">Criar uma Reserva fixa</summary>
-            <form action="/reservar-recorrente" method="POST">
-                <label for="carrinho_rec">De qual carrinho quer reservar?</label>
-                <select id="carrinho_rec" name="carrinho_id" required><option value="" disabled selected>-- Escolha um carrinho --</option><% carrinhos.forEach(c => { %><option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option><% }) %></select>
-                
-                <div class="grid">
-                    <label for="quantidade_rec">Quantidade:</label>
-                    <input type="number" id="quantidade_rec" name="quantidade" required min="1">
-                    <label for="sala_rec">Para qual sala?</label>
-                    <input type="text" id="sala_rec" name="sala" required>
-                </div>
-
-                <label for="dia_semana">Dia da Semana</label>
-                <select id="dia_semana" name="dia_semana" required>
-                    <option value="" disabled selected>-- Escolha um dia --</option>
-                    <option value="1">Segunda-feira</option>
-                    <option value="2">Terça-feira</option>
-                    <option value="3">Quarta-feira</option>
-                    <option value="4">Quinta-feira</option>
-                    <option value="5">Sexta-feira</option>
+                <select id="carrinho" name="carrinho_id" required>
+                    <option value="" disabled selected>Escolha um carrinho</option>
+                    <% carrinhos.forEach(c => { %>
+                        <option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option>
+                    <% }) %>
                 </select>
 
-                <div class="grid">
-                    <label for="hora_inicio">Hora de Início:</label>
-                    <input type="time" id="hora_inicio" name="hora_inicio" required>
-                    <label for="hora_fim">Hora de Fim:</label>
-                    <input type="time" id="hora_fim" name="hora_fim" required>
-                </div>
+                <label for="quantidade">Quantidade:</label>
+                <input type="number" id="quantidade" name="quantidade" required min="1" max="35" placeholder="Respeite a quantidade máxima do carrinho">
 
                 <div class="grid">
-                    <label for="data_inicio_rec">Válido a partir de:</label>
-                    <input type="date" id="data_inicio_rec" name="data_inicio_recorrencia" required>
-                    <label for="data_fim_rec">Válido até:</label>
-                    <input type="date" id="data_fim_rec" name="data_fim_recorrencia" required>
+                    <label for="retirada">Data e Hora de Retirada:
+                        <input type="text" id="retirada" name="data_retirada" required placeholder="Selecione data e hora...">
+                    </label>
+                    <label for="devolucao">Data e Hora de Devolução:
+                        <input type="text" id="devolucao" name="data_devolucao" required placeholder="Selecione data e hora...">
+                    </label>
                 </div>
-            
- 
-                <button type="submit">Criar Reserva</button>
+
+                <label for="sala">Para qual sala?</label>
+                <input type="text" id="sala" name="sala" required placeholder="Ex: Sala 15 - 231M">
+                
+                <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
+        
+                <!-- ID "btnReservar" adicionado aqui -->
+                <button type="submit" id="btnReservar">Reservar</button>
             </form>
-        </details> -->
+        </details>
     </main>
     
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
     <script src="/front-end.js"></script>
+    
     <script>
+        // Lógica de limite de quantidade
         document.getElementById('quantidade').addEventListener("input", function(){
-          //  const min = 1;
             const max = 35;
-            if (this.value>max) this.value = max;
-          //  if (this.value<min) this.value = min;
+            if (parseInt(this.value) > max) this.value = max;
         });
+
+        // Lógica de Loading no Botão
+        const form = document.getElementById('formReserva');
+        const btn = document.getElementById('btnReservar');
+
+        if (form && btn) {
+            form.addEventListener('submit', function() {
+                // Ativa o estado de carregamento visual do Pico CSS
+                btn.setAttribute('aria-busy', 'true');
+                // Desabilita o botão para evitar cliques múltiplos
+                btn.disabled = true;
+                // Altera o texto
+                btn.textContent = 'Processando sua reserva...';
+            });
+        }
     </script>
-    <script></script>
 </body>
 </html>

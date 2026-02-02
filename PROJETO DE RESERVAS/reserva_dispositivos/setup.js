@@ -39,12 +39,12 @@ db.serialize(() => {
 
             // --- 3. Inserir carrinhos ---
             const carrinhos = [
-                { nome: 'Carrinho 1', localizacao: 'Bloco A - 1º Andar', capacidade: 28 },
-                { nome: 'Carrinho 2', localizacao: 'Bloco A - 2º Andar', capacidade: 31 },
-                { nome: 'Carrinho 3', localizacao: 'Bloco A - 3º Andar', capacidade: 27 },
-                { nome: 'Carrinho 4', localizacao: 'Sala Maker Bloco A', capacidade: 17 },
-                { nome: 'Carrinho 5', localizacao: 'Corredor Bloco C', capacidade: 22 },
-                { nome: 'Carrinho 6', localizacao: 'Sala Maker Bloco E', capacidade: 11 }
+                { nome: 'Carrinho 1', localizacao: 'Bloco A - 1º Andar', capacidade: 29 },
+                { nome: 'Carrinho 2', localizacao: 'Bloco A - 2º Andar (Touch)', capacidade: 38 },
+                { nome: 'Carrinho 3', localizacao: 'Bloco A - 3º Andar', capacidade: 32 },
+                { nome: 'Carrinho 4', localizacao: 'Bloco A - Térreo', capacidade: 15 },
+                { nome: 'Carrinho 5', localizacao: 'Corredor Bloco C', capacidade: 35 },
+                { nome: 'Carrinho 6', localizacao: 'Corredor Bloco C (Touch)', capacidade: 15 }
             ];
             const stmt = db.prepare("INSERT OR IGNORE INTO carrinhos (nome, localizacao, capacidade) VALUES (?, ?, ?)");
             carrinhos.forEach(c => stmt.run(c.nome, c.localizacao, c.capacidade));
