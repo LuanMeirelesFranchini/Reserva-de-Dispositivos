@@ -15,6 +15,7 @@
             <h1>Sistema de Reservas</h1>
             <div style="margin-left: auto; text-align: right;">
                 <p style="margin: 0;">Bem-vindo(a), <%= user.nome.split(' ')[0] %></p>
+                <a href="/minhas-reservas" style="margin-right: 15px; font-weight: bold;">Minhas Reservas</a>
                 <% if (user.role === 'admin' || user.role === 'operacional') { %>
                     <a href="/admin" style="margin-right: 10px;">Painel de Gestão</a>
                 <% } %>

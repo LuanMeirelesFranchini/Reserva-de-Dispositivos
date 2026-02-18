@@ -72,7 +72,7 @@
                         <td ><%= reserva.sala %></td>
                         
                         <td>
-                          <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
+                          <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;" onsubmit="return confirm('Realmente deseja concluir esta reserva?');">
                             <button type="submit" class="primary">Concluir</button>
                           </form>
                         </td>
