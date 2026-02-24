@@ -3,42 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reserva de Chromebooks</title>
+    <title>Sistema de Reserva - La Salle</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <!-- <style>
-        /* Ajuste para ocupar mais as laterais sem encostar totalmente nas bordas */
-        main.container-fluid {
-            padding-left: 2%;
-            padding-right: 2%;
-            max-width: 1800px; /* Limite maior para telas muito grandes */
-            margin: 0 auto;
-        }
-
-        /* Estilo específico para a tabela ocupar 100% do espaço disponível */
-        table {
-            width: 100%;
-        }
-
-        /* Ajuste fino no cabeçalho para acompanhar a largura */
-        .logo-header {
-            width: 100%;
-        }
-    </style> -->
 </head>
 <body>
     <main class="container-fluid">
         <header class="logo-header">
             <img src="/images/logo_azul.png" alt="Logo do Colégio">
             <h1>Sistema de Reservas</h1>
-            <div style="margin-left: auto; text-align: right;">
-                <p style="margin: 0;">Bem-vindo(a), <%= user.nome.split(' ')[0] %></p>
-                <a href="/minhas-reservas" style="margin-right: 15px; font-weight: bold;">Minhas Reservas</a>
-                <% if (user.role === 'admin' || user.role === 'operacional') { %>
-                    <a href="/admin" style="margin-right: 10px; font-weight: bold;">Painel de Gestão</a>
-                <% } %>
-                <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
+            
+            <!-- MUDANÇA AQUI: Nova estrutura de Menu Dropdown -->
+            <div class="user-menu-container">
+                <div class="user-menu-button">
+                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
+                    <!-- Ícone de seta -->
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="dropdown-content">
+                    <a href="/minhas-reservas">Minhas Reservas</a>
+                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
+                        <a href="/admin">Painel de Gestão</a>
+                    <% } %>
+                    <hr style="margin: 0; opacity: 0.1;">
+                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
+                </div>
             </div>
         </header>
     

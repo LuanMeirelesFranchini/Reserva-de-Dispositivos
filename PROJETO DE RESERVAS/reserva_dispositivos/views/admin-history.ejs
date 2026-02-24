@@ -18,51 +18,83 @@
             </div>
         </header>
 
-        <nav>
-            <ul>
-                <li><a href="/">Fazer Nova Reserva</a></li>
-                <li><a href="/admin">Gerenciar Reservas</a></li>
-                <% if (user.role === 'admin') { %>
-                    <li><a href="/admin/users">Gerir Utilizadores</a></li>
-                <% } %>
-                <li><strong>Histórico de Reservas</strong></li>
-            </ul>
+        <!-- NAVEGAÇÃO CENTRALIZADA (PILLS) -->
+        <nav class="nav-pills-container">
+            <a href="/" class="nav-pill">Fazer Nova Reserva</a>
+            <a href="/admin" class="nav-pill active">Gerenciar Reservas</a>
+            <% if (user.role === 'admin') { %>
+                <a href="/admin/users" class="nav-pill">Gerir Utilizadores</a>
+            <% } %>
+            <a href="/admin/history" class="nav-pill">Histórico de Reservas</a>
         </nav>
 
-        <p>Reservas concluídas e ativas no sistema</p>
+        <h2>Reservas concluídas e ativas no sistema</h2>
         
-        <div style="overflow-x: auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Professor</th>
-                  <th>Qtde</th>
-                  <th>Carrinho</th>
-                  <th>Retirada</th>
-                  <th>Devolução</th>
-                  <th>Sala</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% if (reservas.length > 0) { %>
-                    <% reservas.forEach(reserva => { %>
-                      <tr>
-                        <td><%= reserva.nome_professor %></td>
-                        <td><%= reserva.quantidade %></td>
-                        <td><%= reserva.nome_carrinho %></td>
-                        <td><%= new Date(reserva.data_retirada).toLocaleString('pt-BR') %></td>
-                        <td><%= new Date(reserva.data_devolucao).toLocaleString('pt-BR') %></td>
-                        <td><%= reserva.sala %></td>
-                        <td><span style="color: #a5d6a7;"><%= reserva.status %></span></td>
-                      </tr>
-                    <% }) %>
-                <% } else { %>
+       <div class="table-container">
+            <table class="striped">
+                <thead>
                     <tr>
-                        <td colspan="7" style="text-align: center;">Nenhuma reserva no histórico.</td>
+                        <th>Professor</th>
+                        <th>Qtde</th>
+                        <th>Carrinho</th>
+                        <th>Feita em</th>
+                        <th>Retirada</th>
+                        <th>Devolução</th>
+                        <th>Sala</th>
+                        <th style="text-align: center;">Responsável</th>
                     </tr>
-                <% } %>
-              </tbody>
+                </thead>
+                <tbody>
+                    <% 
+                    // Definição da função de formatação ANTES de usar no loop
+                    function formatarDataSimples(dataIso){
+                        if(!dataIso) return '---';
+                        const data = new Date(dataIso);
+                        if (isNaN(data.getTime())) return 'Data Inválida';
+                        
+                        const dia = String(data.getDate()).padStart(2, '0');
+                        const mes = String(data.getMonth()+1).padStart(2, '0');
+                        const hora = String(data.getHours()).padStart(2, '0');
+                        const minuto = String(data.getMinutes()).padStart(2, '0');
+                        return `${hora}:${minuto} | ${dia}/${mes}`;
+                    }
+                    %>
+                
+                    <% if (reservas.length > 0) { %>
+                        <% reservas.forEach(reserva => { %>
+                            <tr>
+                                <td><strong><%= reserva.nome_professor %></strong></td>
+                                <td><%= reserva.quantidade %></td>
+                                <td><%= reserva.nome_carrinho %></td>
+                                
+                                <!-- Data de Criação (Feita em) -->
+                                <td style="white-space: nowrap;">
+                                    <%= formatarDataSimples(reserva.data_reserva) %>
+                                </td>
+
+                                <!-- Data de Retirada -->
+                                <td style="white-space: nowrap;">
+                                    <%= formatarDataSimples(reserva.data_retirada) %>
+                                </td>
+
+                                <!-- Data de Devolução -->
+                                <td style="white-space: nowrap;">
+                                    <%= formatarDataSimples(reserva.data_devolucao) %>
+                                </td>
+
+                                <td><%= reserva.sala %></td>
+                                
+                                <td style="text-align: center;">
+                                    <mark style="background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; text-transform: uppercase; font-weight: bold;">
+                                        <%= reserva.concluido_por || 'Concluída' %>
+                                    </mark>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="8" style="text-align: center; padding: 2rem;">Nenhum registro encontrado no histórico.</td></tr>
+                    <% } %>
+                </tbody>
             </table>
         </div>
     </main>

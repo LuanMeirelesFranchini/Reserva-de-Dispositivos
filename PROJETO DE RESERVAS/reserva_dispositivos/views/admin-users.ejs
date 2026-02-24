@@ -18,16 +18,17 @@
             </div>
         </header>
 
-        <nav>
-            <ul>
-                <li><a href="/">Fazer Nova Reserva</a></li>
-                <li><a href="/admin">Gerenciar Reservas</a></li>
-                <li><strong>Gerir Utilizadores</strong></li>
-                 <li><a href="/admin/history">Histórico de Reservas</a></li>
-            </ul>
+        <!-- NAVEGAÇÃO CENTRALIZADA (PILLS) -->
+        <nav class="nav-pills-container">
+            <a href="/" class="nav-pill">Fazer Nova Reserva</a>
+            <a href="/admin" class="nav-pill active">Gerenciar Reservas</a>
+            <% if (user.role === 'admin') { %>
+                <a href="/admin/users" class="nav-pill">Gerir Utilizadores</a>
+            <% } %>
+            <a href="/admin/history" class="nav-pill">Histórico de Reservas</a>
         </nav>
 
-        <p>Usúarios que efetuaram login no sistema</p>
+        <h2>Usúarios que efetuaram login no sistema</h2>
         
         <div style="overflow-x: auto;">
             <table class="users-table">

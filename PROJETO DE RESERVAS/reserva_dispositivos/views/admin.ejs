@@ -7,25 +7,7 @@
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
-     <!-- <style>
-        /* Ajuste para ocupar mais as laterais sem encostar totalmente nas bordas */
-        main.container-fluid {
-            padding-left: 2%;
-            padding-right: 2%;
-            max-width: 1800px; /* Limite maior para telas muito grandes */
-            margin: 0 auto;
-        }
 
-        /* Estilo específico para a tabela ocupar 100% do espaço disponível */
-        table {
-            width: 100%;
-        }
-
-        /* Ajuste fino no cabeçalho para acompanhar a largura */
-        .logo-header {
-            width: 100%;
-        }
-    </style> -->
 </head>
 <body>
     <main class="container-fluid">
@@ -37,16 +19,14 @@
                 <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
             </div>
         </header>
-
-        <nav>
-            <ul>
-                <li><a href="/">Fazer Nova Reserva</a></li>
-                <li><strong>Gerenciar Reservas</strong></li>
-                <% if (user.role === 'admin') { %>
-                    <li><a href="/admin/users">Gerir Utilizadores</a></li>
-                <% } %>
-                <li><a href="/admin/history">Histórico de Reservas</a></li>
-            </ul>
+        <!-- NAVEGAÇÃO CENTRALIZADA (PILLS) -->
+        <nav class="nav-pills-container">
+            <a href="/" class="nav-pill">Fazer Nova Reserva</a>
+            <a href="/admin" class="nav-pill active">Gerenciar Reservas</a>
+            <% if (user.role === 'admin') { %>
+                <a href="/admin/users" class="nav-pill">Gerir Utilizadores</a>
+            <% } %>
+            <a href="/admin/history" class="nav-pill">Histórico de Reservas</a>
         </nav>
 
         <!-- Filtro de reservas -->
@@ -74,7 +54,7 @@
         </article>
         </div>
 
-        <p style="font-weight: bold;">Reservas Ativas no Sistema</p>
+        <h2 style="font-weight: bold;">Reservas Ativas no Sistema</h2>
 
         
         <div style="overflow-x: auto;">
@@ -84,7 +64,7 @@
                   <th>Professor</th>
                   <th>Qtde</th>
                   <th>Carrinho</th>
-                  <th>Reserva</th>
+                  <!-- <th>Reserva</th> -->
                   <th>Retirada</th>
                   <th>Devolução</th>
                   <th>Sala</th>
@@ -110,7 +90,7 @@
                         <td ><%= reserva.nome_professor %></td>
                         <td ><%= reserva.quantidade %></td>
                         <td ><%= reserva.nome_carrinho %></td>
-                        <td ><%= formatarData(reserva.data_reserva)%></td>
+                       <!-- <td ><%= formatarData(reserva.data_reserva)%></td>-->
                         <td ><%= formatarData(reserva.data_retirada)%></td>
                         <td ><%= formatarData(reserva.data_devolucao)%></td>
                         <td ><%= reserva.sala %></td>
