@@ -194,12 +194,24 @@ app.post('/reservas/cancelar/:id', isAuthenticated, async (req, res) => {
 
 app.get('/admin', canManageReservations, async (req, res) => {
     try {
-        const sql = `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r 
+        const dataFiltro = req.query.data;
+        let sql = `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r 
                      JOIN carrinhos c ON r.carrinho_id = c.id 
                      JOIN usuarios u ON r.usuario_id = u.id 
-                     WHERE r.status = 'Ativa' ORDER BY r.data_retirada ASC`;
-        const reservas = await new Promise((r,j)=>db.all(sql,[],(e,rows)=>e?j(e):r(rows)));
-        res.render('admin', { reservas, user: req.user });
+                     WHERE r.status = 'Ativa'`;
+
+                     let params = [];
+
+                     //Verifica se há filtro de data
+                     if (dataFiltro) {
+                        sql += ` AND date(r.data_retirada) = date(?)`;
+                        params.push(dataFiltro);
+                     }
+                     // Ordena por data de retirada
+                        sql += ` ORDER BY r.data_retirada ASC`;
+        const reservas = await new Promise((r,j)=>db.all(sql, params, (e,rows)=>e?j(e):r(rows)));
+
+        res.render('admin', { reservas, user: req.user, dataFiltro: dataFiltro || '' });
     } catch (err) {
         res.status(500).send("Erro ao carregar a página de admin: " + err.message);
     }

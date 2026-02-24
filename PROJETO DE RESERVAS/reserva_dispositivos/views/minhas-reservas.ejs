@@ -8,13 +8,13 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <main class="container">
+    <main class="container-fluid">
         <header class="logo-header">
             <img src="/images/logo_azul.png" alt="Logo do Colégio">
             <h1>Minhas Reservas</h1>
             <div style="margin-left: auto; text-align: right;">
                 <p style="margin: 0;">Olá, <%= user.nome.split(' ')[0] %></p>
-                <a href="/" style="margin-right: 10px;">Fazer Nova Reserva</a>
+                <a href="/" style="margin-right: 10px; font-weight: bold; ">Fazer Nova Reserva</a>
                 <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
             </div>
         </header>

@@ -1,60 +1,85 @@
+/* --- Estilos Globais e Tipografia --- */
+button summary {
+    --pico-font-family: Pacifico, cursive;
+    --pico-font-weight: 400;
+    --pico-typography-spacing-vertical: 0.5rem;
+}
+
 /* --- Cabeçalho com Logo e Título --- */
 .logo-header {
     display: flex;
     align-items: center;
     gap: 1.5rem;
     margin-bottom: 2rem;
+    width: 100%;
 }
- button summary {
-     --pico-font-family: Pacifico, cursive;
-    --pico-font-weight: 400;
-    --pico-typography-spacing-vertical: 0.5rem;
-  }
+
 .logo-header img {
     max-height: 60px;
     width: auto;
-     flex-shrink: 0; /* Impede que o logo encolha se não houver espaço */
+    flex-shrink: 0;
 }
+
 .logo-header h1 {
-    flex-grow: 1; /* Faz o título expandir e ocupar o espaço vazio */
-    text-align: center; /* Centraliza o texto dentro do espaço expandido */
-    margin: 0; /* Remove margens padrão para um alinhamento perfeito */
+    flex-grow: 1;
+   /* padding-left: 500px; */
+    text-align: center;
+    margin: 0;
 }
-/* --- MUDANÇA: Estilo para as informações do utilizador --- */
+
+/* --- MUDANÇA: Informações do utilizador à direita --- */
 .user-info {
     text-align: right;
-    flex-shrink: 0; /* Impede que este bloco encolha */
+    flex-shrink: 0;
 }
 
-/* --- Controlo de Largura e Centralização --- */
-main.container {
-    max-width: 1280px;
-    padding: 0 2rem;
+/* --- MUDANÇA CRUCIAL: Controle de Largura (Ocupar os Cantos) --- */
+/* Mudamos de 1280px para 98vw para ocupar quase toda a tela lateralmente */
+main.container, 
+main.container-fluid {
+    max-width: 98vw; 
+    padding: 0 2vw;  /* Pequena margem para não encostar 100% no canto */
+    margin: 0 auto;
 }
 
+/* Garante que as tabelas usem todo o novo espaço disponível */
+table {
+    width: 100%;
+}
+
+/* Mantemos o formulário com um tamanho legível para não esticar demais */
 form {
     max-width: 800px;
+    margin-left: 0; 
 }
 
-/* --- NOVO: Estilo para os botões de ação na tabela de admin --- */
+/* --- Botões de ação na tabela de admin --- */
 .action-buttons {
-    display: flex;          /* Alinha os botões lado a lado */
-    flex-wrap: nowrap;      /* Impede que os botões quebrem a linha */
-    gap: 0.5rem;            /* Adiciona um pequeno espaço entre os botões */
-    justify-content: flex-start; /* Alinha os botões à esquerda da célula */
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    justify-content: flex-start;
 }
 
 .action-buttons form {
-    margin: 0; /* Remove a margem padrão do formulário */
+    margin: 0;
 }
 
-/* --- NOVO: Controlo de Largura das Colunas da Tabela de Utilizadores --- */
-/* Usamos a classe .users-table que adicionámos ao HTML */
+/* --- Controle de Largura das Colunas da Tabela de Utilizadores --- */
 .users-table .col-nome { width: 30%; }
 .users-table .col-email { width: 35%; }
 .users-table .col-papel { width: 10%; }
 .users-table .col-acoes { width: 25%; }
 
-.teste2 td {
+/* Evita quebras de linha em tabelas específicas */
+.teste2 td, 
+.no-wrap td {
     white-space: nowrap;
+}
+
+/* Ajuste para o Card de Filtro no Admin */
+.filter-card {
+    max-width: 600px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
 }

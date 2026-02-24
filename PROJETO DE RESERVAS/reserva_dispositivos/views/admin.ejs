@@ -7,9 +7,28 @@
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
+     <!-- <style>
+        /* Ajuste para ocupar mais as laterais sem encostar totalmente nas bordas */
+        main.container-fluid {
+            padding-left: 2%;
+            padding-right: 2%;
+            max-width: 1800px; /* Limite maior para telas muito grandes */
+            margin: 0 auto;
+        }
+
+        /* Estilo específico para a tabela ocupar 100% do espaço disponível */
+        table {
+            width: 100%;
+        }
+
+        /* Ajuste fino no cabeçalho para acompanhar a largura */
+        .logo-header {
+            width: 100%;
+        }
+    </style> -->
 </head>
 <body>
-    <main class="container">
+    <main class="container-fluid">
         <header class="logo-header">
             <img src="/images/logo_azul.png" alt="Logo do Colégio">
             <h1>Painel de Gestão</h1>
@@ -30,7 +49,32 @@
             </ul>
         </nav>
 
-        <p>Reservas ativas no sistema.</p>
+        <!-- Filtro de reservas -->
+        <div style="display: flex; justify-content: flex-end;">
+        <article style="max-width: 650px; padding: 1rem; margin-bottom: 1.5rem;">
+            <form action="/admin" method="GET" style="margin-bottom: 0;">
+                <div class="grid" style="align-items: flex-end; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+                    <div style="margin-bottom: 0;">
+                        <label for="data" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Filtrar por dia:</label>
+                        <input type="date" id="data" name="data" value="<%= dataFiltro %>" style="margin-bottom: 0; height: 45px;">
+                    </div>
+                    <div>
+                        <button type="submit" style="margin-bottom: 0; height: 45px; padding: 0;">Filtrar</button>
+                    </div>
+                    <div>
+                        <a href="/admin" role="button" class="secondary outline" style="margin-bottom: 0; height: 45px; padding: 0; display: flex; align-items: center; justify-content: center;">Limpar</a>
+                    </div>
+                </div>
+            </form>
+            <% if (dataFiltro) { %>
+                <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.8rem; color: #1b5e20;">
+                    📅 Mostrando: <strong><%= dataFiltro %></strong>
+                </p>
+            <% } %>
+        </article>
+        </div>
+
+        <p style="font-weight: bold;">Reservas Ativas no Sistema</p>
 
         
         <div style="overflow-x: auto;">
