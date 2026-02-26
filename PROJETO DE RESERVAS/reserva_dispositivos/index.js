@@ -477,18 +477,24 @@ app.post('/reservar-recorrente', isAuthenticated, async (req, res) => {
         res.status(500).send("Erro ao criar reserva recorrente: " + err.message);
     }
 });
-// --- Concluir reserva ---
 app.post('/reservas/concluir/:id', canManageReservations, async (req, res) => {
     const reservaId = req.params.id;
+    
+    // Captura o nome do Administrador ou Operacional que está logado na sessão
+    const nomeQuemConcluiu = req.user.nome; 
+
     try {
-        // Atualiza status da reserva para Concluída
+        // Atualiza o status da reserva E grava o nome do responsável
         await new Promise((resolve, reject) => {
-            db.run("UPDATE reservas SET status = 'Concluída' WHERE id = ?", [reservaId], function(err) {
+            const sql = "UPDATE reservas SET status = 'Concluída', concluido_por = ? WHERE id = ?";
+            db.run(sql, [nomeQuemConcluiu, reservaId], function(err) {
                 if (err) return reject(err);
                 resolve();
             });
         });
-        res.redirect('/admin'); // volta para a página de admin
+
+        // Redireciona de volta para o painel de gestão
+        res.redirect('/admin'); 
     } catch (err) {
         console.error("Erro ao concluir reserva:", err);
         res.status(500).send("Erro ao concluir reserva: " + err.message);
