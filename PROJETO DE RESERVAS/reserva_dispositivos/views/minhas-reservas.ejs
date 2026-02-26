@@ -10,12 +10,23 @@
 <body>
     <main class="container-fluid">
         <header class="logo-header">
-            <img src="/images/logo_azul.png" alt="Logo do Colégio">
+            <img src="/images/logo_azul.png" alt="Logo La Salle">
+            
             <h1>Minhas Reservas</h1>
-            <div style="margin-left: auto; text-align: right;">
-                <p style="margin: 0;">Olá, <%= user.nome.split(' ')[0] %></p>
-                <a href="/" style="margin-right: 10px; font-weight: bold; ">Fazer Nova Reserva</a>
-                <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
+            
+            <div class="user-menu-container">
+                <div class="user-menu-button">
+                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="dropdown-content">
+                    <a href="/">Fazer Nova Reserva</a>
+                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
+                        <a href="/admin">Painel de Gestão</a>
+                    <% } %>
+                    <hr style="margin:0; opacity: 0.1;">
+                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
+                </div>
             </div>
         </header>
 
