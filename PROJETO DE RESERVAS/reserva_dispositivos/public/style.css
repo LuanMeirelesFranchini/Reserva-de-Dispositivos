@@ -1,60 +1,139 @@
-/* --- Cabeçalho com Logo e Título --- */
+/* --- 1. Definições Base e Cores --- */
+:root {
+    --color-lasalle-blue: #004587;
+    --color-lasalle-gold: #ffcc00;
+    --color-bg-light: #f4f7f9;
+    --color-text-dark: #1a202c;
+    --pico-primary: var(--color-lasalle-blue);
+    --pico-border-radius: 0.75rem;
+}
+
+body {
+    background-color: var(--color-bg-light);
+    font-family: 'Noto Sans', sans-serif;
+}
+
+/* --- 2. Cabeçalho Refinado --- */
 .logo-header {
+    background: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--pico-border-radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    justify-content: space-between;
     margin-bottom: 2rem;
+    border-bottom: 4px solid var(--color-lasalle-gold);
+    gap: 1rem;
 }
- button summary {
-     --pico-font-family: Pacifico, cursive;
-    --pico-font-weight: 400;
-    --pico-typography-spacing-vertical: 0.5rem;
-  }
+
 .logo-header img {
-    max-height: 60px;
+    height: 45px;
     width: auto;
-     flex-shrink: 0; /* Impede que o logo encolha se não houver espaço */
 }
+
 .logo-header h1 {
-    flex-grow: 1; /* Faz o título expandir e ocupar o espaço vazio */
-    text-align: center; /* Centraliza o texto dentro do espaço expandido */
-    margin: 0; /* Remove margens padrão para um alinhamento perfeito */
-}
-/* --- MUDANÇA: Estilo para as informações do utilizador --- */
-.user-info {
-    text-align: right;
-    flex-shrink: 0; /* Impede que este bloco encolha */
-}
-
-/* --- Controlo de Largura e Centralização --- */
-main.container {
-    max-width: 1280px;
-    padding: 0 2rem;
+    flex-grow: 1;
+    text-align: center;
+    margin: 0;
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    color: var(--color-lasalle-blue);
+    text-transform: uppercase;
+    font-weight: 800;
 }
 
-form {
-    max-width: 800px;
+/* --- 3. NOVO: Menu Dropdown do Utilizador --- */
+.user-menu-container {
+    position: relative;
+    display: inline-block;
 }
 
-/* --- NOVO: Estilo para os botões de ação na tabela de admin --- */
-.action-buttons {
-    display: flex;          /* Alinha os botões lado a lado */
-    flex-wrap: nowrap;      /* Impede que os botões quebrem a linha */
-    gap: 0.5rem;            /* Adiciona um pequeno espaço entre os botões */
-    justify-content: flex-start; /* Alinha os botões à esquerda da célula */
+/* Botão que ativa o menu */
+.user-menu-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f8fafc;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    color: var(--color-lasalle-blue);
+    margin-bottom: 0; /* Remove margem do Pico */
 }
 
-.action-buttons form {
-    margin: 0; /* Remove a margem padrão do formulário */
+.user-menu-button:hover {
+    background: #edf2f7;
+    border-color: var(--color-lasalle-blue);
 }
 
-/* --- NOVO: Controlo de Largura das Colunas da Tabela de Utilizadores --- */
-/* Usamos a classe .users-table que adicionámos ao HTML */
-.users-table .col-nome { width: 30%; }
-.users-table .col-email { width: 35%; }
-.users-table .col-papel { width: 10%; }
-.users-table .col-acoes { width: 25%; }
+/* A caixa que aparece com os links */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 5px);
+    background-color: #ffffff;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+    z-index: 1000;
+    border-radius: var(--pico-border-radius);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
 
-.teste2 td {
-    white-space: nowrap;
+.dropdown-content a {
+    color: var(--color-text-dark);
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f5f9;
+    color: var(--color-lasalle-blue);
+}
+
+.dropdown-content hr {
+    margin: 0;
+    opacity: 0.1;
+}
+
+/* Mostrar o menu quando o container for focado ou pairado */
+.user-menu-container:hover .dropdown-content {
+    display: block;
+}
+
+/* --- 4. Tabelas e Layout Wide --- */
+main.container-fluid {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 3vw;
+}
+
+.table-container {
+    background: #fff;
+    border-radius: var(--pico-border-radius);
+    overflow-x: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+}
+
+/* --- 5. Responsividade Mobile --- */
+@media (max-width: 768px) {
+    .logo-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .logo-header h1 { order: -1; margin-bottom: 0.5rem; }
+}
+.nav-pills-container {
+    display: flex;
+    justify-content: center; /* AGROUPA NO CENTRO */
+    gap: 0.5rem;             /* ESPAÇO CURTO ENTRE BOTÕES */
+    margin-bottom: 2rem;
+    flex-wrap: wrap;         /* QUEBRA DE LINHA AUTOMÁTICA */
 }

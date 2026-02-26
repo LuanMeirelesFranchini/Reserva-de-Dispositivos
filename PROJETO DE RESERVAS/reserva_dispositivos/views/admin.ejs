@@ -7,9 +7,10 @@
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
+
 </head>
 <body>
-    <main class="container">
+    <main class="container-fluid">
         <header class="logo-header">
             <img src="/images/logo_azul.png" alt="Logo do Colégio">
             <h1>Painel de Gestão</h1>
@@ -18,19 +19,42 @@
                 <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
             </div>
         </header>
-
-        <nav>
-            <ul>
-                <li><a href="/">Fazer Nova Reserva</a></li>
-                <li><strong>Gerenciar Reservas</strong></li>
-                <% if (user.role === 'admin') { %>
-                    <li><a href="/admin/users">Gerir Utilizadores</a></li>
-                <% } %>
-                <li><a href="/admin/history">Histórico de Reservas</a></li>
-            </ul>
+        <!-- NAVEGAÇÃO CENTRALIZADA (PILLS) -->
+        <nav class="nav-pills-container">
+            <a href="/" class="nav-pill">Fazer Nova Reserva</a>
+            <a href="/admin" class="nav-pill active">Gerenciar Reservas</a>
+            <% if (user.role === 'admin') { %>
+                <a href="/admin/users" class="nav-pill">Gerir Utilizadores</a>
+            <% } %>
+            <a href="/admin/history" class="nav-pill">Histórico de Reservas</a>
         </nav>
 
-        <p>Reservas ativas no sistema.</p>
+        <!-- Filtro de reservas -->
+        <div style="display: flex; justify-content: flex-end;">
+        <article style="max-width: 650px; padding: 1rem; margin-bottom: 1.5rem;">
+            <form action="/admin" method="GET" style="margin-bottom: 0;">
+                <div class="grid" style="align-items: flex-end; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+                    <div style="margin-bottom: 0;">
+                        <label for="data" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Filtrar por dia:</label>
+                        <input type="date" id="data" name="data" value="<%= dataFiltro %>" style="margin-bottom: 0; height: 45px;">
+                    </div>
+                    <div>
+                        <button type="submit" style="margin-bottom: 0; height: 45px; padding: 0;">Filtrar</button>
+                    </div>
+                    <div>
+                        <a href="/admin" role="button" class="secondary outline" style="margin-bottom: 0; height: 45px; padding: 0; display: flex; align-items: center; justify-content: center;">Limpar</a>
+                    </div>
+                </div>
+            </form>
+            <% if (dataFiltro) { %>
+                <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.8rem; color: #1b5e20;">
+                    📅 Mostrando: <strong><%= dataFiltro %></strong>
+                </p>
+            <% } %>
+        </article>
+        </div>
+
+        <h2 style="font-weight: bold;">Reservas Ativas no Sistema</h2>
 
         
         <div style="overflow-x: auto;">
@@ -40,7 +64,7 @@
                   <th>Professor</th>
                   <th>Qtde</th>
                   <th>Carrinho</th>
-                  <th>Reserva</th>
+                  <!-- <th>Reserva</th> -->
                   <th>Retirada</th>
                   <th>Devolução</th>
                   <th>Sala</th>
@@ -66,13 +90,13 @@
                         <td ><%= reserva.nome_professor %></td>
                         <td ><%= reserva.quantidade %></td>
                         <td ><%= reserva.nome_carrinho %></td>
-                        <td ><%= formatarData(reserva.data_reserva)%></td>
+                       <!-- <td ><%= formatarData(reserva.data_reserva)%></td>-->
                         <td ><%= formatarData(reserva.data_retirada)%></td>
                         <td ><%= formatarData(reserva.data_devolucao)%></td>
                         <td ><%= reserva.sala %></td>
                         
                         <td>
-                          <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;">
+                          <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;" onsubmit="return confirm('Realmente deseja concluir esta reserva?');">
                             <button type="submit" class="primary">Concluir</button>
                           </form>
                         </td>
