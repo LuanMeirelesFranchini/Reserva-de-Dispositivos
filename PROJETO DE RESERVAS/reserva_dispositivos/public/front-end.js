@@ -8,20 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
         maxTime: "18:00",           // Hora máxima permitida
         onReady: function(selectedDates, dateStr, instance) {
             const minDateTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            instance._minDateTimeStrict = minDateTime;
             instance.set('minDate', minDateTime);
         }, // Definindo um prazo de 24 horas apartir do momento atual
 
-        onChance: function(selectedDates, dateStr, instance){
+        onChange: function(selectedDates, dateStr, instance){
             const selectedDate = selectedDates[0];
             const strict = instance._minDateTimeStrict;
             if (selectedDate && selectedDate.toDateString() === strict.toDateString()){
-                instance.set('minTime', strictMin.toTimeString().substring(0,5));
+                instance.set('minTime', strict.toTimeString().substring(0,5));
             }
             else {
                 instance.set('minTime', "07:00");
             }
 
-                instance.set('maxtime', "18:00");
+                instance.set('maxTime', "18:00");
 
         }, // Ajusta o tempo mínimo se a data selecionada for hoje
         minuteIncrement: 30,        // Incrementos de 30 minutos

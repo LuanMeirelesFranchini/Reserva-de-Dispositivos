@@ -29,7 +29,12 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 } // Sessão válida por 24 horas
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production'
+    } // Sessao valida por 24 horas
 }));
 
 // --- Configuração Completa do Passport.js ---
@@ -268,6 +273,21 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
 
     try {
         // Validação
+        if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0) {
+            return res.redirect('/?erro=' + encodeURIComponent('Quantidade invalida.'));
+        }
+
+        const inicioSolicitado = new Date(data_retirada);
+        const fimSolicitado = new Date(data_devolucao);
+        if (isNaN(inicioSolicitado.getTime()) || isNaN(fimSolicitado.getTime()) || fimSolicitado <= inicioSolicitado) {
+            return res.redirect('/?erro=' + encodeURIComponent('Periodo invalido para reserva.'));
+        }
+
+        const minimoPermitido = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        if (inicioSolicitado < minimoPermitido) {
+            return res.redirect('/?erro=' + encodeURIComponent('As reservas devem ser feitas com pelo menos 24 horas de antecedencia.'));
+        }
+
         const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade, nome FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
         if (!carrinho) return res.redirect('/?erro=' + encodeURIComponent('Carrinho não encontrado.'));
 
@@ -357,125 +377,7 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
 
 // --- Rota de reservas recorrentes ---
 app.post('/reservar-recorrente', isAuthenticated, async (req, res) => {
-    const { carrinho_id, quantidade, dia_semana, hora_inicio, hora_fim, data_final, sala, addToCalendar } = req.body;
-    const quantidadeNum = parseInt(quantidade, 10);
-    const usuario_id = req.user.id;
-    const recurrence_id = uuidv4();
-
-    try {
-        // Validação de campos obrigatórios
-        if (!carrinho_id || !quantidadeNum || !dia_semana || !hora_inicio || !hora_fim || !data_final || !sala) {
-            return res.redirect('/?erro=' + encodeURIComponent('Preencha todos os campos obrigatórios.'));
-        }
-
-        const dataFinalISO = new Date(data_final);
-        if (isNaN(dataFinalISO.getTime())) {
-            return res.redirect('/?erro=' + encodeURIComponent('Data final inválida.'));
-        }
-
-        // Salva regra recorrente no banco
-        const sql = `
-            INSERT INTO reservas_recorrentes 
-            (recurrence_id, usuario_id, carrinho_id, quantidade, dia_semana, hora_inicio, hora_fim, data_final, sala) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        await new Promise((resolve, reject) => 
-            db.run(sql, [recurrence_id, usuario_id, carrinho_id, quantidadeNum, dia_semana, hora_inicio, hora_fim, dataFinalISO.toISOString(), sala], err => err ? reject(err) : resolve())
-        );
-
-        // Recupera informações do carrinho
-        const carrinho = await new Promise((resolve, reject) => 
-            db.get("SELECT nome, capacidade FROM carrinhos WHERE id = ?", [carrinho_id], (err, row) => err ? reject(err) : resolve(row))
-        );
-        if (!carrinho) return res.redirect('/?erro=' + encodeURIComponent('Carrinho não encontrado.'));
-
-        // Cria reservas futuras
-        let current = new Date();
-        current.setHours(0,0,0,0);
-
-        while(current <= dataFinalISO){
-            if(current.getDay() === parseInt(dia_semana,10)){
-                const inicioReserva = new Date(current);
-                const [hInicio, mInicio] = hora_inicio.split(':');
-                inicioReserva.setHours(hInicio, mInicio, 0, 0);
-
-                const fimReserva = new Date(current);
-                const [hFim, mFim] = hora_fim.split(':');
-                fimReserva.setHours(hFim, mFim, 0, 0);
-
-                // Inserir reserva no banco
-                const sqlInsert = `
-                    INSERT INTO reservas 
-                    (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status, recurrence_id) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-                const { lastID } = await new Promise((resolve, reject) => 
-                    db.run(sqlInsert, [carrinho_id, quantidadeNum, usuario_id, inicioReserva.toISOString(), fimReserva.toISOString(), sala, "Ativa", recurrence_id], function(err){
-                        err ? reject(err) : resolve(this);
-                    })
-                );
-
-                // Preparar dados do evento
-                const tituloEvento = `Reserva Recorrente de ${quantidadeNum} Chromebooks (${carrinho.nome})`;
-                const descricaoEvento = `Reserva recorrente realizada por ${req.user.nome}. ID da Reserva: ${lastID}`;
-                const localEvento = `Sala ${sala}, Colégio La Salle`;
-
-                const linkGoogleCalendar = gerarLinkGoogleCalendar(tituloEvento, descricaoEvento, localEvento, inicioReserva.toISOString(), fimReserva.toISOString());
-                const arquivoICS = gerarICS(tituloEvento, descricaoEvento, localEvento, inicioReserva.toISOString(), fimReserva.toISOString());
-
-                // Enviar e-mail
-                await sendReservationEmail({
-                    to: req.user.email,
-                    subject: "Confirmação da sua reserva recorrente",
-                    text: `Olá ${req.user.nome}, sua reserva recorrente foi feita com sucesso. Adicione à sua agenda: ${linkGoogleCalendar}`,
-                    html: `<p>Olá <b>${req.user.nome}</b>, sua reserva recorrente foi feita com sucesso!</p>
-                           <p><b>Detalhes:</b><br>
-                           <strong>Carrinho:</strong> ${carrinho.nome}<br>
-                           <strong>Quantidade:</strong> ${quantidadeNum}<br>
-                           <strong>Data de Retirada:</strong> ${inicioReserva.toISOString()}<br>
-                           <strong>Data de Devolução:</strong> ${fimReserva.toISOString()}<br>
-                           <strong>Sala:</strong> ${sala}</p>
-                           <p>Adicione à sua Agenda Google: <a href="${linkGoogleCalendar}">Google Calendar</a></p>
-                           <p>Ou abra o anexo .ics para Outlook/Apple Calendar.</p>
-                           <p>Equipe de Tecnologia - Colégio La Salle</p>
-                           <p>(11) 2793.1444</p>
-                           <p>https://www.lasalle.edu.br/saopaulo</p>`,
-                    attachments: [
-                        { filename: `reserva_${lastID}.ics`, content: arquivoICS }
-                    ]
-                });
-
-                // Criar evento Google Calendar
-                if(addToCalendar === 'true' && req.user.google_refresh_token){
-                    try {
-                        const oauth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, "/auth/google/callback");
-                        oauth2Client.setCredentials({ refresh_token: req.user.google_refresh_token });
-                        const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-                        await calendar.events.insert({
-                            calendarId: 'primary',
-                            resource: {
-                                summary: tituloEvento,
-                                location: localEvento,
-                                description: descricaoEvento,
-                                start: { dateTime: inicioReserva.toISOString(), timeZone: 'America/Sao_Paulo' },
-                                end: { dateTime: fimReserva.toISOString(), timeZone: 'America/Sao_Paulo' },
-                                attendees: [{ email: req.user.email }, { email: process.env.MANAGER_EMAIL }],
-                                reminders: { useDefault: true }
-                            }
-                        });
-                    } catch(err) {
-                        console.error('Erro ao criar evento recorrente no Google Calendar:', err);
-                    }
-                }
-            }
-            current.setDate(current.getDate() + 1);
-        }
-
-        res.redirect('/?sucesso=' + encodeURIComponent('Reserva recorrente criada com sucesso!'));
-    } catch(err) {
-        console.error(err);
-        res.status(500).send("Erro ao criar reserva recorrente: " + err.message);
-    }
+    return res.redirect('/?erro=' + encodeURIComponent('Reservas recorrentes ainda nao estao ativas no sistema.'));
 });
 app.post('/reservas/concluir/:id', canManageReservations, async (req, res) => {
     const reservaId = req.params.id;
@@ -502,26 +404,6 @@ app.post('/reservas/concluir/:id', canManageReservations, async (req, res) => {
 });
 
 // --- Histórico de reservas (todas concluídas) ---
-app.get('/admin/history', canManageReservations, async (req, res) => {
-    try {
-        const sql = `
-            SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor 
-            FROM reservas r
-            JOIN carrinhos c ON r.carrinho_id = c.id
-            JOIN usuarios u ON r.usuario_id = u.id
-            WHERE r.status = 'Concluída'
-            ORDER BY r.data_devolucao DESC
-        `;
-        const reservas = await new Promise((resolve, reject) => {
-            db.all(sql, [], (err, rows) => err ? reject(err) : resolve(rows));
-        });
-        res.render('admin-history', { reservas, user: req.user });
-    } catch (err) {
-        console.error("Erro ao carregar histórico:", err);
-        res.status(500).send("Erro ao carregar histórico: " + err.message);
-    }
-});
-
 app.get('/api/availability', isAuthenticated, async (req, res) => {
     const { carrinho_id, data_retirada, data_devolucao } = req.query;
     if (!carrinho_id || !data_retirada || !data_devolucao) {
@@ -553,43 +435,13 @@ app.get('/api/availability', isAuthenticated, async (req, res) => {
             });
         });
 
-        const regrasRecorrentes = await new Promise((resolve, reject) => {
-            db.all("SELECT * FROM reservas_recorrentes WHERE carrinho_id = ?", [carrinho_id], (err, rows) => {
-                if (err) reject(err); else resolve(rows);
-            });
-        });
-
         let picoDeUso = 0;
         for (let t = inicioNovaReserva.getTime(); t < fimNovaReserva.getTime(); t += 60000) {
             let emUsoNesteMinuto = 0;
-            const tempoAtual = new Date(t);
-
             // Verifica conflito com reservas pontuais
             for (const r of reservasAtivas) {
                 if (t >= new Date(r.data_retirada).getTime() && t < new Date(r.data_devolucao).getTime()) {
                     emUsoNesteMinuto += r.quantidade;
-                }
-            }
-
-            // Verifica conflito com reservas recorrentes
-            for (const regra of regrasRecorrentes) {
-                const diaDaSemanaAtual = tempoAtual.getDay();
-                if (diaDaSemanaAtual === parseInt(regra.dia_semana, 10)) {
-                    const dataFinalRegra = new Date(regra.data_final);
-                    if (tempoAtual <= dataFinalRegra) {
-                        const [hInicio, mInicio] = regra.hora_inicio.split(':');
-                        const [hFim, mFim] = regra.hora_fim.split(':');
-                        
-                        const inicioRegraNoDia = new Date(tempoAtual);
-                        inicioRegraNoDia.setHours(hInicio, mInicio, 0, 0);
-
-                        const fimRegraNoDia = new Date(tempoAtual);
-                        fimRegraNoDia.setHours(hFim, mFim, 0, 0);
-
-                        if (t >= inicioRegraNoDia.getTime() && t < fimRegraNoDia.getTime()) {
-                            emUsoNesteMinuto += regra.quantidade;
-                        }
-                    }
                 }
             }
             if (emUsoNesteMinuto > picoDeUso) picoDeUso = emUsoNesteMinuto;
