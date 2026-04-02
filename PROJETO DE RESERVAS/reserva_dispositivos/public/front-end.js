@@ -1,70 +1,98 @@
-// Espera o documento HTML carregar completamente antes de executar o script.
+// Aguarda que o documento HTML esteja totalmente carregado
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- CONFIGURAÇÃO DO FLATPCIKR ---
-    const configFlatpickr = {
-        enableTime: true,           // Permite selecionar a hora
-        minTime: "07:00",           // Hora mínima permitida
-        maxTime: "18:00",           // Hora máxima permitida
+    // Seleciona os elementos principais da interface
+    const btnReservar = document.getElementById('btnReservar') || document.querySelector('button[type="submit"]');
+    const disponibilidadeResultEl = document.getElementById('disponibilidade-resultado');
+
+    // --- CONFIGURAÇÃO BASE PARA O FLATPICKR (Calendário) ---
+    const configBase = {
+        enableTime: true,
+        time_24hr: true,
+        minuteIncrement: 30,
+        locale: "pt",
+        dateFormat: "Y-m-d H:i",
+        minTime: "07:00",
+        maxTime: "18:00",
+        maxDate: new Date().fp_incr(30), // Permite reservas até 30 dias no futuro
         onReady: function(selectedDates, dateStr, instance) {
+            // Regra de Negócio: Mínimo de 24 horas de antecedência para reservas
             const minDateTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
             instance._minDateTimeStrict = minDateTime;
             instance.set('minDate', minDateTime);
-        }, // Definindo um prazo de 24 horas apartir do momento atual
+        }
+    };
 
-        onChange: function(selectedDates, dateStr, instance){
+    // Inicialização do Calendário de Retirada
+    const fpRetirada = flatpickr("#retirada", {
+        ...configBase,
+        placeholder: "Data e hora de retirada",
+        onChange: function(selectedDates, dateStr, instance) {
             const selectedDate = selectedDates[0];
             const strict = instance._minDateTimeStrict;
-            if (selectedDate && selectedDate.toDateString() === strict.toDateString()){
-                instance.set('minTime', strict.toTimeString().substring(0,5));
-            }
-            else {
+
+            // Ajusta o horário mínimo se a data selecionada for exatamente o limite das 24h
+            if (selectedDate && selectedDate.toDateString() === strict.toDateString()) {
+                instance.set('minTime', strict.toTimeString().substring(0, 5));
+            } else {
                 instance.set('minTime', "07:00");
             }
 
-                instance.set('maxTime', "18:00");
+            // --- PROTEÇÃO CONTRA DATAS INVERTIDAS ---
+            if (selectedDate) {
+                // Bloqueia no calendário de devolução qualquer data anterior à retirada
+                fpDevolucao.set('minDate', selectedDate);
+                
+                // Se a devolução já estava preenchida e agora ficou inválida, limpa o campo
+                const dataDevValue = document.getElementById('devolucao').value;
+                if (dataDevValue && new Date(dataDevValue) <= selectedDate) {
+                    document.getElementById('devolucao').value = "";
+                }
+            }
+            verificarDisponibilidade();
+        }
+    });
 
-        }, // Ajusta o tempo mínimo se a data selecionada for hoje
-        minuteIncrement: 30,        // Incrementos de 30 minutos
-        maxDate: new Date().fp_incr(30), // Data máxima é 30 dias a partir de hoje
-        dateFormat: "Y-m-d H:i",    // Formato que o backend espera (ex: 2025-06-23 16:30)
-        time_24hr: true,            // Usa o formato de 24 horas
-        locale: "pt",               // Aplica a tradução para português que carregamos no HTML
-    };
+    // Inicialização do Calendário de Devolução
+    const fpDevolucao = flatpickr("#devolucao", {
+        ...configBase,
+        placeholder: "Data e hora de devolução",
+        onChange: function() {
+            verificarDisponibilidade();
+        }
+    });
 
-    // Ativa o Flatpickr nos nossos dois campos de data, usando a configuração acima.
-    // Ele encontra os campos pelos seus IDs.
-    flatpickr("#retirada", configFlatpickr);
-    flatpickr("#devolucao", configFlatpickr);
-    // --- FIM DA CONFIGURAÇÃO DO FLATPCIKR ---
-
-
-    // Pega os elementos do formulário que nos interessam para a verificação.
-    const carrinhoSelect = document.getElementById('carrinho');
-    const dataRetiradaInput = document.getElementById('retirada');
-    const dataDevolucaoInput = document.getElementById('devolucao');
-    const disponibilidadeResultEl = document.getElementById('disponibilidade-resultado');
-
-    // Função para verificar a disponibilidade de chromes na data especificada.
+    /**
+     * Função que comunica com a API para verificar se existem Chromebooks 
+     * suficientes no intervalo de tempo selecionado.
+     */
     async function verificarDisponibilidade() {
-        const carrinhoId = carrinhoSelect.value;
-        const dataRetirada = dataRetiradaInput.value;
-        const dataDevolucao = dataDevolucaoInput.value;
+        const carrinhoId = document.getElementById('carrinho').value;
+        const dataRetirada = document.getElementById('retirada').value;
+        const dataDevolucao = document.getElementById('devolucao').value;
 
+        // Se faltarem dados, reinicia o estado visual
         if (!carrinhoId || !dataRetirada || !dataDevolucao) {
             disponibilidadeResultEl.textContent = '--';
+            if (btnReservar) btnReservar.disabled = false;
             return;
         }
         
         const inicio = new Date(dataRetirada);
         const fim = new Date(dataDevolucao);
 
+        // Validação final de segurança: A devolução nunca pode ser antes da retirada
         if (fim <= inicio) {
-            disponibilidadeResultEl.textContent = 'Devolução deve ser após a retirada.';
+            disponibilidadeResultEl.textContent = 'Erro: A devolução deve ser após a retirada.';
+            disponibilidadeResultEl.style.color = '#d32f2f';
+            if (btnReservar) btnReservar.disabled = true; // Trava o envio do formulário
             return;
+        } else {
+            disponibilidadeResultEl.style.color = '';
+            if (btnReservar) btnReservar.disabled = false;
         }
 
-        disponibilidadeResultEl.textContent = 'Verificando...';
+        disponibilidadeResultEl.textContent = 'A verificar disponibilidade...';
 
         try {
             const params = new URLSearchParams({
@@ -72,30 +100,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 data_retirada: dataRetirada,
                 data_devolucao: dataDevolucao
             });
-            const apiUrl = `/api/availability?${params.toString()}`;
             
-            const response = await fetch(apiUrl);
+            const response = await fetch(`/api/availability?${params.toString()}`);
             const data = await response.json();
 
             if (data.error) {
-                disponibilidadeResultEl.textContent = 'Erro!';
-                console.error('Erro retornado pela API:', data.error);
+                disponibilidadeResultEl.textContent = 'Erro na consulta ao sistema.';
+                if (btnReservar) btnReservar.disabled = true;
             } else {
-                disponibilidadeResultEl.textContent = `${data.disponiveis} disponíveis`;
+                disponibilidadeResultEl.textContent = `${data.disponiveis} Chromebooks disponíveis`;
+                
+                // Se a quantidade for 0 ou negativa, impede a reserva
+                if (data.disponiveis <= 0) {
+                    disponibilidadeResultEl.style.color = 'red';
+                    if (btnReservar) btnReservar.disabled = true;
+                } else {
+                    disponibilidadeResultEl.style.color = 'green';
+                    if (btnReservar) btnReservar.disabled = false;
+                }
             }
         } catch (error) {
-            disponibilidadeResultEl.textContent = 'Erro na consulta.';
-            console.error('Erro ao chamar a API:', error);
+            disponibilidadeResultEl.textContent = 'Erro de ligação.';
+            console.error('Erro na chamada da API:', error);
         }
     }
 
-    // --- EVENT LISTENERS (GATILHOS) - MODO CORRETO PARA FLATPCIKR ---
-    
-    // O seletor de carrinho continua com o evento 'change' padrão.
-    carrinhoSelect.addEventListener('change', verificarDisponibilidade);
-
-    // Para os campos com Flatpickr, precisamos usar o evento 'onChange' da própria biblioteca.
-    // Acessamos a instância do flatpickr criada no elemento e adicionamos nossa função ao seu gatilho.
-    document.getElementById('retirada')._flatpickr.config.onChange.push(verificarDisponibilidade);
-    document.getElementById('devolucao')._flatpickr.config.onChange.push(verificarDisponibilidade);
+    // Escuta mudanças na seleção do carrinho
+    document.getElementById('carrinho').addEventListener('change', verificarDisponibilidade);
 });
