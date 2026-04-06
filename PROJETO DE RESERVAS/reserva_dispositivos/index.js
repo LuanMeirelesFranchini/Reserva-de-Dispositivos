@@ -158,9 +158,8 @@ function isAdmin(req, res, next) { if (req.isAuthenticated() && req.user.role ==
 function canManageReservations(req, res, next) { if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'operacional')) return next(); res.status(403).send("<h1>Acesso Negado</h1>"); }
 function ensureAuthenticatedApi(req, res, next) { if (req.isAuthenticated()) return next(); res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' }); }
 
-// ==================================================================
+
 // --- ROTAS ---
-// ==================================================================
 app.get('/login', (req, res) => res.render('login', { erro: req.query.error || '' }));
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email', 'https://www.googleapis.com/auth/calendar.events'], accessType: 'offline' }));
 app.get('/auth/google/callback', passport.authenticate('google', { successRedirect: '/', failureRedirect: '/login?error=true' }));
@@ -175,7 +174,7 @@ app.get('/', isAuthenticated, async (req, res) => {
     }
 });
 
-// NOVO: Painel "Minhas Reservas"
+// Painel "Minhas Reservas"
 app.get('/minhas-reservas', isAuthenticated, async (req, res) => {
     try {
         const sql = `SELECT r.*, c.nome as nome_carrinho 
@@ -190,7 +189,7 @@ app.get('/minhas-reservas', isAuthenticated, async (req, res) => {
     }
 });
 
-// NOVO: Rota de Cancelamento pelo Professor
+// Rota de Cancelamento pelo Professor
 app.post('/reservas/cancelar/:id', isAuthenticated, async (req, res) => {
     const reservaId = req.params.id;
     try {
@@ -256,13 +255,12 @@ app.get('/admin/history', canManageReservations, async (req, res) => {
     }
 });
 // Rota para abrir a página de inventário
-app.get('/admin/inventario', canManageReservations, (req, res) => {
-    // Usamos 'canManageReservations' para garantir que só Admin/Operacional entra
+app.get('/admin/inventario', isAdmin, (req, res) => {
     db.all('SELECT * FROM carrinhos', [], (err, rows) => {
         if (err) return res.status(500).send("Erro ao carregar inventário.");
         
         res.render('admin-inventario', { 
-            user: req.user, // O Passport guarda o utilizador aqui, não na session
+            user: req.user, 
             carrinhos: rows 
         });
     });
@@ -287,6 +285,97 @@ app.post('/admin/inventario/update', isAdmin, (req, res) => {
         if (this.changes === 0) return res.status(404).json({ message: "Carrinho não encontrado." });
         res.json({ message: "Sucesso!" });
     });
+});
+
+// --- Rota para o Dashboard de Reservas ---
+app.get('/admin/dashboard', canManageReservations, async (req, res) => {
+    try {
+        // 1. Total de Reservas por Status (Ativas vs Concluídas)
+        const statsStatus = await new Promise((r, j) => 
+            db.all("SELECT status, COUNT(*) as qtd FROM reservas GROUP BY status", [], (e, rows) => e ? j(e) : r(rows))
+        );
+
+        // 2. Uso por Carrinho (Os 5 carrinhos mais reservados)
+        const statsCarrinhos = await new Promise((r, j) => 
+            db.all(`SELECT c.nome, COUNT(r.id) as total 
+                    FROM reservas r 
+                    JOIN carrinhos c ON r.carrinho_id = c.id 
+                    GROUP BY c.id ORDER BY total DESC LIMIT 5`, [], (e, rows) => e ? j(e) : r(rows))
+        );
+
+        // 3. Top 5 Professores que mais utilizam o sistema
+        const statsProfessores = await new Promise((r, j) => 
+            db.all(`SELECT u.nome, COUNT(r.id) as total 
+                    FROM reservas r 
+                    JOIN usuarios u ON r.usuario_id = u.id 
+                    GROUP BY u.id ORDER BY total DESC LIMIT 5`, [], (e, rows) => e ? j(e) : r(rows))
+        );
+
+        // 4. Volume de reservas nos últimos 7 dias (Para o gráfico de tendência)
+        const statsDias = await new Promise((r, j) => 
+            db.all(`SELECT date(data_retirada) as data, COUNT(*) as qtd 
+                    FROM reservas 
+                    WHERE data_retirada >= date('now', '-7 days')
+                    GROUP BY date(data_retirada)
+                    ORDER BY data ASC`, [], (e, rows) => e ? j(e) : r(rows))
+        );
+        const statsSalas = await new Promise((r, j) =>
+            db.all(`SELECT sala, COUNT(*) as total
+                    FROM reservas
+                    WHERE sala IS NOT NULL AND trim(sala) <> ''
+                    GROUP BY sala
+                    ORDER BY total DESC
+                    LIMIT 5`, [], (e, rows) => e ? j(e) : r(rows))
+        );
+
+        const statsHorarios = await new Promise((r, j) =>
+            db.all(`SELECT strftime('%H:00', data_retirada) as hora, COUNT(*) as total
+                    FROM reservas
+                    GROUP BY strftime('%H', data_retirada)
+                    ORDER BY total DESC, hora ASC
+                    LIMIT 6`, [], (e, rows) => e ? j(e) : r(rows))
+        );
+
+        const statsResumo = await new Promise((r, j) =>
+            db.get(`SELECT
+                        COUNT(*) as totalReservas,
+                        COALESCE(SUM(quantidade), 0) as totalChromebooks,
+                        ROUND(AVG((julianday(data_devolucao) - julianday(data_retirada)) * 24), 1) as mediaHoras
+                    FROM reservas`, [], (e, row) => e ? j(e) : r(row))
+        );
+
+        const statusMap = statsStatus.reduce((acc, item) => {
+            acc[item.status] = item.qtd;
+            return acc;
+        }, {});
+
+        const totalCanceladas = statusMap.Cancelada || 0;
+        const taxaCancelamento = statsResumo.totalReservas
+            ? Number(((totalCanceladas / statsResumo.totalReservas) * 100).toFixed(1))
+            : 0;
+
+        res.render('admin-dashboard', { 
+            user: req.user, 
+            statsStatus, 
+            statsCarrinhos, 
+            statsProfessores, 
+            statsDias,
+            statsSalas,
+            statsHorarios,
+            resumo: {
+                totalReservas: statsResumo.totalReservas || 0,
+                totalChromebooks: statsResumo.totalChromebooks || 0,
+                mediaHoras: statsResumo.mediaHoras || 0,
+                totalAtivas: statusMap.Ativa || 0,
+                totalConcluidas: statusMap['Concluída'] || 0,
+                totalCanceladas,
+                taxaCancelamento
+            }
+        });
+    } catch (err) {
+        console.error("Erro no Dashboard:", err);
+        res.status(500).send("Erro ao carregar o dashboard: " + err.message);
+    }
 });
 // --- Rotas de atualização de usuários ---
 app.post('/admin/set-role/:id', isAdmin, (req, res) => {
@@ -316,7 +405,6 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
     const usuario_id = req.user.id;
 
     try {
-        // Validação
         if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0) {
             return res.redirect('/?erro=' + encodeURIComponent('Quantidade invalida.'));
         }

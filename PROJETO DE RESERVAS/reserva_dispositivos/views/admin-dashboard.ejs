@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Reservas - La Salle</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            padding: 1.1rem 1.2rem;
+            border: 1px solid #dfe7ef;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .stat-card small {
+            color: #5f6b7a;
+            display: block;
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 1.9rem;
+            color: #123b6d;
+            margin-top: 0.35rem;
+            line-height: 1.1;
+        }
+
+        .stat-card span {
+            display: block;
+            margin-top: 0.35rem;
+            color: #5f6b7a;
+            font-size: 0.92rem;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .insight-card {
+            margin: 0;
+        }
+
+        .insight-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1rem;
+        }
+
+        .chart-card {
+            min-height: 340px;
+        }
+
+        .chart-wrap {
+            position: relative;
+            min-height: 260px;
+        }
+
+        .empty-state {
+            color: #5f6b7a;
+            font-style: italic;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid,
+            .insights-grid,
+            .panel-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .chart-card {
+                min-height: 300px;
+            }
+
+            .chart-wrap {
+                min-height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container-fluid">
+        <header class="logo-header">
+            <img src="/images/logo_azul.png" alt="Logo La Salle">
+            <h1>Dashboard de Reservas</h1>
+
+            <div class="user-menu-container">
+                <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
+                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="dropdown-content">
+                    <a href="/">Fazer Nova Reserva</a>
+                    <a href="/minhas-reservas">Minhas Reservas</a>
+                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
+                        <a href="/admin">Painel de Gestão</a>
+                        <a href="/admin/dashboard">Dashboard de Reservas</a>
+                    <% } %>
+                    <% if (user.role === 'admin') { %>
+                        <a href="/admin/inventario">Gestão de Inventário</a>
+                    <% } %>
+                    <hr style="margin:0; opacity: 0.1;">
+                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
+                </div>
+            </div>
+        </header>
+
+        <section class="stats-grid">
+            <article class="stat-card">
+                <small>Total de reservas</small>
+                <strong><%= resumo.totalReservas %></strong>
+            </article>
+            <article class="stat-card">
+                <small>Reservas ativas</small>
+                <strong><%= resumo.totalAtivas %></strong>
+            </article>
+            <article class="stat-card">
+                <small>Reservas concluídas</small>
+                <strong><%= resumo.totalConcluidas %></strong>
+            </article>
+            <article class="stat-card">
+                <small>Reservas canceladas</small>
+                <strong><%= resumo.totalCanceladas %></strong>
+                <span>Taxa: <%= resumo.taxaCancelamento %>%</span>
+            </article>
+            <article class="stat-card">
+                <small>Chromebooks reservados</small>
+                <strong><%= resumo.totalChromebooks %></strong>
+            </article>
+           
+        </section>
+
+        <section class="panel-grid">
+            <article class="chart-card">
+                <header><strong>Reservas por status</strong></header>
+                <% if (statsStatus.length) { %>
+                    <div class="chart-wrap">
+                        <canvas id="chartStatus"></canvas>
+                    </div>
+                <% } else { %>
+                    <p class="empty-state">Nenhuma reserva encontrada para montar este gráfico.</p>
+                <% } %>
+            </article>
+
+            <article class="chart-card">
+                <header><strong>Top 5 carrinhos mais reservados</strong></header>
+                <% if (statsCarrinhos.length) { %>
+                    <div class="chart-wrap">
+                        <canvas id="chartCarrinhos"></canvas>
+                    </div>
+                <% } else { %>
+                    <p class="empty-state">Ainda não há uso suficiente para este ranking.</p>
+                <% } %>
+            </article>
+
+            <article class="chart-card">
+                <header><strong>Top 5 professores com mais reservas</strong></header>
+                <% if (statsProfessores.length) { %>
+                    <div class="chart-wrap">
+                        <canvas id="chartProfessores"></canvas>
+                    </div>
+                <% } else { %>
+                    <p class="empty-state">Nenhum professor apareceu nas reservas até o momento.</p>
+                <% } %>
+            </article>
+
+            <article class="chart-card">
+                <header><strong>Reservas nos últimos 7 dias</strong></header>
+                <% if (statsDias.length) { %>
+                    <div class="chart-wrap">
+                        <canvas id="chartDias"></canvas>
+                    </div>
+                <% } else { %>
+                    <p class="empty-state">Não houve reservas registradas nos últimos 7 dias.</p>
+                <% } %>
+            </article>
+
+            <article class="chart-card">
+                <header><strong>Horários de pico</strong></header>
+                <% if (statsHorarios.length) { %>
+                    <div class="chart-wrap">
+                        <canvas id="chartHorarios"></canvas>
+                    </div>
+                <% } else { %>
+                    <p class="empty-state">Ainda não existem dados suficientes para este gráfico.</p>
+                <% } %>
+            </article>
+
+            <article class="chart-card">
+                <header><strong>Top 5 salas com mais reservas</strong></header>
+                <% if (statsSalas.length) { %>
+                    <div class="chart-wrap">
+                        <canvas id="chartSalas"></canvas>
+                    </div>
+                <% } else { %>
+                    <p class="empty-state">Nenhuma sala apareceu nas reservas registradas.</p>
+                <% } %>
+            </article>
+        </section>
+    </main>
+
+    <script src="/menu.js"></script>
+    <script>
+        const statsStatus = <%- JSON.stringify(statsStatus) %>;
+        const statsCarrinhos = <%- JSON.stringify(statsCarrinhos) %>;
+        const statsProfessores = <%- JSON.stringify(statsProfessores) %>;
+        const statsDias = <%- JSON.stringify(statsDias) %>;
+        const statsHorarios = <%- JSON.stringify(statsHorarios) %>;
+        const statsSalas = <%- JSON.stringify(statsSalas) %>;
+
+        const palette = {
+            blue: '#1d4ed8',
+            blueLight: '#93c5fd',
+            green: '#15803d',
+            amber: '#d97706',
+            red: '#dc2626',
+            slate: '#475569',
+            cyan: '#0891b2'
+        };
+
+        const statusLabels = {
+            Ativa: 'Ativa',
+            'Concluída': 'Concluída',
+            Cancelada: 'Cancelada'
+        };
+
+        function buildChart(elementId, config) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            new Chart(element, config);
+        }
+
+        if (statsStatus.length) {
+            buildChart('chartStatus', {
+                type: 'doughnut',
+                data: {
+                    labels: statsStatus.map(item => statusLabels[item.status] || item.status),
+                    datasets: [{
+                        data: statsStatus.map(item => item.qtd),
+                        backgroundColor: [palette.blue, palette.green, palette.red, palette.amber, palette.slate]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        if (statsCarrinhos.length) {
+            buildChart('chartCarrinhos', {
+                type: 'bar',
+                data: {
+                    labels: statsCarrinhos.map(item => item.nome),
+                    datasets: [{
+                        label: 'Reservas',
+                        data: statsCarrinhos.map(item => item.total),
+                        backgroundColor: palette.blue
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        if (statsProfessores.length) {
+            buildChart('chartProfessores', {
+                type: 'bar',
+                data: {
+                    labels: statsProfessores.map(item => item.nome),
+                    datasets: [{
+                        label: 'Reservas',
+                        data: statsProfessores.map(item => item.total),
+                        backgroundColor: palette.green
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        if (statsDias.length) {
+            buildChart('chartDias', {
+                type: 'line',
+                data: {
+                    labels: statsDias.map(item => {
+                        const [ano, mes, dia] = item.data.split('-');
+                        return `${dia}/${mes}`;
+                    }),
+                    datasets: [{
+                        label: 'Reservas',
+                        data: statsDias.map(item => item.qtd),
+                        borderColor: palette.amber,
+                        backgroundColor: 'rgba(217, 119, 6, 0.15)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            });
+        }
+
+        if (statsHorarios.length) {
+            buildChart('chartHorarios', {
+                type: 'bar',
+                data: {
+                    labels: statsHorarios.map(item => item.hora),
+                    datasets: [{
+                        label: 'Reservas',
+                        data: statsHorarios.map(item => item.total),
+                        backgroundColor: palette.cyan
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        if (statsSalas.length) {
+            buildChart('chartSalas', {
+                type: 'bar',
+                data: {
+                    labels: statsSalas.map(item => item.sala),
+                    datasets: [{
+                        label: 'Reservas',
+                        data: statsSalas.map(item => item.total),
+                        backgroundColor: palette.slate
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

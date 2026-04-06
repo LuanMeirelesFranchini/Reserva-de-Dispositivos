@@ -15,14 +15,15 @@
             <h1>Minhas Reservas</h1>
             
             <div class="user-menu-container">
-                <div class="user-menu-button">
+                <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
                     <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
-                </div>
+                </button>
                 <div class="dropdown-content">
                     <a href="/">Fazer Nova Reserva</a>
                     <% if (user.role === 'admin' || user.role === 'operacional') { %>
                         <a href="/admin">Painel de Gestão</a>
+                        <a href="/admin/dashboard">Dashboard de Reservas</a>
                     <% } %>
                     <hr style="margin:0; opacity: 0.1;">
                     <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
@@ -36,7 +37,7 @@
                 <a href="/" role="button">Fazer minha primeira reserva</a>
             </article>
         <% } else { %>
-            <div style="overflow-x: auto;">
+            <div class="table-container">
                 <table>
                     <thead>
                         <tr>
@@ -68,5 +69,6 @@
             </div>
         <% } %>
     </main>
+    <script src="/menu.js"></script>
 </body>
 </html>
