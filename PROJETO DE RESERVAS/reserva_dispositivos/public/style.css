@@ -62,10 +62,22 @@ body {
     font-weight: 600;
     color: var(--color-lasalle-blue);
     margin-bottom: 0; /* Remove margem do Pico */
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    line-height: 1.2;
+    min-height: auto;
 }
 
 .user-menu-button:hover {
     background: #edf2f7;
+    border-color: var(--color-lasalle-blue);
+}
+
+.user-menu-button:focus,
+.user-menu-button:focus-visible {
+    outline: 2px solid rgba(0, 69, 135, 0.25);
+    outline-offset: 2px;
     border-color: var(--color-lasalle-blue);
 }
 
@@ -104,7 +116,9 @@ body {
 }
 
 /* Mostrar o menu quando o container for focado ou pairado */
-.user-menu-container:hover .dropdown-content {
+.user-menu-container:hover .dropdown-content,
+.user-menu-container:focus-within .dropdown-content,
+.user-menu-container.is-open .dropdown-content {
     display: block;
 }
 
@@ -124,11 +138,47 @@ main.container-fluid {
 
 /* --- 5. Responsividade Mobile --- */
 @media (max-width: 768px) {
+    main.container-fluid {
+        padding: 0 1rem;
+    }
+
     .logo-header {
         flex-direction: column;
         text-align: center;
+        align-items: stretch;
+        padding: 1rem;
     }
-    .logo-header h1 { order: -1; margin-bottom: 0.5rem; }
+
+    .logo-header h1 {
+        order: -1;
+        margin-bottom: 0.5rem;
+    }
+
+    .logo-header img {
+        margin: 0 auto;
+    }
+
+    .user-menu-container {
+        width: 100%;
+    }
+
+    .user-menu-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .dropdown-content {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    main.container-fluid {
+        padding: 0 0.75rem;
+    }
 }
 .nav-pills-container {
     display: flex;
