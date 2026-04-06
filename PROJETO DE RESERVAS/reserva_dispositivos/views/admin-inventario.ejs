@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Inventário - La Salle</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .input-quantidade {
+            max-width: 100px;
+            margin-bottom: 0;
+            text-align: center;
+        }
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .online { background-color: #e8f5e9; color: #2e7d32; }
+        .offline { background-color: #ffebee; color: #c62828; }
+        
+        #status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <main class="container-fluid">
+        <header class="logo-header">
+            <img src="/images/logo_azul.png" alt="Logo La Salle">
+            <h1>Gestão de Inventário</h1>
+            
+            <div class="user-menu-container">
+                <div class="user-menu-button">
+                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="dropdown-content">
+                    <a href="/">Fazer Nova Reserva</a>
+                    <a href="/minhas-reservas">Minhas Reservas</a>
+                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
+                        <a href="/admin">Painel de Gestão</a>
+                    <% } %>
+                    <hr style="margin:0; opacity: 0.1;">
+                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
+                </div>
+            </div>
+        </header>
+
+        <section>
+            <div id="status-message"></div>
+
+            <article>
+                <header>
+                    <strong>Capacidade Total de Chromebooks por Carrinho</strong>
+                </header>
+                
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Carrinho / Localização</th>
+                                <th>Status</th>
+                                <th style="text-align: center;">Capacidade Total</th>
+                                <th style="text-align: right;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% carrinhos.forEach(carrinho => { %>
+                                <tr>
+                                    <td>
+                                        <strong><%= carrinho.nome %></strong><br>
+                                        <small><%= carrinho.localizacao || 'Local não definido' %></small>
+                                    </td>
+                                    <td>
+                                        <!-- CORREÇÃO AQUI: Adicionado fallback caso status seja undefined -->
+                                        <% const statusAtual = carrinho.status || 'online'; %>
+                                        <span class="status-badge <%= statusAtual === 'online' ? 'online' : 'offline' %>">
+                                            <%= statusAtual.toUpperCase() %>
+                                        </span>
+                                    </td>
+                                    <td style="display: flex; justify-content: center;">
+                                        <input type="number" 
+                                               id="qtd-<%= carrinho.id %>" 
+                                               value="<%= carrinho.capacidade %>" 
+                                               class="input-quantidade"
+                                               min="0">
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button class="secondary outline" 
+                                                style="padding: 5px 15px; margin: 0;"
+                                                onclick="salvarAlteracao(event, '<%= carrinho.id %>')">
+                                            Salvar
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+                <footer>
+                    <small>* Altere o valor e clique em "Salvar" para atualizar o estoque disponível.</small>
+                </footer>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        async function salvarAlteracao(event, id) {
+            const input = document.getElementById(`qtd-${id}`);
+            const novaQtd = parseInt(input.value, 10);
+            const btn = event.currentTarget;
+
+            if (!Number.isInteger(novaQtd) || novaQtd < 0) {
+                mostrarMensagem("Quantidade inválida. Use zero ou um número maior.", "#ffebee", "#c62828");
+                input.focus();
+                return;
+            }
+
+            const textoOriginal = btn.innerText;
+            btn.innerText = "...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/admin/inventario/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, quantidade: novaQtd })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Erro ao salvar.");
+                }
+
+                mostrarMensagem("Sucesso: Inventário atualizado!", "#e8f5e9", "#2e7d32");
+            } catch (error) {
+                mostrarMensagem("Erro: " + error.message, "#ffebee", "#c62828");
+            } finally {
+                btn.innerText = textoOriginal;
+                btn.disabled = false;
+            }
+        }
+
+        function mostrarMensagem(texto, bgColor, textColor) {
+            const msgDiv = document.getElementById('status-message');
+            msgDiv.textContent = texto;
+            msgDiv.style.backgroundColor = bgColor;
+            msgDiv.style.color = textColor;
+            msgDiv.style.display = 'block';
+            setTimeout(() => msgDiv.style.display = 'none', 4000);
+        }
+    </script>
+</body>
+</html>
