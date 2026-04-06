@@ -11,6 +11,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { google } = require('googleapis');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
+const { formatarLocal, initializeSalasTable, montarSalasParaView } = require('./salas-data');
 
 // --- Configurações Iniciais ---
 const app = express();
@@ -30,6 +31,10 @@ const db = new sqlite3.Database('./data/reservas.db', (err) => {
     }
     console.log("Conectado ao banco de dados SQLite com sucesso.");
 });
+
+initializeSalasTable(db)
+    .then(() => console.log("Tabela 'salas' pronta para uso."))
+    .catch((err) => console.error("Erro ao inicializar tabela 'salas':", err.message));
 
 // --- Middlewares Essenciais ---
 app.use(express.static('public'));
@@ -168,7 +173,10 @@ app.get('/logout', (req, res, next) => { req.logout(err => { if (err) return nex
 app.get('/', isAuthenticated, async (req, res) => {
     try {
         const carrinhos = await new Promise((r,j)=>db.all("SELECT * FROM carrinhos",[],(e,rows)=>e?j(e):r(rows)));
-        res.render('index', { carrinhos, user: req.user, erro: req.query.erro || '', sucesso: req.query.sucesso || '' });
+        const salas = await new Promise((r, j) => db.all("SELECT bloco, nome FROM salas", [], (e, rows) => e ? j(e) : r(rows)));
+        const blocosSalas = montarSalasParaView(salas);
+
+        res.render('index', { carrinhos, blocosSalas, user: req.user, erro: req.query.erro || '', sucesso: req.query.sucesso || '' });
     } catch (err) {
         res.status(500).send("Erro ao carregar a página: " + err.message);
     }
@@ -400,13 +408,19 @@ app.post('/admin/delete/:id', isAdmin, (req, res) => {
 
 // --- Rota de reservas individuais ---
 app.post('/reservar', isAuthenticated, async (req, res) => {
-    const { carrinho_id, quantidade, data_retirada, data_devolucao, sala, addToCalendar } = req.body;
+    const { carrinho_id, quantidade, data_retirada, data_devolucao, bloco, sala, addToCalendar } = req.body;
     const quantidadeNum = parseInt(quantidade, 10);
     const usuario_id = req.user.id;
+    const blocoSelecionado = (bloco || '').trim();
+    const salaSelecionada = (sala || '').trim();
 
     try {
         if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0) {
             return res.redirect('/?erro=' + encodeURIComponent('Quantidade invalida.'));
+        }
+
+        if (!blocoSelecionado || !salaSelecionada) {
+            return res.redirect('/?erro=' + encodeURIComponent('Selecione o bloco e a sala da reserva.'));
         }
 
         const inicioSolicitado = new Date(data_retirada);
@@ -422,6 +436,18 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
 
         const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade, nome FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
         if (!carrinho) return res.redirect('/?erro=' + encodeURIComponent('Carrinho não encontrado.'));
+
+        const salaValida = await new Promise((r, j) => db.get(
+            "SELECT bloco, nome FROM salas WHERE bloco = ? AND nome = ?",
+            [blocoSelecionado, salaSelecionada],
+            (e, row) => e ? j(e) : r(row)
+        ));
+
+        if (!salaValida) {
+            return res.redirect('/?erro=' + encodeURIComponent('A sala selecionada nao pertence ao bloco informado.'));
+        }
+
+        const salaFormatada = `${formatarLocal(salaValida.bloco)} - ${formatarLocal(salaValida.nome)}`;
 
         const reservasAtivas = await new Promise((r,j)=>db.all("SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa'",[carrinho_id],(e,rows)=>e?j(e):r(rows)));
         
@@ -443,12 +469,12 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
 
         // Inserção
         const sqlInsert = `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        const { lastID } = await new Promise((r,j)=>db.run(sqlInsert,[carrinho_id,quantidadeNum,usuario_id,data_retirada,data_devolucao,sala,"Ativa"], function(e){ e?j(e):r(this) }));
+        const { lastID } = await new Promise((r,j)=>db.run(sqlInsert,[carrinho_id,quantidadeNum,usuario_id,data_retirada,data_devolucao,salaFormatada,"Ativa"], function(e){ e?j(e):r(this) }));
 
         // Dados do evento
         const tituloEvento = `Reserva de ${quantidadeNum} Chromebooks (${carrinho.nome})`;
         const descricaoEvento = `Reserva realizada por ${req.user.nome}. ID da Reserva: ${lastID}`;
-        const localEvento = `Sala ${sala}, Colégio La Salle`;
+        const localEvento = `${salaFormatada}, Colégio La Salle`;
 
         // Link e ICS
         const linkGoogleCalendar = gerarLinkGoogleCalendar(tituloEvento, descricaoEvento, localEvento, data_retirada, data_devolucao);
@@ -465,7 +491,7 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
                    <strong>Quantidade:</strong> ${quantidadeNum}<br>
                   <strong> Data de Retirada:</strong> ${data_retirada}<br>
                   <strong> Data de Devolução:</strong> ${data_devolucao}<br>
-                  <strong> Sala:</strong> ${sala}</p>
+                  <strong> Sala:</strong> ${salaFormatada}</p>
                    <p>Adicione à sua agenda:</strong> <a href="${linkGoogleCalendar}">Google Calendar</a></p>
                    <p>Ou abra o anexo .ics para Outlook/Apple Calendar.</p>
                    <p><strong>Equipe de Tecnologia - Colégio La Salle</p>
@@ -605,3 +631,4 @@ app.use((err, req, res, next) => {
 
 // --- Inicia servidor ---
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+
