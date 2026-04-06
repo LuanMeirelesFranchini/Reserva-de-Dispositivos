@@ -14,17 +14,17 @@
             <img src="/images/logo_azul.png" alt="Logo do Colégio">
             <h1>Sistema de Reservas</h1>
             
-            <!-- MUDANÇA AQUI: Nova estrutura de Menu Dropdown -->
             <div class="user-menu-container">
                 <div class="user-menu-button">
                     <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
-                    <!-- Ícone de seta -->
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
                 <div class="dropdown-content">
                     <a href="/minhas-reservas">Minhas Reservas</a>
                     <% if (user.role === 'admin' || user.role === 'operacional') { %>
                         <a href="/admin">Painel de Gestão</a>
+                        <!-- NOVO LINK: Para acessar o inventário facilmente -->
+                        <a href="/admin/inventario">Gestão de Inventário</a>
                     <% } %>
                     <hr style="margin: 0; opacity: 0.1;">
                     <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
@@ -51,7 +51,7 @@
                     <tr>
                         <th>Carrinho</th>
                         <th>Localização</th>
-                        <th>Capacidade Total</th>
+                        <th style="text-align: center;">Capacidade Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,7 +59,8 @@
                     <tr>
                         <td><%= c.nome %></td>
                         <td><%= c.localizacao %></td>
-                        <td><%= c.capacidade %></td>
+                        <!-- MUDANÇA: Usando 'quantidade_total' vindo da sua DB -->
+                        <td style="text-align: center;"><strong><%= c.quantidade_total || c.capacidade %></strong></td>
                     </tr>
                     <% }) %>
                 </tbody>
@@ -69,18 +70,20 @@
 
         <details open>
             <summary role="button" class="outline">Fazer uma Nova Reserva</summary>
-            <!-- ID "formReserva" adicionado aqui -->
             <form id="formReserva" action="/reservar" method="POST">
                 <label for="carrinho">De qual carrinho quer reservar?</label>
                 <select id="carrinho" name="carrinho_id" required>
                     <option value="" disabled selected>Escolha um carrinho</option>
                     <% carrinhos.forEach(c => { %>
-                        <option value="<%= c.id %>"><%= c.nome %> - <%= c.localizacao %></option>
+                        <!-- MUDANÇA: Guardamos a capacidade no 'data-max' para o JS ler depois -->
+                        <option value="<%= c.id %>" data-max="<%= c.quantidade_total || c.capacidade %>">
+                            <%= c.nome %> - <%= c.localizacao %>
+                        </option>
                     <% }) %>
                 </select>
 
                 <label for="quantidade">Quantidade:</label>
-                <input type="number" id="quantidade" name="quantidade" required min="1" max="35" placeholder="Respeite a quantidade máxima do carrinho">
+                <input type="number" id="quantidade" name="quantidade" required min="1" placeholder="Selecione um carrinho primeiro">
 
                 <div class="grid">
                     <label for="retirada">Data e Hora de Retirada:
@@ -96,7 +99,6 @@
                 
                 <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
         
-                <!-- ID "btnReservar" adicionado aqui -->
                 <button type="submit" id="btnReservar">Reservar</button>
             </form>
         </details>
@@ -107,10 +109,29 @@
     <script src="/front-end.js"></script>
     
     <script>
-        // Lógica de limite de quantidade
-        document.getElementById('quantidade').addEventListener("input", function(){
-            const max = 35;
-            if (parseInt(this.value) > max) this.value = max;
+        const selectCarrinho = document.getElementById('carrinho');
+        const inputQuantidade = document.getElementById('quantidade');
+
+        // MUDANÇA: Lógica de limite dinâmico
+        selectCarrinho.addEventListener('change', function() {
+            const option = this.options[this.selectedIndex];
+            const maxDisponivel = option.getAttribute('data-max');
+            
+            inputQuantidade.max = maxDisponivel;
+            inputQuantidade.placeholder = `Máximo: ${maxDisponivel} unidades`;
+            
+            // Se o usuário já digitou algo maior que o novo máximo, ajusta
+            if (parseInt(inputQuantidade.value) > parseInt(maxDisponivel)) {
+                inputQuantidade.value = maxDisponivel;
+            }
+        });
+
+        // Validação extra durante a digitação
+        inputQuantidade.addEventListener("input", function(){
+            const max = parseInt(this.max);
+            if (max && parseInt(this.value) > max) {
+                this.value = max;
+            }
         });
 
         // Lógica de Loading no Botão
@@ -119,11 +140,8 @@
 
         if (form && btn) {
             form.addEventListener('submit', function() {
-                // Ativa o estado de carregamento visual do Pico CSS
                 btn.setAttribute('aria-busy', 'true');
-                // Desabilita o botão para evitar cliques múltiplos
                 btn.disabled = true;
-                // Altera o texto
                 btn.textContent = 'Processando sua reserva...';
             });
         }

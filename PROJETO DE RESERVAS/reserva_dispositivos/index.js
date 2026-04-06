@@ -16,13 +16,24 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = 3000;
 app.set('view engine', 'ejs');
+const requiredEnvVars = ['SESSION_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+    console.error(`ERRO FATAL: Variáveis de ambiente obrigatórias ausentes: ${missingEnvVars.join(', ')}`);
+    process.exit(1);
+}
 const db = new sqlite3.Database('./data/reservas.db', (err) => {
-    if (err) return console.error("ERRO FATAL: Não foi possível conectar ao banco de dados.", err.message);
+    if (err) {
+        console.error("ERRO FATAL: Não foi possível conectar ao banco de dados.", err.message);
+        process.exit(1);
+    }
     console.log("Conectado ao banco de dados SQLite com sucesso.");
 });
 
 // --- Middlewares Essenciais ---
 app.use(express.static('public'));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(session({
@@ -145,6 +156,7 @@ END:VCALENDAR`;
 function isAuthenticated(req, res, next) { if (req.isAuthenticated()) return next(); res.redirect('/login'); }
 function isAdmin(req, res, next) { if (req.isAuthenticated() && req.user.role === 'admin') return next(); res.status(403).send("<h1>Acesso Negado</h1>"); }
 function canManageReservations(req, res, next) { if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'operacional')) return next(); res.status(403).send("<h1>Acesso Negado</h1>"); }
+function ensureAuthenticatedApi(req, res, next) { if (req.isAuthenticated()) return next(); res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' }); }
 
 // ==================================================================
 // --- ROTAS ---
@@ -243,7 +255,39 @@ app.get('/admin/history', canManageReservations, async (req, res) => {
         res.status(500).send("Erro ao carregar histórico: " + err.message);
     }
 });
+// Rota para abrir a página de inventário
+app.get('/admin/inventario', canManageReservations, (req, res) => {
+    // Usamos 'canManageReservations' para garantir que só Admin/Operacional entra
+    db.all('SELECT * FROM carrinhos', [], (err, rows) => {
+        if (err) return res.status(500).send("Erro ao carregar inventário.");
+        
+        res.render('admin-inventario', { 
+            user: req.user, // O Passport guarda o utilizador aqui, não na session
+            carrinhos: rows 
+        });
+    });
+});
 
+// Rota para salvar a alteração de quantidade
+app.post('/admin/inventario/update', isAdmin, (req, res) => {
+    const id = parseInt(req.body.id, 10);
+    const quantidade = parseInt(req.body.quantidade, 10);
+    const sql = `UPDATE carrinhos SET capacidade = ? WHERE id = ?`;
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Carrinho inválido." });
+    }
+
+    if (!Number.isInteger(quantidade) || quantidade < 0) {
+        return res.status(400).json({ message: "Quantidade inválida." });
+    }
+
+    db.run(sql, [quantidade, id], function(err) {
+        if (err) return res.status(500).json({ message: "Erro ao atualizar banco." });
+        if (this.changes === 0) return res.status(404).json({ message: "Carrinho não encontrado." });
+        res.json({ message: "Sucesso!" });
+    });
+});
 // --- Rotas de atualização de usuários ---
 app.post('/admin/set-role/:id', isAdmin, (req, res) => {
     const { role } = req.body;
@@ -404,7 +448,7 @@ app.post('/reservas/concluir/:id', canManageReservations, async (req, res) => {
 });
 
 // --- Histórico de reservas (todas concluídas) ---
-app.get('/api/availability', isAuthenticated, async (req, res) => {
+app.get('/api/availability', ensureAuthenticatedApi, async (req, res) => {
     const { carrinho_id, data_retirada, data_devolucao } = req.query;
     if (!carrinho_id || !data_retirada || !data_devolucao) {
         return res.status(400).json({ error: 'Parâmetros faltando.' });
@@ -456,6 +500,20 @@ app.get('/api/availability', isAuthenticated, async (req, res) => {
     }
 });
 
+
+app.use((err, req, res, next) => {
+    console.error('Erro não tratado:', err);
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    if (req.originalUrl.startsWith('/api/')) {
+        return res.status(500).json({ error: 'Erro interno no servidor.' });
+    }
+
+    res.status(500).send('Erro interno no servidor.');
+});
 
 // --- Inicia servidor ---
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
