@@ -37,6 +37,19 @@
                 <a href="/" role="button">Fazer minha primeira reserva</a>
             </article>
         <% } else { %>
+            <% function formatarDataBrasil(dataIso) {
+                const data = new Date(dataIso);
+                if (isNaN(data.getTime())) return dataIso;
+
+                const dia = String(data.getDate()).padStart(2, '0');
+                const mes = String(data.getMonth() + 1).padStart(2, '0');
+                const ano = data.getFullYear();
+                const hora = String(data.getHours()).padStart(2, '0');
+                const minuto = String(data.getMinutes()).padStart(2, '0');
+
+                return `${dia}/${mes}/${ano} às ${hora}:${minuto}`;
+            } %>
+
             <div class="table-container">
                 <table>
                     <thead>
@@ -54,8 +67,8 @@
                             <tr>
                                 <td><%= reserva.nome_carrinho %></td>
                                 <td><%= reserva.quantidade %></td>
-                                <td><%= reserva.data_retirada.replace('T', ' ') %></td>
-                                <td><%= reserva.data_devolucao.replace('T', ' ') %></td>
+                                <td><%= formatarDataBrasil(reserva.data_retirada) %></td>
+                                <td><%= formatarDataBrasil(reserva.data_devolucao) %></td>
                                 <td><%= reserva.sala %></td>
                                 <td>
                                     <form action="/reservas/cancelar/<%= reserva.id %>" method="POST" onsubmit="return confirm('Deseja realmente cancelar esta reserva?');" style="margin: 0;">

@@ -54,6 +54,7 @@
                         <th>Carrinho</th>
                         <th>Localização</th>
                         <th style="text-align: center;">Capacidade Total</th>
+                       
                     </tr>
                 </thead>
                 <tbody>
@@ -61,8 +62,8 @@
                     <tr>
                         <td><%= c.nome %></td>
                         <td><%= c.localizacao %></td>
-                        <!-- MUDANÇA: Usando 'quantidade_total' vindo da sua DB -->
-                        <td style="text-align: center;"><strong><%= c.quantidade_total || c.capacidade %></strong></td>
+                        <td style="text-align: center;"><strong><%= c.capacidade %></strong></td>
+                        
                     </tr>
                     <% }) %>
                 </tbody>
@@ -77,8 +78,7 @@
                 <select id="carrinho" name="carrinho_id" required>
                     <option value="" disabled selected>Escolha um carrinho</option>
                     <% carrinhos.forEach(c => { %>
-                        <!-- MUDANÇA: Guardamos a capacidade no 'data-max' para o JS ler depois -->
-                        <option value="<%= c.id %>" data-max="<%= c.quantidade_total || c.capacidade %>">
+                        <option value="<%= c.id %>" data-max="<%= c.disponiveis %>">
                             <%= c.nome %> - <%= c.localizacao %>
                         </option>
                     <% }) %>

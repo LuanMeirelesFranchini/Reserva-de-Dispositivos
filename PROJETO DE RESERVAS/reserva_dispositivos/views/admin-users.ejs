@@ -1,12 +1,82 @@
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="white">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Gerir Utilizadores</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
-    <link rel="stylesheet" href="/style.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin - Gerir Utilizadores</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+        <link rel="stylesheet" href="/style.css">
+        <style>
+            .toolbar {
+                display: flex;
+                gap: 1rem;
+                align-items: end;
+                margin-bottom: 1rem;
+                flex-wrap: wrap;
+            }
+            .toolbar label {
+                margin-bottom: 0;
+                min-width: 260px;
+                flex: 1;
+            }
+            .action-stack {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                justify-content: flex-start;
+                flex-wrap: nowrap;
+                min-width: 600px;
+            }
+            .role-form {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+                margin: 0;
+                flex: 1;
+            }
+            .action-stack form {
+                margin: 0;
+            }
+            .role-form select,
+            .role-form button,
+            .delete-button {
+                margin: 0;
+                height: 44px;
+            }
+            .role-form select {
+                margin: 0;
+            height: 45px;
+            min-width: 180px; /* Largura mínima para o texto do perfil aparecer */
+            padding-top: 0;
+            padding-bottom: 0;
+            }
+            .role-form button,
+            .delete-button {
+                min-width: 160px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                white-space: nowrap;
+            }
+            .self-role-note {
+                display: inline-flex;
+                align-items: center;
+                justify-content: flex-start;
+                min-height: 44px;
+                white-space: nowrap;
+            }
+            .muted-note {
+                color: #666;
+                font-size: 0.92rem;
+                margin: 0 0 1rem;
+            }
+            .users-table th.col-acoes,
+            .users-table td.col-acoes {
+                min-width: 640px;
+            }
+        </style>
+    </head>
 <body>
     <main class="container-fluid">
         <header class="logo-header">
@@ -30,6 +100,14 @@
         </nav>
 
         <h2>Usúarios que efetuaram login no sistema</h2>
+        <p class="muted-note">Use o filtro para localizar rapidamente um usuário e altere o perfil pelo seletor.</p>
+
+        <div class="toolbar">
+            <label for="filtro-usuarios">
+                Procurar usuário
+                <input type="search" id="filtro-usuarios" placeholder="Digite nome, e-mail ou perfil">
+            </label>
+        </div>
         
         <div style="overflow-x: auto;">
             <table class="users-table">
@@ -43,31 +121,28 @@
               </thead>
               <tbody>
                 <% usuarios.forEach(usuario => { %>
-                  <tr>
+                  <tr data-user-row data-search="<%= `${usuario.nome} ${usuario.email} ${usuario.role}`.toLowerCase() %>">
                     <td><%= usuario.nome %></td>
                     <td><%= usuario.email %></td>
                     <td><%= usuario.role.charAt(0).toUpperCase() + usuario.role.slice(1) %></td>
-                    <td>
-                      <div class="action-buttons">
+                    <td class="col-acoes">
+                      <div class="action-stack">
                         <% if (usuario.id !== user.id) { %>
-                          
-                          <!-- MUDANÇA 2: Texto dos botões simplificado -->
-                          <% if (usuario.role === 'professor') { %>
-                            <form action="/admin/set-role/<%= usuario.id %>" method="POST"><input type="hidden" name="role" value="operacional"><button type="submit" class="secondary">Operacional</button></form>
-                            <form action="/admin/set-role/<%= usuario.id %>" method="POST"><input type="hidden" name="role" value="admin"><button type="submit">Admin</button></form>
-                          <% } else if (usuario.role === 'operacional') { %>
-                            <form action="/admin/set-role/<%= usuario.id %>" method="POST"><input type="hidden" name="role" value="professor"><button type="submit" class="secondary">Professor</button></form>
-                            <form action="/admin/set-role/<%= usuario.id %>" method="POST"><input type="hidden" name="role" value="admin"><button type="submit">Admin</button></form>
-                          <% } else if (usuario.role === 'admin') { %>
-                            <form action="/admin/set-role/<%= usuario.id %>" method="POST"><input type="hidden" name="role" value="professor"><button type="submit" class="secondary">Rebaixar</button></form>
-                          <% } %>
+                          <form action="/admin/set-role/<%= usuario.id %>" method="POST" class="role-form">
+                            <select name="role" aria-label="Selecionar perfil para <%= usuario.nome %>">
+                              <option value="professor" <%= usuario.role === 'professor' ? 'selected' : '' %>>Professor</option>
+                              <option value="operacional" <%= usuario.role === 'operacional' ? 'selected' : '' %>>Operacional</option>
+                              <option value="admin" <%= usuario.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                            </select>
+                            <button type="submit" class="outline">Salvar perfil</button>
+                          </form>
 
                           <form action="/admin/delete/<%= usuario.id %>" method="POST" onsubmit="return confirm('Tem a certeza de que deseja excluir este utilizador?');">
-                              <button type="submit" class="contrast">Excluir</button>
+                              <button type="submit" class="contrast delete-button">Excluir</button>
                           </form>
 
                         <% } else { %>
-                          <p style="text-align: center; margin: 0;">(Administrador)</p>
+                          <p class="self-role-note">(Administrador)</p>
                         <% } %>
                       </div>
                     </td>
@@ -77,5 +152,18 @@
             </table>
         </div>
     </main>
-</body>
+    <script>
+        const filtroUsuarios = document.getElementById('filtro-usuarios');
+        const linhasUsuarios = Array.from(document.querySelectorAll('[data-user-row]'));
+
+        filtroUsuarios.addEventListener('input', function() {
+            const termo = this.value.trim().toLowerCase();
+
+            linhasUsuarios.forEach((linha) => {
+                const textoBusca = linha.getAttribute('data-search') || '';
+                linha.style.display = !termo || textoBusca.includes(termo) ? '' : 'none';
+            });
+        });
+    </script>
+  </body>
 </html>

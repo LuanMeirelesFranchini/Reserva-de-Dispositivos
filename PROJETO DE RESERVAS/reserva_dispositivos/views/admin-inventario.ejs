@@ -12,6 +12,21 @@
             margin-bottom: 0;
             text-align: center;
         }
+        .inventory-grid {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .inventory-grid label {
+            margin-bottom: 0;
+            min-width: 110px;
+        }
+        .inventory-grid small {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
         .status-badge {
             padding: 2px 8px;
             border-radius: 4px;
@@ -62,7 +77,7 @@
 
             <article>
                 <header>
-                    <strong>Capacidade Total de Chromebooks por Carrinho</strong>
+                    <strong>Capacidade e manutenção por carrinho</strong>
                 </header>
                 
                 <div class="table-container">
@@ -71,7 +86,8 @@
                             <tr>
                                 <th>Carrinho / Localização</th>
                                 <th>Status</th>
-                                <th style="text-align: center;">Capacidade Total</th>
+                                <th style="text-align: center;">Capacidade / Manutenção</th>
+                                <th style="text-align: center;">Disponíveis</th>
                                 <th style="text-align: right;">Ações</th>
                             </tr>
                         </thead>
@@ -89,12 +105,28 @@
                                             <%= statusAtual.toUpperCase() %>
                                         </span>
                                     </td>
-                                    <td style="display: flex; justify-content: center;">
-                                        <input type="number" 
-                                               id="qtd-<%= carrinho.id %>" 
-                                               value="<%= carrinho.capacidade %>" 
-                                               class="input-quantidade"
-                                               min="0">
+                                    <td>
+                                        <div class="inventory-grid">
+                                            <label for="capacidade-<%= carrinho.id %>">
+                                                <small>Capacidade total</small>
+                                                <input type="number"
+                                                       id="capacidade-<%= carrinho.id %>"
+                                                       value="<%= carrinho.capacidade %>"
+                                                       class="input-quantidade"
+                                                       min="0">
+                                            </label>
+                                            <label for="indisponiveis-<%= carrinho.id %>">
+                                                <small>Em manutenção</small>
+                                                <input type="number"
+                                                       id="indisponiveis-<%= carrinho.id %>"
+                                                       value="<%= carrinho.indisponiveis %>"
+                                                       class="input-quantidade"
+                                                       min="0">
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <strong id="disponiveis-<%= carrinho.id %>"><%= carrinho.disponiveis %></strong>
                                     </td>
                                     <td style="text-align: right;">
                                         <button class="secondary outline" 
@@ -109,22 +141,37 @@
                     </table>
                 </div>
                 <footer>
-                    <small>* Altere o valor e clique em "Salvar" para atualizar o estoque disponível.</small>
+                    <small>* Use "Capacidade total" para mudanças permanentes e "Em manutenção" para indisponibilidades temporárias.</small>
                 </footer>
             </article>
         </section>
     </main>
 
     <script src="/menu.js"></script>
-    <script>
+        <script>
         async function salvarAlteracao(event, id) {
-            const input = document.getElementById(`qtd-${id}`);
-            const novaQtd = parseInt(input.value, 10);
+            const inputCapacidade = document.getElementById(`capacidade-${id}`);
+            const inputIndisponiveis = document.getElementById(`indisponiveis-${id}`);
+            const campoDisponiveis = document.getElementById(`disponiveis-${id}`);
+            const novaCapacidade = parseInt(inputCapacidade.value, 10);
+            const novosIndisponiveis = parseInt(inputIndisponiveis.value, 10);
             const btn = event.currentTarget;
 
-            if (!Number.isInteger(novaQtd) || novaQtd < 0) {
-                mostrarMensagem("Quantidade inválida. Use zero ou um número maior.", "#ffebee", "#c62828");
-                input.focus();
+            if (!Number.isInteger(novaCapacidade) || novaCapacidade < 0) {
+                mostrarMensagem("Capacidade inválida. Use zero ou um número maior.", "#ffebee", "#c62828");
+                inputCapacidade.focus();
+                return;
+            }
+
+            if (!Number.isInteger(novosIndisponiveis) || novosIndisponiveis < 0) {
+                mostrarMensagem("Quantidade em manutenção inválida. Use zero ou um número maior.", "#ffebee", "#c62828");
+                inputIndisponiveis.focus();
+                return;
+            }
+
+            if (novosIndisponiveis > novaCapacidade) {
+                mostrarMensagem("Em manutenção não pode ser maior que a capacidade total.", "#ffebee", "#c62828");
+                inputIndisponiveis.focus();
                 return;
             }
 
@@ -136,7 +183,7 @@
                 const response = await fetch('/admin/inventario/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id, quantidade: novaQtd })
+                    body: JSON.stringify({ id: id, capacidade: novaCapacidade, indisponiveis: novosIndisponiveis })
                 });
 
                 const data = await response.json();
@@ -145,6 +192,7 @@
                     throw new Error(data.message || "Erro ao salvar.");
                 }
 
+                campoDisponiveis.textContent = data.disponiveis;
                 mostrarMensagem("Sucesso: Inventário atualizado!", "#e8f5e9", "#2e7d32");
             } catch (error) {
                 mostrarMensagem("Erro: " + error.message, "#ffebee", "#c62828");

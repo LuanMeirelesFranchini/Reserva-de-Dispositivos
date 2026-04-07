@@ -1,8 +1,10 @@
+const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 require('dotenv').config(); // Carrega variáveis do .env
 
-const db = new sqlite3.Database('./data/reservas.db', (err) => {
+const dbPath = path.join(__dirname, 'data', 'reservas.db');
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) return console.error("ERRO FATAL: Não foi possível conectar ao banco.", err.message);
     console.log('Conectado ao banco de dados SQLite.');
 });
@@ -31,7 +33,8 @@ db.serialize(() => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nome TEXT NOT NULL,
                 localizacao TEXT NOT NULL,
-                capacidade INTEGER NOT NULL
+                capacidade INTEGER NOT NULL,
+                indisponiveis INTEGER NOT NULL DEFAULT 0
             )
         `, (err) => {
             if (err) return console.error("Erro ao criar tabela carrinhos:", err.message);
@@ -61,6 +64,7 @@ db.serialize(() => {
                         data_devolucao TEXT NOT NULL,
                         data_reserva TEXT NOT NULL DEFAULT (datetime('now','localtime')),
                         sala TEXT NOT NULL,
+                        concluido_por TEXT,
                         status TEXT NOT NULL,
                         carrinho_id INTEGER NOT NULL,
                         usuario_id INTEGER NOT NULL,

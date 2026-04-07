@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="white">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Histórico de Reservas</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
-    <link rel="stylesheet" href="/style.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Histórico de Reservas</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+        <link rel="stylesheet" href="/style.css">
+        <style>
+            .col-carrinho {
+                white-space: nowrap;
+                min-width: 130px;
+            }
+        </style>
+    </head>
 <body>
     <main class="container-fluid">
         <header class="logo-header">
@@ -65,7 +71,7 @@
                             <tr>
                                 <td><strong><%= reserva.nome_professor %></strong></td>
                                 <td><%= reserva.quantidade %></td>
-                                <td><%= reserva.nome_carrinho %></td>
+                                <td class="col-carrinho"><%= reserva.nome_carrinho %></td>
                                 
                                 <!-- Data de Criação (Feita em) -->
                                 <td style="white-space: nowrap;">

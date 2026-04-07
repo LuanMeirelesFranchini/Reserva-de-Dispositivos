@@ -3,6 +3,7 @@ require('dotenv').config();
 
 // --- Importações das Ferramentas ---
 const express = require('express');
+const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
@@ -24,7 +25,8 @@ if (missingEnvVars.length > 0) {
     console.error(`ERRO FATAL: Variáveis de ambiente obrigatórias ausentes: ${missingEnvVars.join(', ')}`);
     process.exit(1);
 }
-const db = new sqlite3.Database('./data/reservas.db', (err) => {
+const dbPath = path.join(__dirname, 'data', 'reservas.db');
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error("ERRO FATAL: Não foi possível conectar ao banco de dados.", err.message);
         process.exit(1);
@@ -35,6 +37,42 @@ const db = new sqlite3.Database('./data/reservas.db', (err) => {
 initializeSalasTable(db)
     .then(() => console.log("Tabela 'salas' pronta para uso."))
     .catch((err) => console.error("Erro ao inicializar tabela 'salas':", err.message));
+
+db.run(`ALTER TABLE reservas ADD COLUMN concluido_por TEXT`, (err) => {
+    if (!err) {
+        console.log("Coluna 'concluido_por' adicionada na tabela reservas.");
+        return;
+    }
+
+    if (err.message.includes('duplicate column name')) {
+        return;
+    }
+
+    if (err.message.includes('no such table')) {
+        console.warn("Tabela 'reservas' ainda nao existe para adicionar 'concluido_por'.");
+        return;
+    }
+
+    console.error("Erro ao garantir coluna 'concluido_por':", err.message);
+});
+
+db.run(`ALTER TABLE carrinhos ADD COLUMN indisponiveis INTEGER NOT NULL DEFAULT 0`, (err) => {
+    if (!err) {
+        console.log("Coluna 'indisponiveis' adicionada na tabela carrinhos.");
+        return;
+    }
+
+    if (err.message.includes('duplicate column name')) {
+        return;
+    }
+
+    if (err.message.includes('no such table')) {
+        console.warn("Tabela 'carrinhos' ainda nao existe para adicionar 'indisponiveis'.");
+        return;
+    }
+
+    console.error("Erro ao garantir coluna 'indisponiveis':", err.message);
+});
 
 // --- Middlewares Essenciais ---
 app.use(express.static('public'));
@@ -163,6 +201,18 @@ function isAdmin(req, res, next) { if (req.isAuthenticated() && req.user.role ==
 function canManageReservations(req, res, next) { if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'operacional')) return next(); res.status(403).send("<h1>Acesso Negado</h1>"); }
 function ensureAuthenticatedApi(req, res, next) { if (req.isAuthenticated()) return next(); res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' }); }
 
+function normalizarCarrinho(carrinho) {
+    const capacidade = Number.isInteger(carrinho.capacidade) ? carrinho.capacidade : parseInt(carrinho.capacidade, 10) || 0;
+    const indisponiveis = Number.isInteger(carrinho.indisponiveis) ? carrinho.indisponiveis : parseInt(carrinho.indisponiveis, 10) || 0;
+
+    return {
+        ...carrinho,
+        capacidade,
+        indisponiveis,
+        disponiveis: Math.max(capacidade - indisponiveis, 0)
+    };
+}
+
 
 // --- ROTAS ---
 app.get('/login', (req, res) => res.render('login', { erro: req.query.error || '' }));
@@ -172,7 +222,8 @@ app.get('/logout', (req, res, next) => { req.logout(err => { if (err) return nex
 
 app.get('/', isAuthenticated, async (req, res) => {
     try {
-        const carrinhos = await new Promise((r,j)=>db.all("SELECT * FROM carrinhos",[],(e,rows)=>e?j(e):r(rows)));
+        const carrinhosDb = await new Promise((r,j)=>db.all("SELECT * FROM carrinhos",[],(e,rows)=>e?j(e):r(rows)));
+        const carrinhos = carrinhosDb.map(normalizarCarrinho);
         const salas = await new Promise((r, j) => db.all("SELECT bloco, nome FROM salas", [], (e, rows) => e ? j(e) : r(rows)));
         const blocosSalas = montarSalasParaView(salas);
 
@@ -269,7 +320,7 @@ app.get('/admin/inventario', isAdmin, (req, res) => {
         
         res.render('admin-inventario', { 
             user: req.user, 
-            carrinhos: rows 
+            carrinhos: rows.map(normalizarCarrinho)
         });
     });
 });
@@ -277,21 +328,30 @@ app.get('/admin/inventario', isAdmin, (req, res) => {
 // Rota para salvar a alteração de quantidade
 app.post('/admin/inventario/update', isAdmin, (req, res) => {
     const id = parseInt(req.body.id, 10);
-    const quantidade = parseInt(req.body.quantidade, 10);
-    const sql = `UPDATE carrinhos SET capacidade = ? WHERE id = ?`;
+    const capacidade = parseInt(req.body.capacidade, 10);
+    const indisponiveis = parseInt(req.body.indisponiveis, 10);
 
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ message: "Carrinho inválido." });
     }
 
-    if (!Number.isInteger(quantidade) || quantidade < 0) {
-        return res.status(400).json({ message: "Quantidade inválida." });
+    if (!Number.isInteger(capacidade) || capacidade < 0) {
+        return res.status(400).json({ message: "Capacidade inválida." });
     }
 
-    db.run(sql, [quantidade, id], function(err) {
+    if (!Number.isInteger(indisponiveis) || indisponiveis < 0) {
+        return res.status(400).json({ message: "Quantidade em manutenção inválida." });
+    }
+
+    if (indisponiveis > capacidade) {
+        return res.status(400).json({ message: "Indisponíveis não pode ser maior que a capacidade total." });
+    }
+
+    const sql = `UPDATE carrinhos SET capacidade = ?, indisponiveis = ? WHERE id = ?`;
+    db.run(sql, [capacidade, indisponiveis, id], function(err) {
         if (err) return res.status(500).json({ message: "Erro ao atualizar banco." });
         if (this.changes === 0) return res.status(404).json({ message: "Carrinho não encontrado." });
-        res.json({ message: "Sucesso!" });
+        res.json({ message: "Sucesso!", disponiveis: Math.max(capacidade - indisponiveis, 0) });
     });
 });
 
@@ -434,7 +494,8 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
             return res.redirect('/?erro=' + encodeURIComponent('As reservas devem ser feitas com pelo menos 24 horas de antecedencia.'));
         }
 
-        const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade, nome FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
+        const carrinhoDb = await new Promise((r,j)=>db.get("SELECT capacidade, indisponiveis, nome FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
+        const carrinho = carrinhoDb ? normalizarCarrinho(carrinhoDb) : null;
         if (!carrinho) return res.redirect('/?erro=' + encodeURIComponent('Carrinho não encontrado.'));
 
         const salaValida = await new Promise((r, j) => db.get(
@@ -463,8 +524,8 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
             }
             if(u > picoDeUso) picoDeUso = u;
         }
-        if(quantidadeNum > (carrinho.capacidade - picoDeUso)){
-            return res.redirect('/?erro=' + encodeURIComponent(`Erro: só há ${carrinho.capacidade - picoDeUso} disponíveis.`));
+        if(quantidadeNum > (carrinho.disponiveis - picoDeUso)){
+            return res.redirect('/?erro=' + encodeURIComponent(`Erro: só há ${Math.max(carrinho.disponiveis - picoDeUso, 0)} disponíveis.`));
         }
 
         // Inserção
@@ -576,15 +637,14 @@ app.get('/api/availability', ensureAuthenticatedApi, async (req, res) => {
     }
 
     try {
-        const carrinho = await new Promise((resolve, reject) => {
-            db.get("SELECT capacidade FROM carrinhos WHERE id = ?", [carrinho_id], (err, row) => {
+        const carrinhoDb = await new Promise((resolve, reject) => {
+            db.get("SELECT capacidade, indisponiveis FROM carrinhos WHERE id = ?", [carrinho_id], (err, row) => {
                 if (err) reject(err); else resolve(row);
             });
         });
+        const carrinho = carrinhoDb ? normalizarCarrinho(carrinhoDb) : null;
 
         if (!carrinho) return res.status(404).json({ error: 'Carrinho não encontrado.' });
-        
-        const capacidadeTotal = carrinho.capacidade;
 
         // Combina reservas pontuais e recorrentes para a verificação
         const reservasAtivas = await new Promise((resolve, reject) => {
@@ -605,7 +665,7 @@ app.get('/api/availability', ensureAuthenticatedApi, async (req, res) => {
             if (emUsoNesteMinuto > picoDeUso) picoDeUso = emUsoNesteMinuto;
         }
 
-        const disponiveisNoHorario = capacidadeTotal - picoDeUso;
+        const disponiveisNoHorario = carrinho.disponiveis - picoDeUso;
         res.json({ disponiveis: disponiveisNoHorario < 0 ? 0 : disponiveisNoHorario });
 
     } catch (err) {
