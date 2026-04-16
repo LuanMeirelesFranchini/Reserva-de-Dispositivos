@@ -16,8 +16,9 @@ const { formatarLocal, initializeSalasTable, montarSalasParaView } = require('./
 
 // --- Configurações Iniciais ---
 const app = express();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 app.set('view engine', 'ejs');
+app.set('trust proxy', 1);
 const requiredEnvVars = ['SESSION_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
@@ -33,6 +34,130 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
     console.log("Conectado ao banco de dados SQLite com sucesso.");
 });
+
+class SQLiteSessionStore extends session.Store {
+    constructor(database) {
+        super();
+        this.db = database;
+        this.ready = this.initialize();
+    }
+
+    initialize() {
+        return new Promise((resolve, reject) => {
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS sessions (
+                    sid TEXT PRIMARY KEY,
+                    sess TEXT NOT NULL,
+                    expires_at INTEGER NOT NULL
+                )
+            `, (err) => {
+                if (err) return reject(err);
+
+                this.db.run(
+                    `CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at)`,
+                    (indexErr) => indexErr ? reject(indexErr) : resolve()
+                );
+            });
+        });
+    }
+
+    get(sid, callback) {
+        this.ready
+            .then(() => {
+                this.db.get(
+                    `SELECT sess, expires_at FROM sessions WHERE sid = ?`,
+                    [sid],
+                    (err, row) => {
+                        if (err) return callback(err);
+                        if (!row) return callback(null, null);
+
+                        if (row.expires_at <= Date.now()) {
+                            return this.destroy(sid, () => callback(null, null));
+                        }
+
+                        try {
+                            callback(null, JSON.parse(row.sess));
+                        } catch (parseErr) {
+                            callback(parseErr);
+                        }
+                    }
+                );
+            })
+            .catch((err) => callback(err));
+    }
+
+    set(sid, sess, callback) {
+        this.ready
+            .then(() => {
+                const expiresAt = this.getExpiry(sess);
+                const payload = JSON.stringify(sess);
+
+                this.db.run(
+                    `INSERT INTO sessions (sid, sess, expires_at)
+                     VALUES (?, ?, ?)
+                     ON CONFLICT(sid) DO UPDATE SET
+                        sess = excluded.sess,
+                        expires_at = excluded.expires_at`,
+                    [sid, payload, expiresAt],
+                    (err) => callback && callback(err)
+                );
+            })
+            .catch((err) => callback && callback(err));
+    }
+
+    destroy(sid, callback) {
+        this.ready
+            .then(() => {
+                this.db.run(`DELETE FROM sessions WHERE sid = ?`, [sid], (err) => {
+                    if (callback) callback(err);
+                });
+            })
+            .catch((err) => callback && callback(err));
+    }
+
+    touch(sid, sess, callback) {
+        this.ready
+            .then(() => {
+                this.db.run(
+                    `UPDATE sessions SET expires_at = ? WHERE sid = ?`,
+                    [this.getExpiry(sess), sid],
+                    (err) => callback && callback(err)
+                );
+            })
+            .catch((err) => callback && callback(err));
+    }
+
+    getExpiry(sess) {
+        const cookieExpiry = sess && sess.cookie && sess.cookie.expires
+            ? new Date(sess.cookie.expires).getTime()
+            : NaN;
+
+        if (Number.isFinite(cookieExpiry)) {
+            return cookieExpiry;
+        }
+
+        const maxAge = sess && sess.cookie && typeof sess.cookie.maxAge === 'number'
+            ? sess.cookie.maxAge
+            : 24 * 60 * 60 * 1000;
+
+        return Date.now() + maxAge;
+    }
+
+    cleanupExpiredSessions() {
+        this.ready
+            .then(() => {
+                this.db.run(`DELETE FROM sessions WHERE expires_at <= ?`, [Date.now()], (err) => {
+                    if (err) {
+                        console.error('Erro ao limpar sessões expiradas:', err.message);
+                    }
+                });
+            })
+            .catch((err) => console.error('Erro ao inicializar limpeza de sessões:', err.message));
+    }
+}
+
+const sessionStore = new SQLiteSessionStore(db);
+setInterval(() => sessionStore.cleanupExpiredSessions(), 60 * 60 * 1000).unref();
 
 initializeSalasTable(db)
     .then(() => console.log("Tabela 'salas' pronta para uso."))
@@ -80,9 +205,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
@@ -166,6 +293,11 @@ async function sendReservationEmail({ to, subject, text, html, attachments=[] })
   }
 }
 
+function appendFlashMessage(urlBase, field, message) {
+    const separator = urlBase.includes('?') ? '&' : '?';
+    return `${urlBase}${separator}${field}=${encodeURIComponent(message)}`;
+}
+
 // --- Funções de Calendário ---
 function gerarLinkGoogleCalendar(titulo, descricao, local, inicio, fim) {
     const formatarData = (date) => date.toISOString().replace(/-|:|\.\d+/g,'');
@@ -242,7 +374,12 @@ app.get('/minhas-reservas', isAuthenticated, async (req, res) => {
                      WHERE r.usuario_id = ? AND r.status = 'Ativa'
                      ORDER BY r.data_retirada ASC`;
         const reservas = await new Promise((r, j) => db.all(sql, [req.user.id], (e, rows) => e ? j(e) : r(rows)));
-        res.render('minhas-reservas', { reservas, user: req.user });
+        res.render('minhas-reservas', {
+            reservas,
+            user: req.user,
+            erro: req.query.erro || '',
+            sucesso: req.query.sucesso || ''
+        });
     } catch (err) {
         res.status(500).send("Erro ao carregar suas reservas.");
     }
@@ -541,12 +678,14 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
         const linkGoogleCalendar = gerarLinkGoogleCalendar(tituloEvento, descricaoEvento, localEvento, data_retirada, data_devolucao);
         const arquivoICS = gerarICS(tituloEvento, descricaoEvento, localEvento, data_retirada, data_devolucao);
 
-        // Enviar e-mail
-        await sendReservationEmail({
-            to: req.user.email,
-            subject: "Confirmação da sua reserva",
-            text: `Olá ${req.user.nome}, sua reserva foi feita com sucesso. Adicione à sua agenda: ${linkGoogleCalendar}`,
-            html: `<p>Olá <b>${req.user.nome}</b>, sua reserva foi feita com sucesso!</p>
+        const avisos = [];
+
+        try {
+            await sendReservationEmail({
+                to: req.user.email,
+                subject: "Confirmação da sua reserva",
+                text: `Olá ${req.user.nome}, sua reserva foi feita com sucesso. Adicione à sua agenda: ${linkGoogleCalendar}`,
+                html: `<p>Olá <b>${req.user.nome}</b>, sua reserva foi feita com sucesso!</p>
                    <p><b>Detalhes:</b><br>
                    <strong>Carrinho:</strong> ${carrinho.nome}<br>
                    <strong>Quantidade:</strong> ${quantidadeNum}<br>
@@ -558,10 +697,14 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
                    <p><strong>Equipe de Tecnologia - Colégio La Salle</p>
                            <p>(11) 2793.1444</p>
                            <p>https://www.lasalle.edu.br/saopaulo</strong></p>`,
-            attachments: [
-                { filename: 'reserva.ics', content: arquivoICS }
-            ]
-        });
+                attachments: [
+                    { filename: 'reserva.ics', content: arquivoICS }
+                ]
+            });
+        } catch (emailErr) {
+            console.error('Falha ao enviar e-mail de confirmação:', emailErr.message || emailErr);
+            avisos.push('Reserva criada, mas o e-mail de confirmação não pôde ser enviado.');
+        }
 
         // Criar evento Google Calendar automático
         if (addToCalendar === 'true' && req.user.google_refresh_token) {
@@ -584,10 +727,16 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
                 console.log('Evento criado no Google Calendar com sucesso!');
             } catch (calendarErr) {
                 console.error("ERRO ao criar evento no Google Calendar:", calendarErr);
+                avisos.push('Reserva criada, mas houve falha ao adicionar o evento no Google Calendar.');
             }
         }
 
-        res.redirect('/?sucesso=' + encodeURIComponent('Sua reserva foi feita com sucesso!'));
+        let redirectUrl = '/?sucesso=' + encodeURIComponent('Sua reserva foi feita com sucesso!');
+        if (avisos.length > 0) {
+            redirectUrl = appendFlashMessage(redirectUrl, 'erro', avisos.join(' '));
+        }
+
+        res.redirect(redirectUrl);
     } catch (err) {
         console.error(err);
         res.status(500).send("Erro ao processar reserva: " + err.message);

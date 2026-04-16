@@ -88,7 +88,7 @@ const SALAS_DATA = [
     { bloco: 'BLOCO E', nome: 'Sala 14' },
     { bloco: 'BLOCO E', nome: 'Sala 15' },
     { bloco: 'BLOCO E', nome: 'SALA MAKER' },
-    { bloco: 'BLOCO E', nome: 'COORD ORIENTACAO EF - ANOS INICIAIS' },
+    { bloco: 'BLOCO E', nome: 'COORD ORIENTACAO EDUCAÇÃO INFANTIL - ANOS INICIAIS' },
     { bloco: 'BLOCO E', nome: 'COORD ORIENTACAO ANOS INICIAIS' },
     { bloco: 'BLOCO E', nome: 'SUPERVISAO PEDAGOGICA' },
     { bloco: 'BLOCO E', nome: 'FORMACAO PEDAGOGICA' },
