@@ -99,8 +99,12 @@
 <body>
     <main class="container-fluid">
         <header class="logo-header">
-            <img src="/images/logo_azul.png" alt="Logo La Salle">
-            <h1>Dashboard de Reservas</h1>
+            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
+                <img src="/images/logo_azul.png" alt="Logo La Salle">
+            </a>
+            <a href="/" class="title-link" aria-label="Ir para a página inicial">
+                <h1>Dashboard de Reservas</h1>
+            </a>
 
             <div class="user-menu-container">
                 <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
@@ -255,7 +259,7 @@
                     labels: statsStatus.map(item => statusLabels[item.status] || item.status),
                     datasets: [{
                         data: statsStatus.map(item => item.qtd),
-                        backgroundColor: [palette.blue, palette.green, palette.red, palette.amber, palette.slate]
+                        backgroundColor: [palette.blue, palette.red, palette.green,  palette.amber, palette.slate]
                     }]
                 },
                 options: {

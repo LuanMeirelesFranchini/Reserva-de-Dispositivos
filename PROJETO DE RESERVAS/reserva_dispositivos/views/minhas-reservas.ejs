@@ -10,9 +10,13 @@
 <body>
     <main class="container-fluid">
         <header class="logo-header">
-            <img src="/images/logo_azul.png" alt="Logo La Salle">
+            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
+                <img src="/images/logo_azul.png" alt="Logo La Salle">
+            </a>
             
-            <h1>Minhas Reservas</h1>
+            <a href="/" class="title-link" aria-label="Ir para a página inicial">
+                <h1>Minhas Reservas</h1>
+            </a>
             
             <div class="user-menu-container">
                 <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
@@ -31,12 +35,37 @@
             </div>
         </header>
 
+        <% if (typeof erro !== 'undefined' && erro) { %>
+            <article style="background-color: #ffebee; border-color: #e57373;">
+                <p style="color: #c62828;"><%= erro %></p>
+            </article>
+        <% } %>
+
+        <% if (typeof sucesso !== 'undefined' && sucesso) { %>
+            <article style="background-color: #e8f5e9; border-color: #81c784;">
+                <p style="color: #2e7d32;"><%= sucesso %></p>
+            </article>
+        <% } %>
+
         <% if (reservas.length === 0) { %>
             <article>
                 <p>Você não possui reservas ativas no momento.</p>
                 <a href="/" role="button">Fazer minha primeira reserva</a>
             </article>
         <% } else { %>
+            <% function formatarDataBrasil(dataIso) {
+                const data = new Date(dataIso);
+                if (isNaN(data.getTime())) return dataIso;
+
+                const dia = String(data.getDate()).padStart(2, '0');
+                const mes = String(data.getMonth() + 1).padStart(2, '0');
+                const ano = data.getFullYear();
+                const hora = String(data.getHours()).padStart(2, '0');
+                const minuto = String(data.getMinutes()).padStart(2, '0');
+
+                return `${dia}/${mes}/${ano} às ${hora}:${minuto}`;
+            } %>
+
             <div class="table-container">
                 <table>
                     <thead>
@@ -54,8 +83,8 @@
                             <tr>
                                 <td><%= reserva.nome_carrinho %></td>
                                 <td><%= reserva.quantidade %></td>
-                                <td><%= reserva.data_retirada.replace('T', ' ') %></td>
-                                <td><%= reserva.data_devolucao.replace('T', ' ') %></td>
+                                <td><%= formatarDataBrasil(reserva.data_retirada) %></td>
+                                <td><%= formatarDataBrasil(reserva.data_devolucao) %></td>
                                 <td><%= reserva.sala %></td>
                                 <td>
                                     <form action="/reservas/cancelar/<%= reserva.id %>" method="POST" onsubmit="return confirm('Deseja realmente cancelar esta reserva?');" style="margin: 0;">

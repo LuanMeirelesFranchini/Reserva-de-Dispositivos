@@ -7,12 +7,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
 </head>
 <body>
     <main class="container-fluid">
         <header class="logo-header">
-            <img src="/images/logo_azul.png" alt="Logo do Colégio">
-            <h1>Sistema de Reservas</h1>
+            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
+                <img src="/images/logo_azul.png" alt="Logo do Colégio">
+            </a>
+            <a href="/" class="title-link" aria-label="Ir para a página inicial">
+                <h1>Sistema de Reservas</h1>
+            </a>
             
             <div class="user-menu-container">
                 <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
@@ -54,6 +59,7 @@
                         <th>Carrinho</th>
                         <th>Localização</th>
                         <th style="text-align: center;">Capacidade Total</th>
+                       
                     </tr>
                 </thead>
                 <tbody>
@@ -61,8 +67,8 @@
                     <tr>
                         <td><%= c.nome %></td>
                         <td><%= c.localizacao %></td>
-                        <!-- MUDANÇA: Usando 'quantidade_total' vindo da sua DB -->
-                        <td style="text-align: center;"><strong><%= c.quantidade_total || c.capacidade %></strong></td>
+                        <td style="text-align: center;"><strong><%= c.capacidade %></strong></td>
+                        
                     </tr>
                     <% }) %>
                 </tbody>
@@ -77,8 +83,7 @@
                 <select id="carrinho" name="carrinho_id" required>
                     <option value="" disabled selected>Escolha um carrinho</option>
                     <% carrinhos.forEach(c => { %>
-                        <!-- MUDANÇA: Guardamos a capacidade no 'data-max' para o JS ler depois -->
-                        <option value="<%= c.id %>" data-max="<%= c.quantidade_total || c.capacidade %>">
+                        <option value="<%= c.id %>" data-max="<%= c.disponiveis %>">
                             <%= c.nome %> - <%= c.localizacao %>
                         </option>
                     <% }) %>
@@ -96,8 +101,21 @@
                     </label>
                 </div>
 
-                <label for="sala">Para qual sala?</label>
-                <input type="text" id="sala" name="sala" required placeholder="Ex: Sala 15 - 231M">
+                <div class="grid">
+                    <label for="bloco">Bloco:
+                        <select id="bloco" name="bloco" required>
+                            <option value="" disabled selected>Selecione um bloco</option>
+                            <% blocosSalas.forEach(bloco => { %>
+                                <option value="<%= bloco.valor %>"><%= bloco.label %></option>
+                            <% }) %>
+                        </select>
+                    </label>
+                    <label for="sala">Sala / local:
+                        <select id="sala" name="sala" required disabled>
+                            <option value="" disabled selected>Selecione primeiro um bloco</option>
+                        </select>
+                    </label>
+                </div>
                 
                 <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
         
@@ -110,10 +128,18 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
     <script src="/menu.js"></script>
     <script src="/front-end.js"></script>
+    <script id="salas-por-bloco-data" type="application/json"><%- JSON.stringify(blocosSalas) %></script>
     
     <script>
         const selectCarrinho = document.getElementById('carrinho');
         const inputQuantidade = document.getElementById('quantidade');
+        const selectBloco = document.getElementById('bloco');
+        const selectSala = document.getElementById('sala');
+        const blocosSalas = JSON.parse(document.getElementById('salas-por-bloco-data').textContent);
+        const salasPorBloco = blocosSalas.reduce((acc, bloco) => {
+            acc[bloco.valor] = bloco.salas;
+            return acc;
+        }, {});
 
         // MUDANÇA: Lógica de limite dinâmico
         selectCarrinho.addEventListener('change', function() {
@@ -135,6 +161,30 @@
             if (max && parseInt(this.value) > max) {
                 this.value = max;
             }
+        });
+
+        function preencherSalasDoBloco(blocoSelecionado) {
+            selectSala.innerHTML = '';
+
+            if (!blocoSelecionado || !salasPorBloco[blocoSelecionado]) {
+                selectSala.disabled = true;
+                selectSala.innerHTML = '<option value="" disabled selected>Selecione primeiro um bloco</option>';
+                return;
+            }
+
+            selectSala.disabled = false;
+            selectSala.innerHTML = '<option value="" disabled selected>Selecione uma sala</option>';
+
+            salasPorBloco[blocoSelecionado].forEach((sala) => {
+                const option = document.createElement('option');
+                option.value = sala.valor;
+                option.textContent = sala.label;
+                selectSala.appendChild(option);
+            });
+        }
+
+        selectBloco.addEventListener('change', function() {
+            preencherSalasDoBloco(this.value);
         });
 
         // Lógica de Loading no Botão

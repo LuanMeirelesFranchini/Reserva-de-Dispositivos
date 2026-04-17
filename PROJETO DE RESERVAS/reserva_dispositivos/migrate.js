@@ -18,6 +18,18 @@ db.serialize(() => {
             console.log("✅ Coluna 'concluido_por' adicionada com sucesso!");
         }
     });
+
+    db.run(`ALTER TABLE carrinhos ADD COLUMN indisponiveis INTEGER NOT NULL DEFAULT 0`, (err) => {
+        if (err) {
+            if (err.message.includes("duplicate column name")) {
+                console.log("ℹ️  A coluna 'indisponiveis' já existe. Nenhuma alteração necessária.");
+            } else {
+                console.error("❌ Erro ao adicionar coluna em carrinhos:", err.message);
+            }
+        } else {
+            console.log("✅ Coluna 'indisponiveis' adicionada com sucesso!");
+        }
+    });
 });
 
 db.close();
