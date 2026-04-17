@@ -32,8 +32,23 @@ body {
     width: auto;
 }
 
-.logo-header h1 {
+.logo-header .brand-link,
+.logo-header .title-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.logo-header .brand-link {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.logo-header .title-link {
     flex-grow: 1;
+}
+
+.logo-header h1 {
     text-align: center;
     margin: 0;
     font-size: clamp(1rem, 2.5vw, 1.5rem);
@@ -152,6 +167,10 @@ main.container-fluid {
     .logo-header h1 {
         order: -1;
         margin-bottom: 0.5rem;
+    }
+
+    .logo-header .title-link {
+        width: 100%;
     }
 
     .logo-header img {

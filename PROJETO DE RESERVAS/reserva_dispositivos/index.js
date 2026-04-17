@@ -3,6 +3,7 @@ require('dotenv').config();
 
 // --- Importações das Ferramentas ---
 const express = require('express');
+const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
@@ -11,11 +12,13 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { google } = require('googleapis');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
+const { formatarLocal, initializeSalasTable, montarSalasParaView } = require('./salas-data');
 
 // --- Configurações Iniciais ---
 const app = express();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 app.set('view engine', 'ejs');
+app.set('trust proxy', 1);
 const requiredEnvVars = ['SESSION_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
@@ -23,12 +26,177 @@ if (missingEnvVars.length > 0) {
     console.error(`ERRO FATAL: Variáveis de ambiente obrigatórias ausentes: ${missingEnvVars.join(', ')}`);
     process.exit(1);
 }
-const db = new sqlite3.Database('./data/reservas.db', (err) => {
+const dbPath = path.join(__dirname, 'data', 'reservas.db');
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error("ERRO FATAL: Não foi possível conectar ao banco de dados.", err.message);
         process.exit(1);
     }
     console.log("Conectado ao banco de dados SQLite com sucesso.");
+});
+
+class SQLiteSessionStore extends session.Store {
+    constructor(database) {
+        super();
+        this.db = database;
+        this.ready = this.initialize();
+    }
+
+    initialize() {
+        return new Promise((resolve, reject) => {
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS sessions (
+                    sid TEXT PRIMARY KEY,
+                    sess TEXT NOT NULL,
+                    expires_at INTEGER NOT NULL
+                )
+            `, (err) => {
+                if (err) return reject(err);
+
+                this.db.run(
+                    `CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at)`,
+                    (indexErr) => indexErr ? reject(indexErr) : resolve()
+                );
+            });
+        });
+    }
+
+    get(sid, callback) {
+        this.ready
+            .then(() => {
+                this.db.get(
+                    `SELECT sess, expires_at FROM sessions WHERE sid = ?`,
+                    [sid],
+                    (err, row) => {
+                        if (err) return callback(err);
+                        if (!row) return callback(null, null);
+
+                        if (row.expires_at <= Date.now()) {
+                            return this.destroy(sid, () => callback(null, null));
+                        }
+
+                        try {
+                            callback(null, JSON.parse(row.sess));
+                        } catch (parseErr) {
+                            callback(parseErr);
+                        }
+                    }
+                );
+            })
+            .catch((err) => callback(err));
+    }
+
+    set(sid, sess, callback) {
+        this.ready
+            .then(() => {
+                const expiresAt = this.getExpiry(sess);
+                const payload = JSON.stringify(sess);
+
+                this.db.run(
+                    `INSERT INTO sessions (sid, sess, expires_at)
+                     VALUES (?, ?, ?)
+                     ON CONFLICT(sid) DO UPDATE SET
+                        sess = excluded.sess,
+                        expires_at = excluded.expires_at`,
+                    [sid, payload, expiresAt],
+                    (err) => callback && callback(err)
+                );
+            })
+            .catch((err) => callback && callback(err));
+    }
+
+    destroy(sid, callback) {
+        this.ready
+            .then(() => {
+                this.db.run(`DELETE FROM sessions WHERE sid = ?`, [sid], (err) => {
+                    if (callback) callback(err);
+                });
+            })
+            .catch((err) => callback && callback(err));
+    }
+
+    touch(sid, sess, callback) {
+        this.ready
+            .then(() => {
+                this.db.run(
+                    `UPDATE sessions SET expires_at = ? WHERE sid = ?`,
+                    [this.getExpiry(sess), sid],
+                    (err) => callback && callback(err)
+                );
+            })
+            .catch((err) => callback && callback(err));
+    }
+
+    getExpiry(sess) {
+        const cookieExpiry = sess && sess.cookie && sess.cookie.expires
+            ? new Date(sess.cookie.expires).getTime()
+            : NaN;
+
+        if (Number.isFinite(cookieExpiry)) {
+            return cookieExpiry;
+        }
+
+        const maxAge = sess && sess.cookie && typeof sess.cookie.maxAge === 'number'
+            ? sess.cookie.maxAge
+            : 24 * 60 * 60 * 1000;
+
+        return Date.now() + maxAge;
+    }
+
+    cleanupExpiredSessions() {
+        this.ready
+            .then(() => {
+                this.db.run(`DELETE FROM sessions WHERE expires_at <= ?`, [Date.now()], (err) => {
+                    if (err) {
+                        console.error('Erro ao limpar sessões expiradas:', err.message);
+                    }
+                });
+            })
+            .catch((err) => console.error('Erro ao inicializar limpeza de sessões:', err.message));
+    }
+}
+
+const sessionStore = new SQLiteSessionStore(db);
+setInterval(() => sessionStore.cleanupExpiredSessions(), 60 * 60 * 1000).unref();
+
+initializeSalasTable(db)
+    .then(() => console.log("Tabela 'salas' pronta para uso."))
+    .catch((err) => console.error("Erro ao inicializar tabela 'salas':", err.message));
+
+db.run(`ALTER TABLE reservas ADD COLUMN concluido_por TEXT`, (err) => {
+    if (!err) {
+        console.log("Coluna 'concluido_por' adicionada na tabela reservas.");
+        return;
+    }
+
+    if (err.message.includes('duplicate column name')) {
+        return;
+    }
+
+    if (err.message.includes('no such table')) {
+        console.warn("Tabela 'reservas' ainda nao existe para adicionar 'concluido_por'.");
+        return;
+    }
+
+    console.error("Erro ao garantir coluna 'concluido_por':", err.message);
+});
+
+db.run(`ALTER TABLE carrinhos ADD COLUMN indisponiveis INTEGER NOT NULL DEFAULT 0`, (err) => {
+    if (!err) {
+        console.log("Coluna 'indisponiveis' adicionada na tabela carrinhos.");
+        return;
+    }
+
+    if (err.message.includes('duplicate column name')) {
+        return;
+    }
+
+    if (err.message.includes('no such table')) {
+        console.warn("Tabela 'carrinhos' ainda nao existe para adicionar 'indisponiveis'.");
+        return;
+    }
+
+    console.error("Erro ao garantir coluna 'indisponiveis':", err.message);
 });
 
 // --- Middlewares Essenciais ---
@@ -37,9 +205,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
@@ -123,6 +293,11 @@ async function sendReservationEmail({ to, subject, text, html, attachments=[] })
   }
 }
 
+function appendFlashMessage(urlBase, field, message) {
+    const separator = urlBase.includes('?') ? '&' : '?';
+    return `${urlBase}${separator}${field}=${encodeURIComponent(message)}`;
+}
+
 // --- Funções de Calendário ---
 function gerarLinkGoogleCalendar(titulo, descricao, local, inicio, fim) {
     const formatarData = (date) => date.toISOString().replace(/-|:|\.\d+/g,'');
@@ -158,6 +333,18 @@ function isAdmin(req, res, next) { if (req.isAuthenticated() && req.user.role ==
 function canManageReservations(req, res, next) { if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'operacional')) return next(); res.status(403).send("<h1>Acesso Negado</h1>"); }
 function ensureAuthenticatedApi(req, res, next) { if (req.isAuthenticated()) return next(); res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' }); }
 
+function normalizarCarrinho(carrinho) {
+    const capacidade = Number.isInteger(carrinho.capacidade) ? carrinho.capacidade : parseInt(carrinho.capacidade, 10) || 0;
+    const indisponiveis = Number.isInteger(carrinho.indisponiveis) ? carrinho.indisponiveis : parseInt(carrinho.indisponiveis, 10) || 0;
+
+    return {
+        ...carrinho,
+        capacidade,
+        indisponiveis,
+        disponiveis: Math.max(capacidade - indisponiveis, 0)
+    };
+}
+
 
 // --- ROTAS ---
 app.get('/login', (req, res) => res.render('login', { erro: req.query.error || '' }));
@@ -167,8 +354,12 @@ app.get('/logout', (req, res, next) => { req.logout(err => { if (err) return nex
 
 app.get('/', isAuthenticated, async (req, res) => {
     try {
-        const carrinhos = await new Promise((r,j)=>db.all("SELECT * FROM carrinhos",[],(e,rows)=>e?j(e):r(rows)));
-        res.render('index', { carrinhos, user: req.user, erro: req.query.erro || '', sucesso: req.query.sucesso || '' });
+        const carrinhosDb = await new Promise((r,j)=>db.all("SELECT * FROM carrinhos",[],(e,rows)=>e?j(e):r(rows)));
+        const carrinhos = carrinhosDb.map(normalizarCarrinho);
+        const salas = await new Promise((r, j) => db.all("SELECT bloco, nome FROM salas", [], (e, rows) => e ? j(e) : r(rows)));
+        const blocosSalas = montarSalasParaView(salas);
+
+        res.render('index', { carrinhos, blocosSalas, user: req.user, erro: req.query.erro || '', sucesso: req.query.sucesso || '' });
     } catch (err) {
         res.status(500).send("Erro ao carregar a página: " + err.message);
     }
@@ -183,7 +374,12 @@ app.get('/minhas-reservas', isAuthenticated, async (req, res) => {
                      WHERE r.usuario_id = ? AND r.status = 'Ativa'
                      ORDER BY r.data_retirada ASC`;
         const reservas = await new Promise((r, j) => db.all(sql, [req.user.id], (e, rows) => e ? j(e) : r(rows)));
-        res.render('minhas-reservas', { reservas, user: req.user });
+        res.render('minhas-reservas', {
+            reservas,
+            user: req.user,
+            erro: req.query.erro || '',
+            sucesso: req.query.sucesso || ''
+        });
     } catch (err) {
         res.status(500).send("Erro ao carregar suas reservas.");
     }
@@ -261,7 +457,7 @@ app.get('/admin/inventario', isAdmin, (req, res) => {
         
         res.render('admin-inventario', { 
             user: req.user, 
-            carrinhos: rows 
+            carrinhos: rows.map(normalizarCarrinho)
         });
     });
 });
@@ -269,21 +465,30 @@ app.get('/admin/inventario', isAdmin, (req, res) => {
 // Rota para salvar a alteração de quantidade
 app.post('/admin/inventario/update', isAdmin, (req, res) => {
     const id = parseInt(req.body.id, 10);
-    const quantidade = parseInt(req.body.quantidade, 10);
-    const sql = `UPDATE carrinhos SET capacidade = ? WHERE id = ?`;
+    const capacidade = parseInt(req.body.capacidade, 10);
+    const indisponiveis = parseInt(req.body.indisponiveis, 10);
 
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ message: "Carrinho inválido." });
     }
 
-    if (!Number.isInteger(quantidade) || quantidade < 0) {
-        return res.status(400).json({ message: "Quantidade inválida." });
+    if (!Number.isInteger(capacidade) || capacidade < 0) {
+        return res.status(400).json({ message: "Capacidade inválida." });
     }
 
-    db.run(sql, [quantidade, id], function(err) {
+    if (!Number.isInteger(indisponiveis) || indisponiveis < 0) {
+        return res.status(400).json({ message: "Quantidade em manutenção inválida." });
+    }
+
+    if (indisponiveis > capacidade) {
+        return res.status(400).json({ message: "Indisponíveis não pode ser maior que a capacidade total." });
+    }
+
+    const sql = `UPDATE carrinhos SET capacidade = ?, indisponiveis = ? WHERE id = ?`;
+    db.run(sql, [capacidade, indisponiveis, id], function(err) {
         if (err) return res.status(500).json({ message: "Erro ao atualizar banco." });
         if (this.changes === 0) return res.status(404).json({ message: "Carrinho não encontrado." });
-        res.json({ message: "Sucesso!" });
+        res.json({ message: "Sucesso!", disponiveis: Math.max(capacidade - indisponiveis, 0) });
     });
 });
 
@@ -400,13 +605,19 @@ app.post('/admin/delete/:id', isAdmin, (req, res) => {
 
 // --- Rota de reservas individuais ---
 app.post('/reservar', isAuthenticated, async (req, res) => {
-    const { carrinho_id, quantidade, data_retirada, data_devolucao, sala, addToCalendar } = req.body;
+    const { carrinho_id, quantidade, data_retirada, data_devolucao, bloco, sala, addToCalendar } = req.body;
     const quantidadeNum = parseInt(quantidade, 10);
     const usuario_id = req.user.id;
+    const blocoSelecionado = (bloco || '').trim();
+    const salaSelecionada = (sala || '').trim();
 
     try {
         if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0) {
             return res.redirect('/?erro=' + encodeURIComponent('Quantidade invalida.'));
+        }
+
+        if (!blocoSelecionado || !salaSelecionada) {
+            return res.redirect('/?erro=' + encodeURIComponent('Selecione o bloco e a sala da reserva.'));
         }
 
         const inicioSolicitado = new Date(data_retirada);
@@ -420,8 +631,21 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
             return res.redirect('/?erro=' + encodeURIComponent('As reservas devem ser feitas com pelo menos 24 horas de antecedencia.'));
         }
 
-        const carrinho = await new Promise((r,j)=>db.get("SELECT capacidade, nome FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
+        const carrinhoDb = await new Promise((r,j)=>db.get("SELECT capacidade, indisponiveis, nome FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
+        const carrinho = carrinhoDb ? normalizarCarrinho(carrinhoDb) : null;
         if (!carrinho) return res.redirect('/?erro=' + encodeURIComponent('Carrinho não encontrado.'));
+
+        const salaValida = await new Promise((r, j) => db.get(
+            "SELECT bloco, nome FROM salas WHERE bloco = ? AND nome = ?",
+            [blocoSelecionado, salaSelecionada],
+            (e, row) => e ? j(e) : r(row)
+        ));
+
+        if (!salaValida) {
+            return res.redirect('/?erro=' + encodeURIComponent('A sala selecionada nao pertence ao bloco informado.'));
+        }
+
+        const salaFormatada = `${formatarLocal(salaValida.bloco)} - ${formatarLocal(salaValida.nome)}`;
 
         const reservasAtivas = await new Promise((r,j)=>db.all("SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa'",[carrinho_id],(e,rows)=>e?j(e):r(rows)));
         
@@ -437,44 +661,50 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
             }
             if(u > picoDeUso) picoDeUso = u;
         }
-        if(quantidadeNum > (carrinho.capacidade - picoDeUso)){
-            return res.redirect('/?erro=' + encodeURIComponent(`Erro: só há ${carrinho.capacidade - picoDeUso} disponíveis.`));
+        if(quantidadeNum > (carrinho.disponiveis - picoDeUso)){
+            return res.redirect('/?erro=' + encodeURIComponent(`Erro: só há ${Math.max(carrinho.disponiveis - picoDeUso, 0)} disponíveis.`));
         }
 
         // Inserção
         const sqlInsert = `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        const { lastID } = await new Promise((r,j)=>db.run(sqlInsert,[carrinho_id,quantidadeNum,usuario_id,data_retirada,data_devolucao,sala,"Ativa"], function(e){ e?j(e):r(this) }));
+        const { lastID } = await new Promise((r,j)=>db.run(sqlInsert,[carrinho_id,quantidadeNum,usuario_id,data_retirada,data_devolucao,salaFormatada,"Ativa"], function(e){ e?j(e):r(this) }));
 
         // Dados do evento
         const tituloEvento = `Reserva de ${quantidadeNum} Chromebooks (${carrinho.nome})`;
         const descricaoEvento = `Reserva realizada por ${req.user.nome}. ID da Reserva: ${lastID}`;
-        const localEvento = `Sala ${sala}, Colégio La Salle`;
+        const localEvento = `${salaFormatada}, Colégio La Salle`;
 
         // Link e ICS
         const linkGoogleCalendar = gerarLinkGoogleCalendar(tituloEvento, descricaoEvento, localEvento, data_retirada, data_devolucao);
         const arquivoICS = gerarICS(tituloEvento, descricaoEvento, localEvento, data_retirada, data_devolucao);
 
-        // Enviar e-mail
-        await sendReservationEmail({
-            to: req.user.email,
-            subject: "Confirmação da sua reserva",
-            text: `Olá ${req.user.nome}, sua reserva foi feita com sucesso. Adicione à sua agenda: ${linkGoogleCalendar}`,
-            html: `<p>Olá <b>${req.user.nome}</b>, sua reserva foi feita com sucesso!</p>
+        const avisos = [];
+
+        try {
+            await sendReservationEmail({
+                to: req.user.email,
+                subject: "Confirmação da sua reserva",
+                text: `Olá ${req.user.nome}, sua reserva foi feita com sucesso. Adicione à sua agenda: ${linkGoogleCalendar}`,
+                html: `<p>Olá <b>${req.user.nome}</b>, sua reserva foi feita com sucesso!</p>
                    <p><b>Detalhes:</b><br>
                    <strong>Carrinho:</strong> ${carrinho.nome}<br>
                    <strong>Quantidade:</strong> ${quantidadeNum}<br>
                   <strong> Data de Retirada:</strong> ${data_retirada}<br>
                   <strong> Data de Devolução:</strong> ${data_devolucao}<br>
-                  <strong> Sala:</strong> ${sala}</p>
+                  <strong> Sala:</strong> ${salaFormatada}</p>
                    <p>Adicione à sua agenda:</strong> <a href="${linkGoogleCalendar}">Google Calendar</a></p>
                    <p>Ou abra o anexo .ics para Outlook/Apple Calendar.</p>
                    <p><strong>Equipe de Tecnologia - Colégio La Salle</p>
                            <p>(11) 2793.1444</p>
                            <p>https://www.lasalle.edu.br/saopaulo</strong></p>`,
-            attachments: [
-                { filename: 'reserva.ics', content: arquivoICS }
-            ]
-        });
+                attachments: [
+                    { filename: 'reserva.ics', content: arquivoICS }
+                ]
+            });
+        } catch (emailErr) {
+            console.error('Falha ao enviar e-mail de confirmação:', emailErr.message || emailErr);
+            avisos.push('Reserva criada, mas o e-mail de confirmação não pôde ser enviado.');
+        }
 
         // Criar evento Google Calendar automático
         if (addToCalendar === 'true' && req.user.google_refresh_token) {
@@ -497,10 +727,16 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
                 console.log('Evento criado no Google Calendar com sucesso!');
             } catch (calendarErr) {
                 console.error("ERRO ao criar evento no Google Calendar:", calendarErr);
+                avisos.push('Reserva criada, mas houve falha ao adicionar o evento no Google Calendar.');
             }
         }
 
-        res.redirect('/?sucesso=' + encodeURIComponent('Sua reserva foi feita com sucesso!'));
+        let redirectUrl = '/?sucesso=' + encodeURIComponent('Sua reserva foi feita com sucesso!');
+        if (avisos.length > 0) {
+            redirectUrl = appendFlashMessage(redirectUrl, 'erro', avisos.join(' '));
+        }
+
+        res.redirect(redirectUrl);
     } catch (err) {
         console.error(err);
         res.status(500).send("Erro ao processar reserva: " + err.message);
@@ -550,15 +786,14 @@ app.get('/api/availability', ensureAuthenticatedApi, async (req, res) => {
     }
 
     try {
-        const carrinho = await new Promise((resolve, reject) => {
-            db.get("SELECT capacidade FROM carrinhos WHERE id = ?", [carrinho_id], (err, row) => {
+        const carrinhoDb = await new Promise((resolve, reject) => {
+            db.get("SELECT capacidade, indisponiveis FROM carrinhos WHERE id = ?", [carrinho_id], (err, row) => {
                 if (err) reject(err); else resolve(row);
             });
         });
+        const carrinho = carrinhoDb ? normalizarCarrinho(carrinhoDb) : null;
 
         if (!carrinho) return res.status(404).json({ error: 'Carrinho não encontrado.' });
-        
-        const capacidadeTotal = carrinho.capacidade;
 
         // Combina reservas pontuais e recorrentes para a verificação
         const reservasAtivas = await new Promise((resolve, reject) => {
@@ -579,7 +814,7 @@ app.get('/api/availability', ensureAuthenticatedApi, async (req, res) => {
             if (emUsoNesteMinuto > picoDeUso) picoDeUso = emUsoNesteMinuto;
         }
 
-        const disponiveisNoHorario = capacidadeTotal - picoDeUso;
+        const disponiveisNoHorario = carrinho.disponiveis - picoDeUso;
         res.json({ disponiveis: disponiveisNoHorario < 0 ? 0 : disponiveisNoHorario });
 
     } catch (err) {
@@ -605,3 +840,4 @@ app.use((err, req, res, next) => {
 
 // --- Inicia servidor ---
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+
