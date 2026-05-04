@@ -163,6 +163,30 @@ initializeSalasTable(db)
     .then(() => console.log("Tabela 'salas' pronta para uso."))
     .catch((err) => console.error("Erro ao inicializar tabela 'salas':", err.message));
 
+db.run(`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER,
+        usuario_nome TEXT,
+        usuario_role TEXT,
+        acao TEXT NOT NULL,
+        entidade TEXT,
+        entidade_id INTEGER,
+        detalhes_json TEXT,
+        ip TEXT,
+        user_agent TEXT,
+        criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )
+`, (err) => {
+    if (err) {
+        console.error("Erro ao garantir tabela 'audit_logs':", err.message);
+        return;
+    }
+
+    console.log("Tabela 'audit_logs' pronta para uso.");
+});
+
 db.run(`ALTER TABLE reservas ADD COLUMN concluido_por TEXT`, (err) => {
     if (!err) {
         console.log("Coluna 'concluido_por' adicionada na tabela reservas.");
@@ -345,6 +369,37 @@ function normalizarCarrinho(carrinho) {
     };
 }
 
+async function registrarAuditoria(req, { acao, entidade = null, entidadeId = null, detalhes = null }) {
+    const usuario = req.user || {};
+    const detalhesJson = detalhes ? JSON.stringify(detalhes) : null;
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || null;
+    const userAgent = req.get('user-agent') || null;
+
+    try {
+        await new Promise((resolve, reject) => {
+            db.run(
+                `INSERT INTO audit_logs (
+                    usuario_id, usuario_nome, usuario_role, acao, entidade, entidade_id, detalhes_json, ip, user_agent
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    usuario.id || null,
+                    usuario.nome || null,
+                    usuario.role || null,
+                    acao,
+                    entidade,
+                    entidadeId,
+                    detalhesJson,
+                    ip,
+                    userAgent
+                ],
+                (err) => err ? reject(err) : resolve()
+            );
+        });
+    } catch (err) {
+        console.error("Erro ao registrar auditoria:", err.message);
+    }
+}
+
 
 // --- ROTAS ---
 app.get('/login', (req, res) => res.render('login', { erro: req.query.error || '' }));
@@ -390,13 +445,34 @@ app.post('/reservas/cancelar/:id', isAuthenticated, async (req, res) => {
     const reservaId = req.params.id;
     try {
         // Verifica se a reserva pertence ao usuário (ou se ele é admin)
-        const reserva = await new Promise((r, j) => db.get("SELECT usuario_id FROM reservas WHERE id = ?", [reservaId], (e, row) => e ? j(e) : r(row)));
+        const reserva = await new Promise((r, j) => db.get(
+            `SELECT r.*, c.nome as nome_carrinho
+             FROM reservas r
+             LEFT JOIN carrinhos c ON r.carrinho_id = c.id
+             WHERE r.id = ?`,
+            [reservaId],
+            (e, row) => e ? j(e) : r(row)
+        ));
         
         if (!reserva || (reserva.usuario_id !== req.user.id && req.user.role !== 'admin')) {
             return res.status(403).send("Você não tem permissão para cancelar esta reserva.");
         }
 
         await new Promise((r, j) => db.run("UPDATE reservas SET status = 'Cancelada' WHERE id = ?", [reservaId], e => e ? j(e) : r()));
+        await registrarAuditoria(req, {
+            acao: 'RESERVA_CANCELADA',
+            entidade: 'reserva',
+            entidadeId: reservaId,
+            detalhes: {
+                carrinho_id: reserva.carrinho_id,
+                carrinho: reserva.nome_carrinho,
+                quantidade: reserva.quantidade,
+                data_retirada: reserva.data_retirada,
+                data_devolucao: reserva.data_devolucao,
+                sala: reserva.sala,
+                usuario_reserva_id: reserva.usuario_id
+            }
+        });
         res.redirect('/minhas-reservas?sucesso=Reserva cancelada com sucesso.');
     } catch (err) {
         res.status(500).send("Erro ao cancelar reserva.");
@@ -450,6 +526,32 @@ app.get('/admin/history', canManageReservations, async (req, res) => {
         res.status(500).send("Erro ao carregar histórico: " + err.message);
     }
 });
+
+app.get('/admin/audit', isAdmin, async (req, res) => {
+    try {
+        const acaoFiltro = (req.query.acao || '').trim();
+        const params = [];
+        let sql = `SELECT * FROM audit_logs`;
+
+        if (acaoFiltro) {
+            sql += ` WHERE acao = ?`;
+            params.push(acaoFiltro);
+        }
+
+        sql += ` ORDER BY criado_em DESC, id DESC LIMIT 300`;
+
+        const logs = await new Promise((r,j)=>db.all(sql, params, (e,rows)=>e?j(e):r(rows)));
+        const acoes = await new Promise((r,j)=>db.all(
+            `SELECT DISTINCT acao FROM audit_logs ORDER BY acao ASC`,
+            [],
+            (e,rows)=>e?j(e):r(rows.map(row => row.acao))
+        ));
+
+        res.render('admin-audit', { logs, acoes, acaoFiltro, user: req.user });
+    } catch (err) {
+        res.status(500).send("Erro ao carregar auditoria: " + err.message);
+    }
+});
 // Rota para abrir a página de inventário
 app.get('/admin/inventario', isAdmin, (req, res) => {
     db.all('SELECT * FROM carrinhos', [], (err, rows) => {
@@ -463,7 +565,7 @@ app.get('/admin/inventario', isAdmin, (req, res) => {
 });
 
 // Rota para salvar a alteração de quantidade
-app.post('/admin/inventario/update', isAdmin, (req, res) => {
+app.post('/admin/inventario/update', isAdmin, async (req, res) => {
     const id = parseInt(req.body.id, 10);
     const capacidade = parseInt(req.body.capacidade, 10);
     const indisponiveis = parseInt(req.body.indisponiveis, 10);
@@ -484,12 +586,44 @@ app.post('/admin/inventario/update', isAdmin, (req, res) => {
         return res.status(400).json({ message: "Indisponíveis não pode ser maior que a capacidade total." });
     }
 
-    const sql = `UPDATE carrinhos SET capacidade = ?, indisponiveis = ? WHERE id = ?`;
-    db.run(sql, [capacidade, indisponiveis, id], function(err) {
-        if (err) return res.status(500).json({ message: "Erro ao atualizar banco." });
-        if (this.changes === 0) return res.status(404).json({ message: "Carrinho não encontrado." });
+    try {
+        const carrinhoAnterior = await new Promise((r, j) => db.get(
+            "SELECT id, nome, capacidade, indisponiveis FROM carrinhos WHERE id = ?",
+            [id],
+            (e, row) => e ? j(e) : r(row)
+        ));
+
+        if (!carrinhoAnterior) {
+            return res.status(404).json({ message: "Carrinho não encontrado." });
+        }
+
+        const sql = `UPDATE carrinhos SET capacidade = ?, indisponiveis = ? WHERE id = ?`;
+        await new Promise((r, j) => db.run(sql, [capacidade, indisponiveis, id], function(err) {
+            if (err) return j(err);
+            r(this);
+        }));
+
+        await registrarAuditoria(req, {
+            acao: 'INVENTARIO_ATUALIZADO',
+            entidade: 'carrinho',
+            entidadeId: id,
+            detalhes: {
+                carrinho: carrinhoAnterior.nome,
+                antes: {
+                    capacidade: carrinhoAnterior.capacidade,
+                    indisponiveis: carrinhoAnterior.indisponiveis
+                },
+                depois: {
+                    capacidade,
+                    indisponiveis
+                }
+            }
+        });
+
         res.json({ message: "Sucesso!", disponiveis: Math.max(capacidade - indisponiveis, 0) });
-    });
+    } catch (err) {
+        res.status(500).json({ message: "Erro ao atualizar banco." });
+    }
 });
 
 // --- Rota para o Dashboard de Reservas ---
@@ -583,24 +717,67 @@ app.get('/admin/dashboard', canManageReservations, async (req, res) => {
     }
 });
 // --- Rotas de atualização de usuários ---
-app.post('/admin/set-role/:id', isAdmin, (req, res) => {
+app.post('/admin/set-role/:id', isAdmin, async (req, res) => {
     const { role } = req.body;
     const userId = req.params.id;
     if (req.user.id == userId) return res.status(400).send("Você não pode alterar seu próprio papel.");
     const allowedRoles = ['professor', 'operacional', 'admin'];
     if (!allowedRoles.includes(role)) return res.status(400).send("Papel inválido.");
-    db.run(`UPDATE usuarios SET role = ? WHERE id = ?`, [role, userId], (err) => {
-        if (err) return res.status(500).send("Erro ao atualizar papel do utilizador.");
+
+    try {
+        const usuarioAlterado = await new Promise((r, j) => db.get(
+            "SELECT id, nome, email, role FROM usuarios WHERE id = ?",
+            [userId],
+            (e, row) => e ? j(e) : r(row)
+        ));
+
+        if (!usuarioAlterado) return res.status(404).send("Utilizador não encontrado.");
+
+        await new Promise((r, j) => db.run(`UPDATE usuarios SET role = ? WHERE id = ?`, [role, userId], (err) => err ? j(err) : r()));
+        await registrarAuditoria(req, {
+            acao: 'USUARIO_PERFIL_ALTERADO',
+            entidade: 'usuario',
+            entidadeId: userId,
+            detalhes: {
+                usuario: usuarioAlterado.nome,
+                email: usuarioAlterado.email,
+                role_anterior: usuarioAlterado.role,
+                role_novo: role
+            }
+        });
         res.redirect('/admin/users');
-    });
+    } catch (err) {
+        res.status(500).send("Erro ao atualizar papel do utilizador.");
+    }
 });
 
-app.post('/admin/delete/:id', isAdmin, (req, res) => {
+app.post('/admin/delete/:id', isAdmin, async (req, res) => {
     if (req.user.id == req.params.id) return res.status(400).send("Você não pode excluir a si mesmo.");
-    db.run(`DELETE FROM usuarios WHERE id = ?`, [req.params.id], (err) => {
-        if (err) return res.status(500).send("Erro ao excluir utilizador.");
+
+    try {
+        const usuarioExcluido = await new Promise((r, j) => db.get(
+            "SELECT id, nome, email, role FROM usuarios WHERE id = ?",
+            [req.params.id],
+            (e, row) => e ? j(e) : r(row)
+        ));
+
+        if (!usuarioExcluido) return res.status(404).send("Utilizador não encontrado.");
+
+        await new Promise((r, j) => db.run(`DELETE FROM usuarios WHERE id = ?`, [req.params.id], (err) => err ? j(err) : r()));
+        await registrarAuditoria(req, {
+            acao: 'USUARIO_EXCLUIDO',
+            entidade: 'usuario',
+            entidadeId: req.params.id,
+            detalhes: {
+                usuario: usuarioExcluido.nome,
+                email: usuarioExcluido.email,
+                role: usuarioExcluido.role
+            }
+        });
         res.redirect('/admin/users');
-    });
+    } catch (err) {
+        res.status(500).send("Erro ao excluir utilizador.");
+    }
 });
 
 // --- Rota de reservas individuais ---
@@ -626,9 +803,22 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
             return res.redirect('/?erro=' + encodeURIComponent('Periodo invalido para reserva.'));
         }
 
-        const minimoPermitido = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        if (inicioSolicitado < minimoPermitido) {
-            return res.redirect('/?erro=' + encodeURIComponent('As reservas devem ser feitas com pelo menos 24 horas de antecedencia.'));
+        const agora = new Date();
+        if (inicioSolicitado < agora) {
+            return res.redirect('/?erro=' + encodeURIComponent('A data de retirada nao pode estar no passado.'));
+        }
+
+        if (req.user.role !== 'admin') {
+            const minimoPermitido = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
+            const maximoPermitido = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+            if (inicioSolicitado < minimoPermitido) {
+                return res.redirect('/?erro=' + encodeURIComponent('As reservas devem ser feitas com pelo menos 24 horas de antecedencia.'));
+            }
+
+            if (inicioSolicitado > maximoPermitido || fimSolicitado > maximoPermitido) {
+                return res.redirect('/?erro=' + encodeURIComponent('As reservas devem ser feitas com no maximo 30 dias de antecedencia.'));
+            }
         }
 
         const carrinhoDb = await new Promise((r,j)=>db.get("SELECT capacidade, indisponiveis, nome FROM carrinhos WHERE id = ?",[carrinho_id],(e,row)=>e?j(e):r(row)));
@@ -666,8 +856,22 @@ app.post('/reservar', isAuthenticated, async (req, res) => {
         }
 
         // Inserção
-        const sqlInsert = `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const sqlInsert = `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`; 
         const { lastID } = await new Promise((r,j)=>db.run(sqlInsert,[carrinho_id,quantidadeNum,usuario_id,data_retirada,data_devolucao,salaFormatada,"Ativa"], function(e){ e?j(e):r(this) }));
+        await registrarAuditoria(req, {
+            acao: 'RESERVA_CRIADA',
+            entidade: 'reserva',
+            entidadeId: lastID,
+            detalhes: {
+                carrinho_id,
+                carrinho: carrinho.nome,
+                quantidade: quantidadeNum,
+                data_retirada,
+                data_devolucao,
+                sala: salaFormatada,
+                reserva_admin_sem_bloqueio_prazo: req.user.role === 'admin'
+            }
+        });
 
         // Dados do evento
         const tituloEvento = `Reserva de ${quantidadeNum} Chromebooks (${carrinho.nome})`;
@@ -754,6 +958,22 @@ app.post('/reservas/concluir/:id', canManageReservations, async (req, res) => {
     const nomeQuemConcluiu = req.user.nome; 
 
     try {
+        const reserva = await new Promise((resolve, reject) => {
+            db.get(
+                `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor
+                 FROM reservas r
+                 LEFT JOIN carrinhos c ON r.carrinho_id = c.id
+                 LEFT JOIN usuarios u ON r.usuario_id = u.id
+                 WHERE r.id = ?`,
+                [reservaId],
+                (err, row) => err ? reject(err) : resolve(row)
+            );
+        });
+
+        if (!reserva) {
+            return res.status(404).send("Reserva não encontrada.");
+        }
+
         // Atualiza o status da reserva E grava o nome do responsável
         await new Promise((resolve, reject) => {
             const sql = "UPDATE reservas SET status = 'Concluída', concluido_por = ? WHERE id = ?";
@@ -761,6 +981,21 @@ app.post('/reservas/concluir/:id', canManageReservations, async (req, res) => {
                 if (err) return reject(err);
                 resolve();
             });
+        });
+        await registrarAuditoria(req, {
+            acao: 'RESERVA_CONCLUIDA',
+            entidade: 'reserva',
+            entidadeId: reservaId,
+            detalhes: {
+                carrinho_id: reserva.carrinho_id,
+                carrinho: reserva.nome_carrinho,
+                professor: reserva.nome_professor,
+                quantidade: reserva.quantidade,
+                data_retirada: reserva.data_retirada,
+                data_devolucao: reserva.data_devolucao,
+                sala: reserva.sala,
+                concluido_por: nomeQuemConcluiu
+            }
         });
 
         // Redireciona de volta para o painel de gestão

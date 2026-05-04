@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Seleciona os elementos principais da interface
     const btnReservar = document.getElementById('btnReservar') || document.querySelector('button[type="submit"]');
     const disponibilidadeResultEl = document.getElementById('disponibilidade-resultado');
+    const isAdmin = document.documentElement.dataset.userRole === 'admin';
 
     // --- CONFIGURACAO BASE PARA O FLATPICKR (Calendario) ---
     const configBase = {
@@ -14,10 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dateFormat: "Y-m-d H:i",
         minTime: "07:00",
         maxTime: "18:00",
-        maxDate: new Date().fp_incr(30), // Permite reservas ate 30 dias no futuro
+        maxDate: isAdmin ? null : new Date().fp_incr(30), // Admin pode reservar acima de 30 dias
         onReady: function(selectedDates, dateStr, instance) {
-            // Regra de negocio: minimo de 24 horas de antecedencia para reservas
-            const minDateTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            // Regra de negocio: admin pode reservar sem antecedencia minima de 24h
+            const minDateTime = isAdmin ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000);
             instance._minDateTimeStrict = minDateTime;
             instance.set('minDate', minDateTime);
         }

@@ -30,6 +30,28 @@ db.serialize(() => {
             console.log("✅ Coluna 'indisponiveis' adicionada com sucesso!");
         }
     });
+    db.run(`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER,
+            usuario_nome TEXT,
+            usuario_role TEXT,
+            acao TEXT NOT NULL,
+            entidade TEXT,
+            entidade_id INTEGER,
+            detalhes_json TEXT,
+            ip TEXT,
+            user_agent TEXT,
+            criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        )
+    `, (err) => {
+        if (err) {
+            console.error("Erro ao criar tabela audit_logs:", err.message);
+        } else {
+            console.log("Tabela 'audit_logs' pronta para uso!");
+        }
+    });
 });
 
 db.close();

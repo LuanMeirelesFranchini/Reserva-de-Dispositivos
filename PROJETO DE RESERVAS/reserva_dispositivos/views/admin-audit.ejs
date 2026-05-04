@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoria do Sistema</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .audit-details {
+            max-width: 520px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 0.82rem;
+            margin: 0;
+        }
+
+        .audit-meta {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <main class="container-fluid">
+        <header class="logo-header">
+            <a href="/" class="brand-link" aria-label="Ir para a pagina inicial">
+                <img src="/images/logo_azul.png" alt="Logo do Colegio">
+            </a>
+            <a href="/" class="title-link" aria-label="Ir para a pagina inicial">
+                <h1>Auditoria do Sistema</h1>
+            </a>
+            <div style="margin-left: auto; text-align: right;">
+                <p style="margin: 0;"><%= user.nome.split(' ')[0] %> (<%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>)</p>
+                <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
+            </div>
+        </header>
+
+        <nav class="nav-pills-container">
+            <a href="/" class="nav-pill">Fazer Nova Reserva</a>
+            <a href="/admin" class="nav-pill">Gerenciar Reservas</a>
+            <a href="/admin/users" class="nav-pill">Gerir Utilizadores</a>
+            <a href="/admin/history" class="nav-pill">Historico de Reservas</a>
+            <a href="/admin/audit" class="nav-pill active">Auditoria</a>
+            <a href="/admin/dashboard" class="nav-pill">Dashboard de Reservas</a>
+        </nav>
+
+        <form action="/admin/audit" method="GET" style="max-width: 520px;">
+            <label for="acao">Filtrar por acao</label>
+            <div class="grid" style="align-items: end;">
+                <select id="acao" name="acao">
+                    <option value="">Todas as acoes</option>
+                    <% acoes.forEach(acao => { %>
+                        <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
+                    <% }) %>
+                </select>
+                <button type="submit">Filtrar</button>
+                <a href="/admin/audit" role="button" class="secondary outline">Limpar</a>
+            </div>
+        </form>
+
+        <div class="table-container">
+            <table class="striped">
+                <thead>
+                    <tr>
+                        <th>Quando</th>
+                        <th>Usuario</th>
+                        <th>Acao</th>
+                        <th>Entidade</th>
+                        <th>Detalhes</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <%
+                    function formatarDetalhes(valor) {
+                        if (!valor) return '---';
+                        try {
+                            return JSON.stringify(JSON.parse(valor), null, 2);
+                        } catch (err) {
+                            return valor;
+                        }
+                    }
+                    %>
+                    <% if (logs.length > 0) { %>
+                        <% logs.forEach(log => { %>
+                            <tr>
+                                <td class="audit-meta"><%= log.criado_em %></td>
+                                <td>
+                                    <strong><%= log.usuario_nome || 'Sistema' %></strong><br>
+                                    <small><%= log.usuario_role || '---' %></small>
+                                </td>
+                                <td><mark><%= log.acao %></mark></td>
+                                <td>
+                                    <%= log.entidade || '---' %>
+                                    <% if (log.entidade_id) { %>
+                                        <br><small>ID: <%= log.entidade_id %></small>
+                                    <% } %>
+                                </td>
+                                <td><pre class="audit-details"><%= formatarDetalhes(log.detalhes_json) %></pre></td>
+                                <td class="audit-meta"><%= log.ip || '---' %></td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="6" style="text-align: center; padding: 2rem;">Nenhum registro de auditoria encontrado.</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

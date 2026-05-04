@@ -96,6 +96,26 @@ db.serialize(() => {
                         if (err) return console.error("Erro ao criar tabela reservas_recorrentes:", err.message);
                         console.log("Tabela 'reservas_recorrentes' criada.");
 
+                        db.run(`
+                            CREATE TABLE IF NOT EXISTS audit_logs (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                usuario_id INTEGER,
+                                usuario_nome TEXT,
+                                usuario_role TEXT,
+                                acao TEXT NOT NULL,
+                                entidade TEXT,
+                                entidade_id INTEGER,
+                                detalhes_json TEXT,
+                                ip TEXT,
+                                user_agent TEXT,
+                                criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+                                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+                            )
+                        `, (err) => {
+                            if (err) return console.error("Erro ao criar tabela audit_logs:", err.message);
+                            console.log("Tabela 'audit_logs' criada.");
+                        });
+
                         // --- 6. Admin padrão ---
                         const adminEmail = process.env.INITIAL_ADMIN_EMAIL;
                         const adminSenha = "admin123";
