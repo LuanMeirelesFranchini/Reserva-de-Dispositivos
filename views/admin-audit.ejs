@@ -44,20 +44,24 @@
             <a href="/admin/dashboard" class="nav-pill">Dashboard de Reservas</a>
         </nav>
 
-        <form action="/admin/audit" method="GET" style="max-width: 520px;">
-            <label for="acao">Filtrar por acao</label>
-            <div class="grid" style="align-items: end;">
-                <select id="acao" name="acao">
-                    <option value="">Todas as acoes</option>
-                    <% acoes.forEach(acao => { %>
-                        <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
-                    <% }) %>
-                </select>
-                <button type="submit">Filtrar</button>
-                <a href="/admin/audit" role="button" class="secondary outline">Limpar</a>
-            </div>
-        </form>
+        <form action="/admin/audit" method="GET" style="max-width: 600px;">
+    <label for="acao">Filtrar por ação</label>
+    <div class="grid" style="align-items: center;">
+        <!-- Select -->
+        <select id="acao" name="acao" style="margin-bottom: 0;">
+            <option value="">Todas as ações</option>
+            <% acoes.forEach(acao => { %>
+                <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
+            <% }) %>
+        </select>
 
+        <!-- Botão Filtrar -->
+        <button type="submit" style="margin-bottom: 0;">Filtrar</button>
+
+        <!-- Botão Limpar -->
+        <a href="/admin/audit" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
+    </div>
+</form>
         <div class="table-container">
             <table class="striped">
                 <thead>

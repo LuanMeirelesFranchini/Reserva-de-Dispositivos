@@ -179,9 +179,9 @@ function initializeSalasTable(db) {
         db.serialize(() => {
             db.run(`
                 CREATE TABLE IF NOT EXISTS salas (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    bloco TEXT NOT NULL,
-                    nome TEXT NOT NULL
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    bloco VARCHAR(100) NOT NULL,
+                    nome VARCHAR(255) NOT NULL
                 )
             `, (createErr) => {
                 if (createErr) {
@@ -189,14 +189,14 @@ function initializeSalasTable(db) {
                 }
 
                 db.run(`
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_salas_bloco_nome
+                    CREATE UNIQUE INDEX idx_salas_bloco_nome
                     ON salas (bloco, nome)
                 `, (indexErr) => {
                     if (indexErr) {
                         return reject(indexErr);
                     }
 
-                    const stmt = db.prepare("INSERT OR IGNORE INTO salas (bloco, nome) VALUES (?, ?)", (prepareErr) => {
+                    const stmt = db.prepare("INSERT IGNORE INTO salas (bloco, nome) VALUES (?, ?)", (prepareErr) => {
                         if (prepareErr) {
                             return reject(prepareErr);
                         }
