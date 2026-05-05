@@ -1,0 +1,19 @@
+{
+  "source": {
+    "include": [
+      "helpers",
+      "services",
+      "middlewares",
+      "database.js",
+      "README.md"
+    ],
+    "includePattern": ".js$",
+    "excludePattern": "(node_modules/|docs/|public/|scripts/)"
+  },
+  "opts": {
+    "destination": "./docs/",
+    "encoding": "utf8",
+    "readme": "README.md",
+    "recurse": true
+  }
+}
