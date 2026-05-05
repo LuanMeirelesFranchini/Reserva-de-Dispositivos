@@ -17,8 +17,14 @@ function configurePassport(passport, db) {
         callbackURL: "/auth/google/callback",
       },
       (accessToken, refreshToken, profile, done) => {
-        const email = profile.emails[0].value;
+        const email = profile.emails?.[0]?.value;
         const nome = profile.displayName;
+
+        if (!email || !accessToken) {
+          return done(null, false, {
+            message: "Nao foi possivel obter os dados da conta Google.",
+          });
+        }
 
         db.get(
           "SELECT * FROM usuarios WHERE email = ?",
@@ -29,13 +35,17 @@ function configurePassport(passport, db) {
             if (user) {
               return db.run(
                 "UPDATE usuarios SET google_access_token = ?, google_refresh_token = ? WHERE id = ?",
-                [accessToken, refreshToken || user.google_refresh_token, user.id],
+                [
+                  accessToken || null,
+                  refreshToken || user.google_refresh_token || null,
+                  user.id,
+                ],
                 (updateErr) => {
                   if (updateErr) return done(updateErr);
 
                   user.google_access_token = accessToken;
                   user.google_refresh_token =
-                    refreshToken || user.google_refresh_token;
+                    refreshToken || user.google_refresh_token || null;
                   return done(null, user);
                 },
               );
@@ -61,7 +71,13 @@ function configurePassport(passport, db) {
 
             return db.run(
               "INSERT INTO usuarios (nome, email, role, google_access_token, google_refresh_token) VALUES (?, ?, ?, ?, ?)",
-              [nome, email, "professor", accessToken, refreshToken],
+              [
+                nome,
+                email,
+                "professor",
+                accessToken || null,
+                refreshToken || null,
+              ],
               function (insertErr) {
                 if (insertErr) return done(insertErr);
 
@@ -71,7 +87,7 @@ function configurePassport(passport, db) {
                   email,
                   role: "professor",
                   google_access_token: accessToken,
-                  google_refresh_token: refreshToken,
+                  google_refresh_token: refreshToken || null,
                 });
               },
             );

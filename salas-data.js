@@ -174,57 +174,26 @@ function montarSalasParaView(salas = SALAS_DATA) {
     );
 }
 
-function initializeSalasTable(db) {
-    return new Promise((resolve, reject) => {
-        db.serialize(() => {
-            db.run(`
-                CREATE TABLE IF NOT EXISTS salas (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    bloco VARCHAR(100) NOT NULL,
-                    nome VARCHAR(255) NOT NULL
-                )
-            `, (createErr) => {
-                if (createErr) {
-                    return reject(createErr);
-                }
+async function initializeSalasTable(db) {
+    await db.run(`
+        CREATE TABLE IF NOT EXISTS salas (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            bloco VARCHAR(100) NOT NULL,
+            nome VARCHAR(255) NOT NULL
+        )
+    `);
 
-                db.run(`
-                    CREATE UNIQUE INDEX idx_salas_bloco_nome
-                    ON salas (bloco, nome)
-                `, (indexErr) => {
-                    if (indexErr) {
-                        return reject(indexErr);
-                    }
+    await db.run(`
+        CREATE UNIQUE INDEX idx_salas_bloco_nome
+        ON salas (bloco, nome)
+    `);
 
-                    const stmt = db.prepare("INSERT IGNORE INTO salas (bloco, nome) VALUES (?, ?)", (prepareErr) => {
-                        if (prepareErr) {
-                            return reject(prepareErr);
-                        }
-
-                        let pending = SALAS_DATA.length;
-
-                        if (pending === 0) {
-                            stmt.finalize((finalizeErr) => finalizeErr ? reject(finalizeErr) : resolve());
-                            return;
-                        }
-
-                        SALAS_DATA.forEach((sala) => {
-                            stmt.run(sala.bloco, sala.nome, (runErr) => {
-                                if (runErr) {
-                                    return reject(runErr);
-                                }
-
-                                pending -= 1;
-                                if (pending === 0) {
-                                    stmt.finalize((finalizeErr) => finalizeErr ? reject(finalizeErr) : resolve());
-                                }
-                            });
-                        });
-                    });
-                });
-            });
-        });
-    });
+    for (const sala of SALAS_DATA) {
+        await db.run(
+            "INSERT IGNORE INTO salas (bloco, nome) VALUES (?, ?)",
+            [sala.bloco, sala.nome]
+        );
+    }
 }
 
 module.exports = {

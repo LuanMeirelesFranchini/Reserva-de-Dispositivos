@@ -1,5 +1,8 @@
 const { formatarLocal, montarSalasParaView } = require("../salas-data");
-const { gerarICS, gerarLinkGoogleCalendar } = require("../services/calendar-service");
+const {
+  gerarICS,
+  gerarLinkGoogleCalendar,
+} = require("../services/calendar-service");
 const createEmailService = require("../services/email-service");
 
 function appendFlashMessage(urlBase, field, message) {
@@ -8,7 +11,7 @@ function appendFlashMessage(urlBase, field, message) {
 }
 
 function toMySQLDateTime(value) {
-  if (!value) return value;
+  if (!value) return null;
   return String(value).slice(0, 19).replace("T", " ");
 }
 

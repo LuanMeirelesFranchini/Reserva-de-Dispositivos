@@ -48,7 +48,10 @@ const db = new MySQLDatabase((err) => {
 });
 
 const sessionStore = new MySQLSessionStore(db);
-setInterval(() => sessionStore.cleanupExpiredSessions(), 60 * 60 * 1000).unref();
+setInterval(
+  () => sessionStore.cleanupExpiredSessions(),
+  60 * 60 * 1000,
+).unref();
 
 initializeSalasTable(db)
   .then(() => console.log("Tabela 'salas' pronta para uso."))
@@ -117,10 +120,15 @@ app.use("/admin", require("./routes/admin")(db, authMiddlewares, helpers));
 app.use("/", require("./routes/reservas")(db, authMiddlewares, helpers));
 
 app.use((err, req, res, next) => {
-  console.error("Erro nao tratado:", err);
+  console.error("Erro nao tratado:", err.message || err);
 
   if (res.headersSent) {
     return next(err);
+  }
+
+  // Intercepta erros de expiração/falha de código do Google OAuth
+  if (err.name === "TokenError" || err.code === "invalid_grant") {
+    return res.redirect("/login?error=true");
   }
 
   if (req.originalUrl.startsWith("/api/")) {

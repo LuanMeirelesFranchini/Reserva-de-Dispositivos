@@ -1,24 +1,5 @@
 const express = require("express");
-
-function dbAll(db, sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-  });
-}
-
-function dbGet(db, sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row)));
-  });
-}
-
-function dbRun(db, sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      return err ? reject(err) : resolve(this);
-    });
-  });
-}
+const { dbAll, dbGet, dbRun } = require("./database");
 
 module.exports = (db, middlewares, helpers) => {
   const router = express.Router();

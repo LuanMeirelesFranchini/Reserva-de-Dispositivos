@@ -52,6 +52,7 @@ PROJETO DE RESERVAS/reserva_dispositivos/
   services/
     calendar-service.js          # Geracao de link Google Calendar e ICS
     email-service.js             # Envio de e-mails
+    reservation-service.js       # Calculo otimizado de disponibilidade
   views/                         # Templates EJS
   public/                        # CSS, JS e imagens
   scripts/                       # Scripts auxiliares

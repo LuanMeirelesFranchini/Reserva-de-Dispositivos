@@ -56,9 +56,9 @@ async function main() {
     console.log("Tabela 'carrinhos' pronta.");
 
     const carrinhos = [
-        { nome: 'Carrinho 1', localizacao: 'Bloco A - 1o Andar', capacidade: 29 },
-        { nome: 'Carrinho 2', localizacao: 'Bloco A - 2o Andar (Touch)', capacidade: 38 },
-        { nome: 'Carrinho 3', localizacao: 'Bloco A - 3o Andar', capacidade: 32 },
+        { nome: 'Carrinho 1', localizacao: 'Bloco A - 1° Andar', capacidade: 29 },
+        { nome: 'Carrinho 2', localizacao: 'Bloco A - 2° Andar (Touch)', capacidade: 38 },
+        { nome: 'Carrinho 3', localizacao: 'Bloco A - 3° Andar', capacidade: 32 },
         { nome: 'Carrinho 4', localizacao: 'Bloco A - Terreo', capacidade: 15 },
         { nome: 'Carrinho 5', localizacao: 'Corredor Bloco C', capacidade: 35 },
         { nome: 'Carrinho 6', localizacao: 'Corredor Bloco C (Touch)', capacidade: 15 }

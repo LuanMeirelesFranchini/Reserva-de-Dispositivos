@@ -1,5 +1,10 @@
 const express = require("express");
 const { google } = require("googleapis");
+const { dbAll, dbGet, dbRun } = require("./database");
+const {
+  calcularDisponiveisNoPeriodo,
+  calcularPicoDeUso,
+} = require("./services/reservation-service");
 
 module.exports = (db, middlewares, helpers) => {
   const router = express.Router();
@@ -19,17 +24,9 @@ module.exports = (db, middlewares, helpers) => {
 
   router.get("/", isAuthenticated, async (req, res) => {
     try {
-      const carrinhosDb = await new Promise((r, j) =>
-        db.all("SELECT * FROM carrinhos", [], (e, rows) =>
-          e ? j(e) : r(rows),
-        ),
-      );
+      const carrinhosDb = await dbAll(db, "SELECT * FROM carrinhos");
       const carrinhos = carrinhosDb.map(normalizarCarrinho);
-      const salas = await new Promise((r, j) =>
-        db.all("SELECT bloco, nome FROM salas", [], (e, rows) =>
-          e ? j(e) : r(rows),
-        ),
-      );
+      const salas = await dbAll(db, "SELECT bloco, nome FROM salas");
       const blocosSalas = montarSalasParaView(salas);
       res.render("index", {
         carrinhos,
@@ -46,9 +43,7 @@ module.exports = (db, middlewares, helpers) => {
   router.get("/minhas-reservas", isAuthenticated, async (req, res) => {
     try {
       const sql = `SELECT r.*, c.nome as nome_carrinho FROM reservas r JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.usuario_id = ? AND r.status = 'Ativa' ORDER BY r.data_retirada ASC`;
-      const reservas = await new Promise((r, j) =>
-        db.all(sql, [req.user.id], (e, rows) => (e ? j(e) : r(rows))),
-      );
+      const reservas = await dbAll(db, sql, [req.user.id]);
       res.render("minhas-reservas", {
         reservas,
         user: req.user,
@@ -63,12 +58,10 @@ module.exports = (db, middlewares, helpers) => {
   router.post("/reservas/cancelar/:id", isAuthenticated, async (req, res) => {
     const reservaId = req.params.id;
     try {
-      const reserva = await new Promise((r, j) =>
-        db.get(
-          `SELECT r.*, c.nome as nome_carrinho FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.id = ?`,
-          [reservaId],
-          (e, row) => (e ? j(e) : r(row)),
-        ),
+      const reserva = await dbGet(
+        db,
+        `SELECT r.*, c.nome as nome_carrinho FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.id = ?`,
+        [reservaId],
       );
       if (
         !reserva ||
@@ -77,13 +70,9 @@ module.exports = (db, middlewares, helpers) => {
         return res
           .status(403)
           .send("Você não tem permissão para cancelar esta reserva.");
-      await new Promise((r, j) =>
-        db.run(
-          "UPDATE reservas SET status = 'Cancelada' WHERE id = ?",
-          [reservaId],
-          (e) => (e ? j(e) : r()),
-        ),
-      );
+      await dbRun(db, "UPDATE reservas SET status = 'Cancelada' WHERE id = ?", [
+        reservaId,
+      ]);
       await registrarAuditoria(req, {
         acao: "RESERVA_CANCELADA",
         entidade: "reserva",
@@ -111,23 +100,17 @@ module.exports = (db, middlewares, helpers) => {
       const reservaId = req.params.id;
       const nomeQuemConcluiu = req.user.nome;
       try {
-        const reserva = await new Promise((resolve, reject) => {
-          db.get(
-            `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id LEFT JOIN usuarios u ON r.usuario_id = u.id WHERE r.id = ?`,
-            [reservaId],
-            (err, row) => (err ? reject(err) : resolve(row)),
-          );
-        });
+        const reserva = await dbGet(
+          db,
+          `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id LEFT JOIN usuarios u ON r.usuario_id = u.id WHERE r.id = ?`,
+          [reservaId],
+        );
         if (!reserva) return res.status(404).send("Reserva não encontrada.");
-        await new Promise((resolve, reject) => {
-          db.run(
-            "UPDATE reservas SET status = 'Concluida', concluido_por = ? WHERE id = ?",
-            [nomeQuemConcluiu, reservaId],
-            function (err) {
-              err ? reject(err) : resolve();
-            },
-          );
-        });
+        await dbRun(
+          db,
+          "UPDATE reservas SET status = 'Concluida', concluido_por = ? WHERE id = ?",
+          [nomeQuemConcluiu, reservaId],
+        );
         await registrarAuditoria(req, {
           acao: "RESERVA_CONCLUIDA",
           entidade: "reserva",
@@ -159,7 +142,13 @@ module.exports = (db, middlewares, helpers) => {
 
   router.get("/api/availability", ensureAuthenticatedApi, async (req, res) => {
     const { carrinho_id, data_retirada, data_devolucao } = req.query;
-    if (!carrinho_id || !data_retirada || !data_devolucao)
+    const carrinhoId = parseInt(carrinho_id, 10);
+    if (
+      !Number.isInteger(carrinhoId) ||
+      carrinhoId <= 0 ||
+      !data_retirada ||
+      !data_devolucao
+    )
       return res.status(400).json({ error: "Parâmetros faltando." });
 
     const inicioNovaReserva = new Date(data_retirada);
@@ -172,47 +161,34 @@ module.exports = (db, middlewares, helpers) => {
       return res.status(400).json({ error: "Datas inválidas." });
 
     try {
-      const carrinhoDb = await new Promise((resolve, reject) => {
-        db.get(
-          "SELECT capacidade, indisponiveis FROM carrinhos WHERE id = ?",
-          [carrinho_id],
-          (err, row) => (err ? reject(err) : resolve(row)),
-        );
-      });
+      const carrinhoDb = await dbGet(
+        db,
+        "SELECT capacidade, indisponiveis FROM carrinhos WHERE id = ?",
+        [carrinhoId],
+      );
       const carrinho = carrinhoDb ? normalizarCarrinho(carrinhoDb) : null;
       if (!carrinho)
         return res.status(404).json({ error: "Carrinho não encontrado." });
 
       // Query Otimizada: Traz apenas reservas que se sobrepõem ao período solicitado
-      const reservasAtivas = await new Promise((resolve, reject) => {
-        db.all(
-          "SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa' AND data_retirada < ? AND data_devolucao > ?",
-          [
-            carrinho_id,
-            toMySQLDateTime(data_devolucao),
-            toMySQLDateTime(data_retirada),
-          ],
-          (err, rows) => (err ? reject(err) : resolve(rows)),
-        );
-      });
+      const reservasAtivas = await dbAll(
+        db,
+        "SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa' AND data_retirada < ? AND data_devolucao > ?",
+        [
+          carrinhoId,
+          toMySQLDateTime(data_devolucao),
+          toMySQLDateTime(data_retirada),
+        ],
+      );
 
-      let picoDeUso = 0;
-      for (
-        let t = inicioNovaReserva.getTime();
-        t < fimNovaReserva.getTime();
-        t += 60000
-      ) {
-        let emUso = 0;
-        for (const r of reservasAtivas) {
-          if (
-            t >= new Date(r.data_retirada).getTime() &&
-            t < new Date(r.data_devolucao).getTime()
-          )
-            emUso += r.quantidade;
-        }
-        if (emUso > picoDeUso) picoDeUso = emUso;
-      }
-      res.json({ disponiveis: Math.max(carrinho.disponiveis - picoDeUso, 0) });
+      res.json({
+        disponiveis: calcularDisponiveisNoPeriodo(
+          carrinho,
+          reservasAtivas,
+          inicioNovaReserva,
+          fimNovaReserva,
+        ),
+      });
     } catch (err) {
       res.status(500).json({ error: "Erro interno no servidor." });
     }
@@ -228,10 +204,16 @@ module.exports = (db, middlewares, helpers) => {
       sala,
       addToCalendar,
     } = req.body;
+    const carrinhoId = parseInt(carrinho_id, 10);
     const quantidadeNum = parseInt(quantidade, 10);
     const usuario_id = req.user.id;
     const blocoSelecionado = (bloco || "").trim();
     const salaSelecionada = (sala || "").trim();
+
+    if (!Number.isInteger(carrinhoId) || carrinhoId <= 0)
+      return res.redirect(
+        "/?erro=" + encodeURIComponent("Selecione um carrinho valido."),
+      );
 
     if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0)
       return res.redirect(
@@ -285,7 +267,7 @@ module.exports = (db, middlewares, helpers) => {
     try {
       const [cartRows] = await connection.execute(
         "SELECT capacidade, indisponiveis, nome FROM carrinhos WHERE id = ? FOR UPDATE",
-        [carrinho_id],
+        [carrinhoId],
       );
       if (!cartRows.length) throw new Error("Carrinho não encontrado.");
       carrinho = normalizarCarrinho(cartRows[0]);
@@ -301,28 +283,17 @@ module.exports = (db, middlewares, helpers) => {
       const [reservasAtivas] = await connection.execute(
         "SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa' AND data_retirada < ? AND data_devolucao > ?",
         [
-          carrinho_id,
+          carrinhoId,
           toMySQLDateTime(data_devolucao),
           toMySQLDateTime(data_retirada),
         ],
       );
 
-      let picoDeUso = 0;
-      for (
-        let t = inicioSolicitado.getTime();
-        t < fimSolicitado.getTime();
-        t += 60000
-      ) {
-        let u = 0;
-        for (const R of reservasAtivas) {
-          if (
-            t >= new Date(R.data_retirada).getTime() &&
-            t < new Date(R.data_devolucao).getTime()
-          )
-            u += R.quantidade;
-        }
-        if (u > picoDeUso) picoDeUso = u;
-      }
+      const picoDeUso = calcularPicoDeUso(
+        reservasAtivas,
+        inicioSolicitado,
+        fimSolicitado,
+      );
 
       if (quantidadeNum > carrinho.disponiveis - picoDeUso)
         throw new Error(
@@ -332,7 +303,7 @@ module.exports = (db, middlewares, helpers) => {
       const [result] = await connection.execute(
         `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          carrinho_id,
+          carrinhoId,
           quantidadeNum,
           usuario_id,
           toMySQLDateTime(data_retirada),
@@ -357,7 +328,7 @@ module.exports = (db, middlewares, helpers) => {
       entidade: "reserva",
       entidadeId: lastID,
       detalhes: {
-        carrinho_id,
+        carrinho_id: carrinhoId,
         carrinho: carrinho.nome,
         quantidade: quantidadeNum,
         data_retirada,

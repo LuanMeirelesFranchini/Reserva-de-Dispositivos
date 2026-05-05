@@ -26,22 +26,15 @@ async function main() {
 
   // 1. Garantir que existam usuários de teste (Cria se não existirem)
   for (const email of emailsTeste) {
-    await new Promise((resolve) => {
-      db.run(
-        "INSERT IGNORE INTO usuarios (nome, email, role) VALUES (?, ?, ?)",
-        [email.split("@")[0].toUpperCase(), email, "professor"],
-        () => resolve(),
-      );
-    });
+    await db.run(
+      "INSERT IGNORE INTO usuarios (nome, email, role) VALUES (?, ?, ?)",
+      [email.split("@")[0].toUpperCase(), email, "professor"],
+    );
   }
 
   // 2. Buscar IDs reais que agora certamente existem
-  const usersRows = await new Promise((r, j) =>
-    db.all("SELECT id FROM usuarios", [], (e, rows) => (e ? j(e) : r(rows))),
-  );
-  const cartsRows = await new Promise((r, j) =>
-    db.all("SELECT id FROM carrinhos", [], (e, rows) => (e ? j(e) : r(rows))),
-  );
+  const usersRows = await db.all("SELECT id FROM usuarios");
+  const cartsRows = await db.all("SELECT id FROM carrinhos");
 
   const usuariosIds = usersRows.map((u) => u.id);
   const carrinhosIds = cartsRows.map((c) => c.id);
@@ -51,11 +44,6 @@ async function main() {
       "❌ ERRO: Cadastre ao menos um CARRINHO no painel antes de rodar o teste.",
     );
   }
-
-  const stmt = db.prepare(`
-        INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
 
   console.log("📝 Gerando 150 registros...");
 
@@ -68,8 +56,10 @@ async function main() {
       .slice(0, 19)
       .replace("T", " ");
 
-    await new Promise((resolve, reject) =>
-      stmt.run(
+    await db.run(
+      `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
         carrinhosIds[Math.floor(Math.random() * carrinhosIds.length)],
         Math.floor(Math.random() * 20) + 5, // Quantidade entre 5 e 25
         usuariosIds[Math.floor(Math.random() * usuariosIds.length)],
@@ -77,14 +67,10 @@ async function main() {
         dataDevolucao,
         salas[Math.floor(Math.random() * salas.length)],
         status[Math.floor(Math.random() * status.length)],
-        (err) => (err ? reject(err) : resolve()),
-      ),
+      ],
     );
   }
 
-  await new Promise((resolve, reject) =>
-    stmt.finalize((err) => (err ? reject(err) : resolve())),
-  );
   console.log("✅ Sucesso: 150 reservas geradas para teste!");
 }
 
