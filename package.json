@@ -30,6 +30,9 @@
     "uuid": "^14.0.0"
   },
   "devDependencies": {
-    "sqlite3": "^6.0.1"
+    "clean-jsdoc-theme": "^2.2.15",
+    "jsdoc": "^4.0.5",
+    "sqlite3": "^6.0.1",
+    "taffydb": "^2.7.3"
   }
 }
