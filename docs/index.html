@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Home</title>
+
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/third-party/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/third-party/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-base.css">
+    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-light.css">
+    
+    
+    
+<svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none">
+    <defs>
+        <symbol id="copy-icon" viewbox="0 0 488.3 488.3">
+            <g>
+                <path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/>
+                <path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/>
+            </g>
+        </symbol>
+    </defs>
+</svg>
+
+</head>
+<body>
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html"><div class="text">Home</div></a></h2><div class="search-box"><input type="text" placeholder="Search..." id="search-box" /><div class="search-item-container" id="search-item-container"><ul class="search-item-ul" id="search-item-ul"></ul></div></div><div class="sidebar-list-div"><h3><a href="global.html">Global</a></h3><ul><li><a href="global.html#appendFlashMessage">appendFlashMessage</a></li><li><a href="global.html#calcularDisponiveisNoPeriodo">calcularDisponiveisNoPeriodo</a></li><li><a href="global.html#calcularPicoDeUso">calcularPicoDeUso</a></li><li><a href="global.html#createAppHelpers">createAppHelpers</a></li><li><a href="global.html#normalizarCarrinho">normalizarCarrinho</a></li><li><a href="global.html#toMySQLDateTime">toMySQLDateTime</a></li><li><a href="global.html#toTimestamp">toTimestamp</a></li></ul></div>
+</nav>
+
+<div id="main">
+    
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    
+
+
+    <section class="readme">
+        <article><h1>Sistema de Reservas de Chromebooks</h1>
+<p>Sistema web para reserva e gestao de carrinhos de Chromebooks do Colegio La Salle. A aplicacao permite que professores consultem disponibilidade em tempo real, criem reservas, recebam confirmacao por e-mail e acompanhem seus agendamentos. A equipe operacional e administradores contam com painel de gestao, inventario, historico, dashboard e auditoria.</p>
+<h2>Principais Funcionalidades</h2>
+<ul>
+<li>Login institucional com Google OAuth 2.0.</li>
+<li>Controle de acesso por perfil: <code>professor</code>, <code>operacional</code> e <code>admin</code>.</li>
+<li>Reserva de carrinhos por quantidade, bloco, sala, data e horario.</li>
+<li>Validacao de disponibilidade considerando reservas ativas sobrepostas.</li>
+<li>Bloqueio de reservas no passado, com antecedencia minima de 24 horas e limite de 30 dias para usuarios nao administradores.</li>
+<li>Confirmacao por e-mail com anexo <code>.ics</code> e link para Google Calendar.</li>
+<li>Opcao de criar evento no Google Calendar do usuario.</li>
+<li>Painel administrativo para acompanhar reservas ativas.</li>
+<li>Conclusao e cancelamento de reservas com registro de auditoria.</li>
+<li>Inventario de carrinhos com capacidade total e itens indisponiveis.</li>
+<li>Dashboard com indicadores de uso.</li>
+<li>Exclusao logica de usuarios para preservar historico de reservas.</li>
+</ul>
+<h2>Tecnologias</h2>
+<ul>
+<li>Node.js</li>
+<li>Express 5</li>
+<li>EJS</li>
+<li>MySQL com <code>mysql2</code></li>
+<li>Passport.js com estrategia Google OAuth 2.0</li>
+<li>Express Session com store MySQL proprio</li>
+<li>Nodemailer</li>
+<li>Pico CSS</li>
+</ul>
+<h2>Estrutura do Projeto</h2>
+<pre class="prettyprint source lang-text"><code>PROJETO DE RESERVAS/reserva_dispositivos/
+  index.js                       # Entrada da aplicacao Express
+  admin.js                       # Rotas administrativas
+  reservas.js                    # Rotas de reservas e disponibilidade
+  database.js                    # Adaptador MySQL usado pelo projeto
+  setup.js                       # Criacao inicial das tabelas e dados base
+  migrate.js                     # Atualizacoes incrementais do banco
+  salas-data.js                  # Dados e utilitarios de salas
+  config/
+    mysql-session-store.js       # Store de sessoes em MySQL
+    passport.js                  # Configuracao do Google OAuth
+  helpers/
+    app-helpers.js               # Helpers compartilhados por rotas
+  middlewares/
+    auth.js                      # Middlewares de autenticacao/autorizacao
+  routes/
+    admin.js                     # Proxy para rotas administrativas
+    reservas.js                  # Proxy para rotas de reservas
+  services/
+    calendar-service.js          # Geracao de link Google Calendar e ICS
+    email-service.js             # Envio de e-mails
+    reservation-service.js       # Calculo otimizado de disponibilidade
+  views/                         # Templates EJS
+  public/                        # CSS, JS e imagens
+  scripts/                       # Scripts auxiliares
+</code></pre>
+<h2>Requisitos</h2>
+<ul>
+<li>Node.js instalado.</li>
+<li>MySQL em execucao.</li>
+<li>Credenciais OAuth 2.0 do Google.</li>
+<li>Conta SMTP ou senha de app para envio de e-mails.</li>
+</ul>
+<h2>Configuracao</h2>
+<p>Entre na pasta da aplicacao:</p>
+<pre class="prettyprint source lang-bash"><code>cd &quot;PROJETO DE RESERVAS/reserva_dispositivos&quot;
+</code></pre>
+<p>Instale as dependencias:</p>
+<pre class="prettyprint source lang-bash"><code>npm install
+</code></pre>
+<p>Crie o arquivo <code>.env</code> com base em <code>.env.example</code>:</p>
+<pre class="prettyprint source lang-bash"><code>cp .env.example .env
+</code></pre>
+<p>Configure as variaveis principais:</p>
+<pre class="prettyprint source lang-env"><code>PORT=3000
+NODE_ENV=development
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=reserva_user
+DB_PASSWORD=sua_senha
+DB_NAME=reserva_dispositivos
+DB_CONNECTION_LIMIT=10
+
+SESSION_SECRET=troque_este_segredo
+
+GOOGLE_CLIENT_ID=seu_google_client_id
+GOOGLE_CLIENT_SECRET=seu_google_client_secret
+ALLOWED_DOMAINS=lasalle.org.br,prof.soulasalle.com.br
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+EMAIL_USER=seu_email
+EMAIL_PASS=sua_senha_de_app
+EMAIL_FROM=&quot;Colegio La Salle &lt;nao-responda@lasalle.org.br>&quot;
+
+INITIAL_ADMIN_EMAIL=admin@exemplo.com
+INITIAL_ADMIN_PASSWORD=admin123
+MANAGER_EMAIL=admin@exemplo.com
+</code></pre>
+<h2>Banco de Dados</h2>
+<p>Crie o banco e usuario no MySQL antes de executar o setup. Exemplo:</p>
+<pre class="prettyprint source lang-sql"><code>CREATE DATABASE reserva_dispositivos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'reserva_user'@'localhost' IDENTIFIED BY 'sua_senha';
+GRANT ALL PRIVILEGES ON reserva_dispositivos.* TO 'reserva_user'@'localhost';
+FLUSH PRIVILEGES;
+</code></pre>
+<p>Execute o setup inicial:</p>
+<pre class="prettyprint source lang-bash"><code>npm run setup
+</code></pre>
+<p>Para aplicar atualizacoes estruturais em um banco existente:</p>
+<pre class="prettyprint source lang-bash"><code>npm run migrate
+</code></pre>
+<p>Observacao para Windows PowerShell: se <code>npm run ...</code> for bloqueado pela politica de execucao, use:</p>
+<pre class="prettyprint source lang-powershell"><code>npm.cmd run setup
+npm.cmd run migrate
+</code></pre>
+<h2>Execucao</h2>
+<p>Ambiente local:</p>
+<pre class="prettyprint source lang-bash"><code>npm start
+</code></pre>
+<p>A aplicacao sobe em:</p>
+<pre class="prettyprint source lang-text"><code>http://localhost:3000
+</code></pre>
+<h2>Perfis de Usuario</h2>
+<ul>
+<li><code>professor</code>: cria reservas, visualiza as proprias reservas e cancela reservas ativas proprias.</li>
+<li><code>operacional</code>: acessa gestao de reservas, historico e dashboard.</li>
+<li><code>admin</code>: gerencia usuarios, inventario, auditoria e todas as areas administrativas.</li>
+</ul>
+<h2>Regras de Reserva</h2>
+<ul>
+<li>A data de retirada nao pode estar no passado.</li>
+<li>Professores precisam reservar com pelo menos 24 horas de antecedencia.</li>
+<li>Professores podem reservar no maximo com 30 dias de antecedencia.</li>
+<li>Administradores podem criar reservas sem esses bloqueios de prazo.</li>
+<li>A sala precisa existir no cadastro de salas.</li>
+<li>O sistema considera reservas ativas sobrepostas para calcular disponibilidade.</li>
+<li>A capacidade disponivel considera <code>capacidade - indisponiveis</code>.</li>
+</ul>
+<h2>Usuarios e Exclusao</h2>
+<p>A exclusao de usuarios e logica, nao fisica. Isso evita erro de chave estrangeira no MySQL e preserva o historico de reservas.</p>
+<p>Quando um administrador exclui um usuario:</p>
+<ul>
+<li><code>ativo</code> passa para <code>0</code>.</li>
+<li>O usuario deixa de aparecer em <code>Gerir Utilizadores</code>.</li>
+<li>E-mail, senha e tokens Google sao removidos/descaracterizados.</li>
+<li>Reservas antigas e ativas continuam ligadas ao registro para historico, dashboard e auditoria.</li>
+<li>A acao <code>USUARIO_EXCLUIDO</code> e registrada em <code>audit_logs</code>.</li>
+</ul>
+<h2>Google OAuth</h2>
+<p>Configure no Google Cloud Console:</p>
+<ul>
+<li>Tipo de app: Web application.</li>
+<li>Redirect URI local:</li>
+</ul>
+<pre class="prettyprint source lang-text"><code>http://localhost:3000/auth/google/callback
+</code></pre>
+<p>Em producao, cadastre tambem a URL publica:</p>
+<pre class="prettyprint source lang-text"><code>https://seu-dominio/auth/google/callback
+</code></pre>
+<p>Os dominios permitidos podem ser ajustados com <code>ALLOWED_DOMAINS</code>.</p>
+<h2>E-mail e Calendario</h2>
+<p>O sistema usa Nodemailer para enviar confirmacoes. Cada reserva criada tenta enviar:</p>
+<ul>
+<li>E-mail de confirmacao.</li>
+<li>Anexo <code>.ics</code> para Outlook/Apple Calendar.</li>
+<li>Link de criacao no Google Calendar.</li>
+</ul>
+<p>Se o usuario marcar a opcao de adicionar ao calendario e possuir <code>google_refresh_token</code>, o sistema tenta criar o evento diretamente no Google Calendar.</p>
+<h2>Scripts Disponiveis</h2>
+<pre class="prettyprint source lang-bash"><code>npm start           # Inicia o servidor
+npm run setup       # Cria tabelas e dados iniciais
+npm run migrate     # Aplica migracoes incrementais
+npm run migrate:sqlite # Migra dados do SQLite antigo para MySQL
+</code></pre>
+<h2>Observacoes de Manutencao</h2>
+<ul>
+<li>Rode <code>npm run migrate</code> apos atualizar o codigo em ambientes existentes.</li>
+<li>Evite apagar registros diretamente no MySQL; use as telas administrativas para preservar auditoria.</li>
+<li>Verifique <code>audit_logs</code> para rastrear alteracoes sensiveis.</li>
+<li>Mantenha <code>.env</code> fora do Git.</li>
+<li>Antes de alteracoes grandes, faca backup do banco MySQL.</li>
+</ul>
+<h2>Licenca e Uso</h2>
+<p>Projeto de uso interno do Colegio La Salle.</p>
+<p>Desenvolvido por Luan Meireles Franchini / Michael Dantas Moreira.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<footer id="footer">
+  
+</footer>
+
+<script src="scripts/third-party/prettify.js"></script>
+<script src="scripts/third-party/lang-css.js"></script>
+<script src="scripts/search.js"></script>
+<script src="scripts/third-party/fuse.js"></script>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+<script src="scripts/fix-code-block.js"></script>
+<script>
+var list = [{"title":"appendFlashMessage","link":"<a href=\"global.html#appendFlashMessage\">Global &rtrif; appendFlashMessage</a>"},{"title":"calcularDisponiveisNoPeriodo","link":"<a href=\"global.html#calcularDisponiveisNoPeriodo\">Global &rtrif; calcularDisponiveisNoPeriodo</a>"},{"title":"calcularPicoDeUso","link":"<a href=\"global.html#calcularPicoDeUso\">Global &rtrif; calcularPicoDeUso</a>"},{"title":"createAppHelpers","link":"<a href=\"global.html#createAppHelpers\">Global &rtrif; createAppHelpers</a>"},{"title":"normalizarCarrinho","link":"<a href=\"global.html#normalizarCarrinho\">Global &rtrif; normalizarCarrinho</a>"},{"title":"toMySQLDateTime","link":"<a href=\"global.html#toMySQLDateTime\">Global &rtrif; toMySQLDateTime</a>"},{"title":"toTimestamp","link":"<a href=\"global.html#toTimestamp\">Global &rtrif; toTimestamp</a>"}];
+setupSearch(list)
+</script>
+
+ 
+<script type="text/javascript" src="scripts/misc.js"></script>
+</body>
+</html>
