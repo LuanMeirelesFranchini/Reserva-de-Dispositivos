@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const { MySQLDatabase } = require("./database");
 const { initializeSalasTable } = require("./salas-data");
+const { decryptToken, encryptToken } = require("./helpers/token-crypto");
 
 const db = new MySQLDatabase((err) => {
   if (err) {
@@ -89,6 +90,29 @@ async function main() {
 
   await initializeSalasTable(db);
   console.log("Tabela 'salas' pronta para uso.");
+
+  const usuariosComTokens = await new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, google_access_token, google_refresh_token
+       FROM usuarios
+       WHERE google_access_token IS NOT NULL OR google_refresh_token IS NOT NULL`,
+      (err, rows) => (err ? reject(err) : resolve(rows)),
+    );
+  });
+
+  for (const usuario of usuariosComTokens) {
+    const refreshToken = decryptToken(usuario.google_refresh_token);
+    await run(
+      "UPDATE usuarios SET google_access_token = NULL, google_refresh_token = ? WHERE id = ?",
+      [encryptToken(refreshToken), usuario.id],
+    );
+  }
+
+  if (usuariosComTokens.length > 0) {
+    console.log(
+      `Tokens Google atualizados com criptografia: ${usuariosComTokens.length} usuario(s).`,
+    );
+  }
 }
 
 main()

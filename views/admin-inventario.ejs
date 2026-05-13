@@ -154,6 +154,8 @@
 
     <script src="/menu.js"></script>
         <script>
+        const csrfToken = "<%= csrfToken %>";
+
         async function salvarAlteracao(event, id) {
             const inputCapacidade = document.getElementById(`capacidade-${id}`);
             const inputIndisponiveis = document.getElementById(`indisponiveis-${id}`);
@@ -187,7 +189,10 @@
             try {
                 const response = await fetch('/admin/inventario/update', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ id: id, capacidade: novaCapacidade, indisponiveis: novosIndisponiveis })
                 });
 

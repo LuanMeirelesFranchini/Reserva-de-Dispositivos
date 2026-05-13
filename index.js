@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const crypto = require("crypto");
 const express = require("express");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -31,9 +32,100 @@ if (missingEnvVars.length > 0) {
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const googleScopes = ["profile", "email"];
+
+if (process.env.GOOGLE_CALENDAR_ENABLED === "true") {
+  googleScopes.push("https://www.googleapis.com/auth/calendar.events");
+}
+
+function safeJson(value) {
+  const replacements = {
+    "<": "\\u003c",
+    ">": "\\u003e",
+    "&": "\\u0026",
+    "\u2028": "\\u2028",
+    "\u2029": "\\u2029",
+  };
+
+  const json = JSON.stringify(value);
+  return (json === undefined ? "null" : json).replace(
+    /[<>&\u2028\u2029]/g,
+    (char) => replacements[char],
+  );
+}
+
+function secureCompare(a, b) {
+  const left = Buffer.from(String(a || ""));
+  const right = Buffer.from(String(b || ""));
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(left, right);
+}
+
+function csrfProtection(req, res, next) {
+  if (!req.session) return next();
+
+  if (!req.session.csrfToken && SAFE_METHODS.has(req.method)) {
+    req.session.csrfToken = crypto.randomBytes(32).toString("hex");
+  }
+
+  res.locals.csrfToken = req.session.csrfToken || "";
+
+  if (SAFE_METHODS.has(req.method)) {
+    return next();
+  }
+
+  const submittedToken =
+    req.body?._csrf ||
+    req.get("x-csrf-token") ||
+    req.get("x-xsrf-token") ||
+    "";
+
+  if (!req.session.csrfToken || !secureCompare(req.session.csrfToken, submittedToken)) {
+    if (req.originalUrl.startsWith("/api/") || req.is("application/json")) {
+      return res.status(403).json({ error: "Token CSRF invalido." });
+    }
+
+    return res.status(403).send("Token CSRF invalido.");
+  }
+
+  return next();
+}
+
+function securityHeaders(req, res, next) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "img-src 'self' data:",
+      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://npmcdn.com",
+      "connect-src 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  );
+
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  }
+
+  next();
+}
 
 app.set("view engine", "ejs");
 app.set("trust proxy", 1);
+app.locals.safeJson = safeJson;
 
 const db = new MySQLDatabase((err) => {
   if (err) {
@@ -61,9 +153,10 @@ initializeSalasTable(db)
 
 configurePassport(passport, db);
 
+app.use(securityHeaders);
 app.use(express.static("public"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 app.use(cookieParser());
 app.use(
   session({
@@ -82,6 +175,7 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(csrfProtection);
 
 const helpers = createAppHelpers(db);
 
@@ -92,11 +186,7 @@ app.get("/login", (req, res) =>
 app.get(
   "/auth/google",
   passport.authenticate("google", {
-    scope: [
-      "profile",
-      "email",
-      "https://www.googleapis.com/auth/calendar.events",
-    ],
+    scope: googleScopes,
     accessType: "offline",
   }),
 );

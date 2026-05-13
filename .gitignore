@@ -1,16 +1,33 @@
-# Ignorar a pasta
+# Dependencies
 node_modules/
 
-# Ignorar Banco de Dados
-./data/reservas.db
+# Environment and secrets
+.env
+.env.*
+!.env.example
 
-# Arquivos de log que podem ser gerados
-npm-debug.log*
+# Local databases and migrations scratch files
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Test/browser artifacts
+auth/
+screenshots/
+playwright-report/
+test-results/
+coverage/
+
+# Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Arquivos de sistema operacional que não fazem parte do projeto
+# OS/editor files
 .DS_Store
 Thumbs.db
-
-# Arquivos de ambiente (para senhas e segredos)
-.env
+.vscode/
+.idea/

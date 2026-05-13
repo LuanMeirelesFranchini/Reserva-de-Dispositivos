@@ -131,9 +131,12 @@ async function main() {
     console.log("Tabela 'salas' pronta.");
 
     const adminEmail = process.env.INITIAL_ADMIN_EMAIL;
-    const adminSenha = process.env.INITIAL_ADMIN_PASSWORD || 'admin123';
+    const adminSenha = process.env.INITIAL_ADMIN_PASSWORD;
     if (!adminEmail) {
         throw new Error("INITIAL_ADMIN_EMAIL nao definido no .env");
+    }
+    if (!adminSenha || adminSenha.length < 12) {
+        throw new Error("INITIAL_ADMIN_PASSWORD precisa ter pelo menos 12 caracteres.");
     }
 
     const admin = await get("SELECT * FROM usuarios WHERE email = ?", [adminEmail]);

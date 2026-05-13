@@ -80,6 +80,7 @@
         <details open>
             <summary role="button" class="outline">Fazer uma Nova Reserva</summary>
             <form id="formReserva" action="/reservar" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <label for="carrinho">De qual carrinho quer reservar?</label>
                 <select id="carrinho" name="carrinho_id" required>
                     <option value="" disabled selected>Escolha um carrinho</option>
@@ -129,7 +130,7 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
     <script src="/menu.js"></script>
     <script src="/front-end.js"></script>
-    <script id="salas-por-bloco-data" type="application/json"><%- JSON.stringify(blocosSalas) %></script>
+    <script id="salas-por-bloco-data" type="application/json"><%- safeJson(blocosSalas) %></script>
     
     <script>
         const selectCarrinho = document.getElementById('carrinho');

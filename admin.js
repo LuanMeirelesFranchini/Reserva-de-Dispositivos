@@ -32,7 +32,8 @@ module.exports = (db, middlewares, helpers) => {
         dataFiltro: dataFiltro || "",
       });
     } catch (err) {
-      res.status(500).send("Erro ao carregar a pagina de admin: " + err.message);
+      console.error("Erro interno em GET /admin:", err);
+      res.status(500).send("Erro ao carregar a pagina de admin.");
     }
   });
 
@@ -44,7 +45,8 @@ module.exports = (db, middlewares, helpers) => {
       );
       res.render("admin-users", { usuarios, user: req.user });
     } catch (err) {
-      res.status(500).send("Erro ao carregar utilizadores: " + err.message);
+      console.error("Erro interno em GET /admin/users:", err);
+      res.status(500).send("Erro ao carregar utilizadores.");
     }
   });
 
@@ -61,7 +63,8 @@ module.exports = (db, middlewares, helpers) => {
       );
       res.render("admin-history", { reservas, user: req.user });
     } catch (err) {
-      res.status(500).send("Erro ao carregar historico: " + err.message);
+      console.error("Erro interno em GET /admin/history:", err);
+      res.status(500).send("Erro ao carregar historico.");
     }
   });
 
@@ -87,7 +90,8 @@ module.exports = (db, middlewares, helpers) => {
 
       res.render("admin-audit", { logs, acoes, acaoFiltro, user: req.user });
     } catch (err) {
-      res.status(500).send("Erro ao carregar auditoria: " + err.message);
+      console.error("Erro interno em GET /admin/audit:", err);
+      res.status(500).send("Erro ao carregar auditoria.");
     }
   });
 
@@ -255,7 +259,8 @@ module.exports = (db, middlewares, helpers) => {
         },
       });
     } catch (err) {
-      res.status(500).send("Erro ao carregar o dashboard: " + err.message);
+      console.error("Erro interno em GET /admin/dashboard:", err);
+      res.status(500).send("Erro ao carregar o dashboard.");
     }
   });
 

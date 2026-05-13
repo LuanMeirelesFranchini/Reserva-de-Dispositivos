@@ -88,6 +88,7 @@
                                 <td><%= reserva.sala %></td>
                                 <td>
                                     <form action="/reservas/cancelar/<%= reserva.id %>" method="POST" onsubmit="return confirm('Deseja realmente cancelar esta reserva?');" style="margin: 0;">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                         <button type="submit" class="contrast outline" style="padding: 5px 10px;">Cancelar</button>
                                     </form>
                                 </td>

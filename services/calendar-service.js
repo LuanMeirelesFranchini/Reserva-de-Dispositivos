@@ -12,6 +12,14 @@ function gerarLinkGoogleCalendar(titulo, descricao, local, inicio, fim) {
   );
 }
 
+function escapeICS(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r\n|\n|\r/g, "\\n")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,");
+}
+
 function gerarICS(titulo, descricao, local, inicio, fim) {
   const formatarDataICS = (date) =>
     date.toISOString().replace(/-|:|\.\d+/g, "");
@@ -24,9 +32,9 @@ UID:${Date.now()}@seudominio.com
 DTSTAMP:${formatarDataICS(new Date())}
 DTSTART:${formatarDataICS(new Date(inicio))}
 DTEND:${formatarDataICS(new Date(fim))}
-SUMMARY:${titulo}
-DESCRIPTION:${descricao}
-LOCATION:${local}
+SUMMARY:${escapeICS(titulo)}
+DESCRIPTION:${escapeICS(descricao)}
+LOCATION:${escapeICS(local)}
 END:VEVENT
 END:VCALENDAR`;
 }

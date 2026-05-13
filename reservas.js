@@ -1,6 +1,7 @@
 const express = require("express");
 const { google } = require("googleapis");
 const { dbAll, dbGet, dbRun } = require("./database");
+const { decryptToken } = require("./helpers/token-crypto");
 const {
   calcularDisponiveisNoPeriodo,
   calcularPicoDeUso,
@@ -36,7 +37,8 @@ module.exports = (db, middlewares, helpers) => {
         sucesso: req.query.sucesso || "",
       });
     } catch (err) {
-      res.status(500).send("Erro ao carregar a página: " + err.message);
+      console.error("Erro ao carregar a pagina inicial:", err.message);
+      res.status(500).send("Erro ao carregar a pagina.");
     }
   });
 
@@ -128,7 +130,8 @@ module.exports = (db, middlewares, helpers) => {
         });
         res.redirect("/admin");
       } catch (err) {
-        res.status(500).send("Erro ao concluir reserva: " + err.message);
+        console.error("Erro ao concluir reserva:", err.message);
+        res.status(500).send("Erro ao concluir reserva.");
       }
     },
   );
@@ -316,10 +319,13 @@ module.exports = (db, middlewares, helpers) => {
       await connection.commit();
     } catch (err) {
       await connection.rollback();
-      connection.release();
-      return res.redirect("/?erro=" + encodeURIComponent(err.message));
+      const message = err.code
+        ? "Nao foi possivel concluir a reserva."
+        : err.message;
+      return res.redirect("/?erro=" + encodeURIComponent(message));
+    } finally {
+      if (connection) connection.release();
     }
-    connection.release();
     // ==============================================
 
     // Ações secundárias fora da transação
@@ -369,7 +375,17 @@ module.exports = (db, middlewares, helpers) => {
       avisos.push("O e-mail de confirmação não pôde ser enviado.");
     }
 
-    if (addToCalendar === "true" && req.user.google_refresh_token) {
+    let googleRefreshToken = null;
+    if (addToCalendar === "true") {
+      const tokenRow = await dbGet(
+        db,
+        "SELECT google_refresh_token FROM usuarios WHERE id = ? AND ativo = 1",
+        [req.user.id],
+      );
+      googleRefreshToken = decryptToken(tokenRow?.google_refresh_token);
+    }
+
+    if (googleRefreshToken) {
       try {
         const oauth2Client = new google.auth.OAuth2(
           process.env.GOOGLE_CLIENT_ID,
@@ -377,7 +393,7 @@ module.exports = (db, middlewares, helpers) => {
           "/auth/google/callback",
         );
         oauth2Client.setCredentials({
-          refresh_token: req.user.google_refresh_token,
+          refresh_token: googleRefreshToken,
         });
         const calendar = google.calendar({ version: "v3", auth: oauth2Client });
         await calendar.events.insert({

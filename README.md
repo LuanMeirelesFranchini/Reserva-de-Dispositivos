@@ -99,9 +99,11 @@ DB_NAME=reserva_dispositivos
 DB_CONNECTION_LIMIT=10
 
 SESSION_SECRET=troque_este_segredo
+TOKEN_ENCRYPTION_KEY=chave_longa_para_tokens_google
 
 GOOGLE_CLIENT_ID=seu_google_client_id
 GOOGLE_CLIENT_SECRET=seu_google_client_secret
+GOOGLE_CALENDAR_ENABLED=false
 ALLOWED_DOMAINS=lasalle.org.br,prof.soulasalle.com.br
 
 SMTP_HOST=smtp.gmail.com
@@ -112,7 +114,7 @@ EMAIL_PASS=sua_senha_de_app
 EMAIL_FROM="Colegio La Salle <nao-responda@lasalle.org.br>"
 
 INITIAL_ADMIN_EMAIL=admin@exemplo.com
-INITIAL_ADMIN_PASSWORD=admin123
+INITIAL_ADMIN_PASSWORD=uma_senha_forte_com_12_ou_mais_caracteres
 MANAGER_EMAIL=admin@exemplo.com
 ```
 

@@ -79,11 +79,7 @@ function createAppHelpers(db) {
   ) {
     const usuario = req.user || {};
     const detalhesJson = detalhes ? JSON.stringify(detalhes) : null;
-    const ip =
-      req.ip ||
-      req.headers["x-forwarded-for"] ||
-      req.socket?.remoteAddress ||
-      null;
+    const ip = req.ip || req.socket?.remoteAddress || null;
     const userAgent = req.get("user-agent") || null;
 
     try {

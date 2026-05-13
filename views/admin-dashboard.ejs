@@ -224,12 +224,12 @@
 
     <script src="/menu.js"></script>
     <script>
-        const statsStatus = <%- JSON.stringify(statsStatus) %>;
-        const statsCarrinhos = <%- JSON.stringify(statsCarrinhos) %>;
-        const statsProfessores = <%- JSON.stringify(statsProfessores) %>;
-        const statsDias = <%- JSON.stringify(statsDias) %>;
-        const statsHorarios = <%- JSON.stringify(statsHorarios) %>;
-        const statsSalas = <%- JSON.stringify(statsSalas) %>;
+        const statsStatus = <%- safeJson(statsStatus) %>;
+        const statsCarrinhos = <%- safeJson(statsCarrinhos) %>;
+        const statsProfessores = <%- safeJson(statsProfessores) %>;
+        const statsDias = <%- safeJson(statsDias) %>;
+        const statsHorarios = <%- safeJson(statsHorarios) %>;
+        const statsSalas = <%- safeJson(statsSalas) %>;
 
         const palette = {
             blue: '#1d4ed8',
