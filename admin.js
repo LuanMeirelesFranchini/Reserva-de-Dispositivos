@@ -1,10 +1,224 @@
 const express = require("express");
 const { dbAll, dbGet, dbRun } = require("./database");
+const {
+  calcularPicoBloqueado,
+  calcularPicoDeUso,
+} = require("./services/reservation-service");
+
+const MONTH_NAMES_PT_BR = [
+  "Janeiro",
+  "Fevereiro",
+  "Marco",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+function formatDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatMonthParam(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function parseMonthReference(monthParam) {
+  if (typeof monthParam === "string" && /^\d{4}-\d{2}$/.test(monthParam)) {
+    const [year, month] = monthParam.split("-").map(Number);
+    const parsed = new Date(year, month - 1, 1);
+
+    if (
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === 1
+    ) {
+      return parsed;
+    }
+  }
+
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+function getMonthContext(monthParam) {
+  const monthStart = parseMonthReference(monthParam);
+  const monthEnd = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    1,
+  );
+  const previousMonth = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() - 1,
+    1,
+  );
+  const nextMonth = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    1,
+  );
+
+  return {
+    monthStart,
+    monthEnd,
+    monthParam: formatMonthParam(monthStart),
+    previousMonthParam: formatMonthParam(previousMonth),
+    nextMonthParam: formatMonthParam(nextMonth),
+    label: `${MONTH_NAMES_PT_BR[monthStart.getMonth()]} de ${monthStart.getFullYear()}`,
+  };
+}
+
+function addDays(date, amount) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + amount);
+  return result;
+}
+
+function overlapsPeriod(item, inicio, fim, startKey, endKey) {
+  return (
+    new Date(item[startKey]).getTime() < fim.getTime() &&
+    new Date(item[endKey]).getTime() > inicio.getTime()
+  );
+}
+
+function buildCalendarData({
+  monthStart,
+  monthEnd,
+  reservas,
+  bloqueios,
+  capacidadeBase,
+}) {
+  const todayKey = formatDateKey(new Date());
+  const days = [];
+
+  for (
+    let cursor = new Date(monthStart);
+    cursor < monthEnd;
+    cursor = addDays(cursor, 1)
+  ) {
+    const dayStart = new Date(
+      cursor.getFullYear(),
+      cursor.getMonth(),
+      cursor.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    const dayEnd = addDays(dayStart, 1);
+    const reservasDoDia = reservas.filter((reserva) =>
+      overlapsPeriod(reserva, dayStart, dayEnd, "data_retirada", "data_devolucao"),
+    );
+    const bloqueiosDoDia = bloqueios.filter((bloqueio) =>
+      overlapsPeriod(bloqueio, dayStart, dayEnd, "data_inicio", "data_fim"),
+    );
+    const reservadoNoPico = reservasDoDia.length
+      ? calcularPicoDeUso(reservasDoDia, dayStart, dayEnd)
+      : 0;
+    const bloqueadoNoPico = bloqueiosDoDia.length
+      ? calcularPicoBloqueado(bloqueiosDoDia, dayStart, dayEnd)
+      : 0;
+    const capacidadeEfetiva = Math.max(capacidadeBase - bloqueadoNoPico, 0);
+    const ocupacao = capacidadeEfetiva
+      ? Number(((reservadoNoPico / capacidadeEfetiva) * 100).toFixed(1))
+      : 0;
+
+    let nivel = "green";
+    if (ocupacao > 85) {
+      nivel = "red";
+    } else if (ocupacao > 60) {
+      nivel = "yellow";
+    }
+
+    days.push({
+      dayNumber: cursor.getDate(),
+      dateKey: formatDateKey(cursor),
+      isToday: formatDateKey(cursor) === todayKey,
+      reservadoNoPico,
+      bloqueadoNoPico,
+      capacidadeEfetiva,
+      ocupacao,
+      reservasAtivas: reservasDoDia.length,
+      nivel,
+    });
+  }
+
+  const weeks = [];
+  const firstDayOffset = (monthStart.getDay() + 6) % 7;
+  let currentWeek = Array(firstDayOffset).fill(null);
+
+  for (const day of days) {
+    currentWeek.push(day);
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+
+  if (currentWeek.length > 0) {
+    while (currentWeek.length < 7) currentWeek.push(null);
+    weeks.push(currentWeek);
+  }
+
+  const worstDay = days.reduce(
+    (highest, day) => (day.ocupacao > highest.ocupacao ? day : highest),
+    { ocupacao: -1, reservadoNoPico: 0, dateKey: null, bloqueadoNoPico: 0 },
+  );
+  const occupiedDays = days.filter((day) => day.reservadoNoPico > 0);
+  const criticalDays = days.filter((day) => day.nivel === "red").length;
+  const warningDays = days.filter((day) => day.nivel === "yellow").length;
+  const mediaOcupacao = days.length
+    ? Number(
+        (
+          days.reduce((sum, day) => sum + day.ocupacao, 0) / days.length
+        ).toFixed(1),
+      )
+    : 0;
+
+  return {
+    weeks,
+    days,
+    summary: {
+      capacidadeBase,
+      occupiedDays: occupiedDays.length,
+      criticalDays,
+      warningDays,
+      mediaOcupacao,
+      worstDay:
+        worstDay.dateKey === null
+          ? null
+          : {
+              dateKey: worstDay.dateKey,
+              ocupacao: worstDay.ocupacao,
+              reservadoNoPico: worstDay.reservadoNoPico,
+              bloqueadoNoPico: worstDay.bloqueadoNoPico,
+            },
+    },
+  };
+}
+
+function startOfToday() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+}
 
 module.exports = (db, middlewares, helpers) => {
   const router = express.Router();
   const { isAdmin, canManageReservations } = middlewares;
-  const { normalizarCarrinho, registrarAuditoria } = helpers;
+  const {
+    normalizarCarrinho,
+    registrarAuditoria,
+    toMySQLDateTime,
+  } = helpers;
 
   router.get("/", canManageReservations, async (req, res) => {
     try {
@@ -97,10 +311,36 @@ module.exports = (db, middlewares, helpers) => {
 
   router.get("/inventario", isAdmin, async (req, res) => {
     try {
-      const carrinhos = await dbAll(db, "SELECT * FROM carrinhos");
+      const [carrinhos, bloqueiosProgramados, resumoAtual] = await Promise.all([
+        dbAll(db, "SELECT * FROM carrinhos ORDER BY nome ASC"),
+        dbAll(
+          db,
+          `SELECT b.*, c.nome as nome_carrinho
+           FROM carrinho_bloqueios b
+           JOIN carrinhos c ON c.id = b.carrinho_id
+           WHERE b.data_fim >= NOW()
+           ORDER BY b.data_inicio ASC, b.id ASC`,
+        ),
+        dbGet(
+          db,
+          `SELECT
+              COUNT(*) as total,
+              COALESCE(SUM(CASE WHEN data_inicio <= NOW() AND data_fim > NOW() THEN quantidade ELSE 0 END), 0) as bloqueadosAgora
+           FROM carrinho_bloqueios
+           WHERE data_fim >= NOW()`,
+        ),
+      ]);
+
       res.render("admin-inventario", {
         user: req.user,
         carrinhos: carrinhos.map(normalizarCarrinho),
+        bloqueiosProgramados,
+        resumoBloqueios: {
+          total: resumoAtual?.total || 0,
+          bloqueadosAgora: resumoAtual?.bloqueadosAgora || 0,
+        },
+        erro: req.query.erro || "",
+        sucesso: req.query.sucesso || "",
       });
     } catch (err) {
       res.status(500).send("Erro ao carregar inventario.");
@@ -172,73 +412,326 @@ module.exports = (db, middlewares, helpers) => {
     }
   });
 
+  router.post("/inventario/bloqueios", isAdmin, async (req, res) => {
+    const carrinhoId = parseInt(req.body.carrinho_id, 10);
+    const quantidade = parseInt(req.body.quantidade, 10);
+    const motivo = String(req.body.motivo || "").trim();
+    const dataInicio = new Date(req.body.data_inicio);
+    const dataFim = new Date(req.body.data_fim);
+
+    if (!Number.isInteger(carrinhoId) || carrinhoId <= 0) {
+      return res.redirect(
+        "/admin/inventario?erro=" + encodeURIComponent("Carrinho invalido."),
+      );
+    }
+    if (!Number.isInteger(quantidade) || quantidade <= 0) {
+      return res.redirect(
+        "/admin/inventario?erro=" +
+          encodeURIComponent("Quantidade do bloqueio invalida."),
+      );
+    }
+    if (!motivo) {
+      return res.redirect(
+        "/admin/inventario?erro=" + encodeURIComponent("Informe o motivo."),
+      );
+    }
+    if (
+      isNaN(dataInicio.getTime()) ||
+      isNaN(dataFim.getTime()) ||
+      dataFim <= dataInicio
+    ) {
+      return res.redirect(
+        "/admin/inventario?erro=" + encodeURIComponent("Periodo invalido."),
+      );
+    }
+
+    try {
+      const carrinho = await dbGet(
+        db,
+        "SELECT id, nome, capacidade FROM carrinhos WHERE id = ?",
+        [carrinhoId],
+      );
+
+      if (!carrinho) {
+        return res.redirect(
+          "/admin/inventario?erro=" +
+            encodeURIComponent("Carrinho nao encontrado."),
+        );
+      }
+      if (quantidade > carrinho.capacidade) {
+        return res.redirect(
+          "/admin/inventario?erro=" +
+            encodeURIComponent(
+              "Bloqueio nao pode ser maior que a capacidade total do carrinho.",
+            ),
+        );
+      }
+
+      const result = await dbRun(
+        db,
+        `INSERT INTO carrinho_bloqueios (
+            carrinho_id, quantidade, data_inicio, data_fim, motivo, criado_por_usuario_id
+         ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          carrinhoId,
+          quantidade,
+          toMySQLDateTime(dataInicio),
+          toMySQLDateTime(dataFim),
+          motivo,
+          req.user.id,
+        ],
+      );
+
+      await registrarAuditoria(req, {
+        acao: "BLOQUEIO_AGENDADO_CRIADO",
+        entidade: "carrinho_bloqueio",
+        entidadeId: result.lastID,
+        detalhes: {
+          carrinho: carrinho.nome,
+          quantidade,
+          data_inicio: toMySQLDateTime(dataInicio),
+          data_fim: toMySQLDateTime(dataFim),
+          motivo,
+        },
+      });
+
+      res.redirect(
+        "/admin/inventario?sucesso=" +
+          encodeURIComponent("Bloqueio programado salvo com sucesso."),
+      );
+    } catch (err) {
+      res.redirect(
+        "/admin/inventario?erro=" +
+          encodeURIComponent("Nao foi possivel salvar o bloqueio."),
+      );
+    }
+  });
+
+  router.post("/inventario/bloqueios/:id/delete", isAdmin, async (req, res) => {
+    const bloqueioId = parseInt(req.params.id, 10);
+    if (!Number.isInteger(bloqueioId) || bloqueioId <= 0) {
+      return res.redirect(
+        "/admin/inventario?erro=" + encodeURIComponent("Bloqueio invalido."),
+      );
+    }
+
+    try {
+      const bloqueio = await dbGet(
+        db,
+        `SELECT b.*, c.nome as nome_carrinho
+         FROM carrinho_bloqueios b
+         JOIN carrinhos c ON c.id = b.carrinho_id
+         WHERE b.id = ?`,
+        [bloqueioId],
+      );
+
+      if (!bloqueio) {
+        return res.redirect(
+          "/admin/inventario?erro=" +
+            encodeURIComponent("Bloqueio nao encontrado."),
+        );
+      }
+
+      await dbRun(db, "DELETE FROM carrinho_bloqueios WHERE id = ?", [bloqueioId]);
+
+      await registrarAuditoria(req, {
+        acao: "BLOQUEIO_AGENDADO_EXCLUIDO",
+        entidade: "carrinho_bloqueio",
+        entidadeId: bloqueioId,
+        detalhes: {
+          carrinho: bloqueio.nome_carrinho,
+          quantidade: bloqueio.quantidade,
+          data_inicio: bloqueio.data_inicio,
+          data_fim: bloqueio.data_fim,
+          motivo: bloqueio.motivo,
+        },
+      });
+
+      res.redirect(
+        "/admin/inventario?sucesso=" +
+          encodeURIComponent("Bloqueio removido com sucesso."),
+      );
+    } catch (err) {
+      res.redirect(
+        "/admin/inventario?erro=" +
+          encodeURIComponent("Nao foi possivel remover o bloqueio."),
+      );
+    }
+  });
+
   router.get("/dashboard", canManageReservations, async (req, res) => {
     try {
-      const statsStatus = await dbAll(
-        db,
-        "SELECT status, COUNT(*) as qtd FROM reservas GROUP BY status",
+      const monthContext = getMonthContext(req.query.month);
+      const today = startOfToday();
+      const nextSevenDays = addDays(today, 7);
+      const nextFourteenDays = addDays(today, 14);
+
+      const [
+        statsStatus,
+        statsCarrinhos,
+        statsProfessores,
+        statsDias,
+        statsSalas,
+        statsHorarios,
+        statsResumo,
+        carrinhos,
+        reservasCalendario,
+        bloqueiosCalendario,
+        retiradasHoje,
+        bloqueiosProximos,
+      ] = await Promise.all([
+        dbAll(
+          db,
+          `SELECT status, COUNT(*) as qtd
+           FROM reservas
+           WHERE data_retirada >= ? AND data_retirada < ?
+           GROUP BY status`,
+          [monthContext.monthStart, monthContext.monthEnd],
+        ),
+        dbAll(
+          db,
+          `SELECT c.nome, COUNT(r.id) as total
+           FROM reservas r
+           JOIN carrinhos c ON r.carrinho_id = c.id
+           WHERE r.data_retirada >= ? AND r.data_retirada < ?
+           GROUP BY c.id, c.nome
+           ORDER BY total DESC, c.nome ASC
+           LIMIT 5`,
+          [monthContext.monthStart, monthContext.monthEnd],
+        ),
+        dbAll(
+          db,
+          `SELECT u.nome, COUNT(r.id) as total
+           FROM reservas r
+           JOIN usuarios u ON r.usuario_id = u.id
+           WHERE r.data_retirada >= ? AND r.data_retirada < ?
+           GROUP BY u.id, u.nome
+           ORDER BY total DESC, u.nome ASC
+           LIMIT 5`,
+          [monthContext.monthStart, monthContext.monthEnd],
+        ),
+        dbAll(
+          db,
+          `SELECT DATE(data_retirada) as data, COUNT(*) as qtd
+           FROM reservas
+           WHERE data_retirada >= ? AND data_retirada < ?
+           GROUP BY DATE(data_retirada)
+           ORDER BY data ASC`,
+          [monthContext.monthStart, monthContext.monthEnd],
+        ),
+        dbAll(
+          db,
+          `SELECT sala, COUNT(*) as total
+           FROM reservas
+           WHERE data_retirada >= ? AND data_retirada < ?
+             AND sala IS NOT NULL AND TRIM(sala) <> ''
+           GROUP BY sala
+           ORDER BY total DESC, sala ASC
+           LIMIT 5`,
+          [monthContext.monthStart, monthContext.monthEnd],
+        ),
+        dbAll(
+          db,
+          `SELECT DATE_FORMAT(data_retirada, '%H:00') as hora, COUNT(*) as total
+           FROM reservas
+           WHERE data_retirada >= ? AND data_retirada < ?
+           GROUP BY hora
+           ORDER BY total DESC, hora ASC
+           LIMIT 6`,
+          [monthContext.monthStart, monthContext.monthEnd],
+        ),
+        dbGet(
+          db,
+          `SELECT
+              COUNT(*) as totalReservas,
+              COALESCE(SUM(quantidade), 0) as totalChromebooks,
+              ROUND(AVG(TIMESTAMPDIFF(MINUTE, data_retirada, data_devolucao) / 60), 1) as mediaHoras
+           FROM reservas
+           WHERE data_retirada >= ? AND data_retirada < ?`,
+          [monthContext.monthStart, monthContext.monthEnd],
+        ),
+        dbAll(db, "SELECT * FROM carrinhos ORDER BY nome ASC"),
+        dbAll(
+          db,
+          `SELECT carrinho_id, quantidade, data_retirada, data_devolucao
+           FROM reservas
+           WHERE status IN ('Ativa', 'Concluida')
+             AND data_retirada < ?
+             AND data_devolucao > ?`,
+          [monthContext.monthEnd, monthContext.monthStart],
+        ),
+        dbAll(
+          db,
+          `SELECT carrinho_id, quantidade, data_inicio, data_fim
+           FROM carrinho_bloqueios
+           WHERE data_inicio < ?
+             AND data_fim > ?`,
+          [monthContext.monthEnd, monthContext.monthStart],
+        ),
+        dbAll(
+          db,
+          `SELECT r.id, r.quantidade, r.data_retirada, c.nome as nome_carrinho, u.nome as nome_professor
+           FROM reservas r
+           JOIN carrinhos c ON c.id = r.carrinho_id
+           JOIN usuarios u ON u.id = r.usuario_id
+           WHERE r.status = 'Ativa'
+             AND r.data_retirada >= ?
+             AND r.data_retirada < ?
+           ORDER BY r.data_retirada ASC
+           LIMIT 6`,
+          [today, addDays(today, 1)],
+        ),
+        dbAll(
+          db,
+          `SELECT b.id, b.quantidade, b.data_inicio, b.data_fim, b.motivo, c.nome as nome_carrinho
+           FROM carrinho_bloqueios b
+           JOIN carrinhos c ON c.id = b.carrinho_id
+           WHERE b.data_fim >= ?
+             AND b.data_inicio < ?
+           ORDER BY b.data_inicio ASC
+           LIMIT 6`,
+          [today, nextFourteenDays],
+        ),
+      ]);
+
+      const carrinhosNormalizados = carrinhos.map(normalizarCarrinho);
+      const capacidadeBase = carrinhosNormalizados.reduce(
+        (sum, carrinho) => sum + carrinho.disponiveis,
+        0,
       );
-      const statsCarrinhos = await dbAll(
-        db,
-        `SELECT c.nome, COUNT(r.id) as total
-         FROM reservas r
-         JOIN carrinhos c ON r.carrinho_id = c.id
-         GROUP BY c.id
-         ORDER BY total DESC
-         LIMIT 5`,
-      );
-      const statsProfessores = await dbAll(
-        db,
-        `SELECT u.nome, COUNT(r.id) as total
-         FROM reservas r
-         JOIN usuarios u ON r.usuario_id = u.id
-         GROUP BY u.id
-         ORDER BY total DESC
-         LIMIT 5`,
-      );
-      const statsDias = await dbAll(
-        db,
-        `SELECT DATE(data_retirada) as data, COUNT(*) as qtd
-         FROM reservas
-         WHERE data_retirada >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-         GROUP BY DATE(data_retirada)
-         ORDER BY data ASC`,
-      );
-      const statsSalas = await dbAll(
-        db,
-        `SELECT sala, COUNT(*) as total
-         FROM reservas
-         WHERE sala IS NOT NULL AND trim(sala) <> ''
-         GROUP BY sala
-         ORDER BY total DESC
-         LIMIT 5`,
-      );
-      const statsHorarios = await dbAll(
-        db,
-        `SELECT DATE_FORMAT(data_retirada, '%H:00') as hora, COUNT(*) as total
-         FROM reservas
-         GROUP BY hora
-         ORDER BY total DESC, hora ASC
-         LIMIT 6`,
-      );
-      const statsResumo = await dbGet(
-        db,
-        `SELECT
-            COUNT(*) as totalReservas,
-            COALESCE(SUM(quantidade), 0) as totalChromebooks,
-            ROUND(AVG(TIMESTAMPDIFF(MINUTE, data_retirada, data_devolucao) / 60), 1) as mediaHoras
-         FROM reservas`,
-      );
+      const occupancyCalendar = buildCalendarData({
+        monthStart: monthContext.monthStart,
+        monthEnd: monthContext.monthEnd,
+        reservas: reservasCalendario,
+        bloqueios: bloqueiosCalendario,
+        capacidadeBase,
+      });
 
       const statusMap = statsStatus.reduce((acc, item) => {
         acc[item.status] = item.qtd;
         return acc;
       }, {});
       const totalCanceladas = statusMap.Cancelada || 0;
-      const totalReservas = statsResumo.totalReservas || 0;
+      const totalReservas = statsResumo?.totalReservas || 0;
       const taxaCancelamento = totalReservas
         ? Number(((totalCanceladas / totalReservas) * 100).toFixed(1))
         : 0;
+
+      const alertWindow = occupancyCalendar.days.filter((day) => {
+        const date = new Date(`${day.dateKey}T00:00:00`);
+        return date >= today && date < nextSevenDays;
+      });
+
+      const alertas = {
+        criticosProximos: alertWindow
+          .filter((day) => day.nivel === "red")
+          .slice(0, 5),
+        atencaoProxima: alertWindow
+          .filter((day) => day.nivel === "yellow")
+          .slice(0, 5),
+        retiradasHoje,
+        bloqueiosProximos,
+      };
 
       res.render("admin-dashboard", {
         user: req.user,
@@ -248,10 +741,13 @@ module.exports = (db, middlewares, helpers) => {
         statsDias,
         statsSalas,
         statsHorarios,
+        occupancyCalendar,
+        calendarMonth: monthContext,
+        alertas,
         resumo: {
           totalReservas,
-          totalChromebooks: statsResumo.totalChromebooks || 0,
-          mediaHoras: statsResumo.mediaHoras || 0,
+          totalChromebooks: statsResumo?.totalChromebooks || 0,
+          mediaHoras: statsResumo?.mediaHoras || 0,
           totalAtivas: statusMap.Ativa || 0,
           totalConcluidas: statusMap.Concluida || 0,
           totalCanceladas,

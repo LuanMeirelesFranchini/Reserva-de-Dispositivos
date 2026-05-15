@@ -7,18 +7,23 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <style>
-        /* Centralização Absoluta */
         body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            background-image: url('/images/back1.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .auth-shell {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh; /* Ocupa 100% da altura da tela */
-            margin: 0;
-            padding: 0;
-           /* background-color: #f4f7f9; */
-           background-image: url('/images/back1.jpg'); 
-              background-size: cover;
-                background-position: center;
+            padding: 1rem;
         }
 
         .login-card {
@@ -29,16 +34,14 @@
             background: #ffffff;
             border-radius: 1.5rem;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            /* Ajuste fino para o centro visual */
-            margin-bottom: 5vh; 
+            margin-bottom: 5vh;
         }
 
         .login-card img {
             max-width: 160px;
             height: auto;
             margin-bottom: 1.5rem;
-            /* Disfarça o fundo branco se a logo não for PNG transparente */
-            mix-blend-mode: multiply; 
+            mix-blend-mode: multiply;
         }
 
         .login-card h1 {
@@ -56,7 +59,7 @@
         }
 
         .btn-google {
-            background-color: #1e293b;
+            background-color: #4285F4;
             color: #ffffff;
             border: none;
             display: inline-flex;
@@ -73,8 +76,8 @@
 
         .btn-google:hover {
             transform: translateY(-2px);
-            background-color: #0f172a;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            background-color: #3367D6;
+            box-shadow: 0 5px 15px rgba(66, 133, 244, 0.3);
             color: #fff;
         }
 
@@ -90,29 +93,30 @@
     </style>
 </head>
 <body>
-    <article class="login-card">
-        <!-- Logo centralizada no card -->
-        <img src="/images/logo_azul.png" alt="Logo La Salle">
-        
-        <h1>Sistema de Reservas</h1>
-        
-        <p>Por favor, acesse com sua conta Google La Salle</p>
-        
-        <% if (typeof erro !== 'undefined' && erro) { %>
-            <div class="error-box">
-                ⚠️ <%= erro %>
-            </div>
-        <% } %>
+    <main class="auth-shell">
+        <article class="login-card">
+            <img src="/images/logo_azul.png" alt="Logo La Salle">
+            
+            <h1>Sistema de Reservas</h1>
+            
+            <p>Por favor, acesse com sua conta Google La Salle</p>
+            
+            <% if (typeof erro !== 'undefined' && erro) { %>
+                <div class="error-box">
+                    <%= erro %>
+                </div>
+            <% } %>
 
-        <a href="/auth/google" role="button" class="btn-google">
-            <svg width="20" height="20" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.67-.35-1.39-.35-2.09s.13-1.42.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/>
-            </svg>
-            Entrar com Google
-        </a>
-    </article>
+            <a href="/auth/google" role="button" class="btn-google">
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.67-.35-1.39-.35-2.09s.13-1.42.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/>
+                </svg>
+                Entrar com Google
+            </a>
+        </article>
+    </main>
 </body>
 </html>

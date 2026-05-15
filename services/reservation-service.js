@@ -69,7 +69,49 @@ function calcularDisponiveisNoPeriodo(carrinho, reservasAtivas, inicio, fim) {
   return Math.max(carrinho.disponiveis - picoDeUso, 0);
 }
 
+/**
+ * Calcula o pico de indisponibilidade programada durante um periodo.
+ *
+ * @param {Array<Object>} bloqueiosAtivos - Lista de bloqueios programados.
+ * @param {Date|string} inicioPeriodo - Inicio do periodo.
+ * @param {Date|string} fimPeriodo - Fim do periodo.
+ * @returns {number} Quantidade maxima bloqueada no periodo.
+ */
+function calcularPicoBloqueado(bloqueiosAtivos, inicioPeriodo, fimPeriodo) {
+  const eventos = bloqueiosAtivos.map((bloqueio) => ({
+    quantidade: Number(bloqueio.quantidade) || 0,
+    data_retirada: bloqueio.data_inicio,
+    data_devolucao: bloqueio.data_fim,
+  }));
+
+  return calcularPicoDeUso(eventos, inicioPeriodo, fimPeriodo);
+}
+
+/**
+ * Calcula a disponibilidade considerando indisponibilidades permanentes e agendadas.
+ *
+ * @param {Object} carrinho - Carrinho normalizado.
+ * @param {Array<Object>} reservasAtivas - Reservas sobrepostas ao periodo.
+ * @param {Array<Object>} bloqueiosAtivos - Bloqueios programados sobrepostos ao periodo.
+ * @param {Date|string} inicio - Inicio do periodo.
+ * @param {Date|string} fim - Fim do periodo.
+ * @returns {number} Quantidade disponivel no periodo.
+ */
+function calcularDisponiveisComBloqueios(
+  carrinho,
+  reservasAtivas,
+  bloqueiosAtivos,
+  inicio,
+  fim,
+) {
+  const picoReservado = calcularPicoDeUso(reservasAtivas, inicio, fim);
+  const picoBloqueado = calcularPicoBloqueado(bloqueiosAtivos, inicio, fim);
+  return Math.max(carrinho.disponiveis - picoBloqueado - picoReservado, 0);
+}
+
 module.exports = {
   calcularDisponiveisNoPeriodo,
+  calcularDisponiveisComBloqueios,
+  calcularPicoBloqueado,
   calcularPicoDeUso,
 };

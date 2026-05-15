@@ -4,13 +4,32 @@
     --color-lasalle-gold: #ffcc00;
     --color-bg-light: #f4f7f9;
     --color-text-dark: #1a202c;
-    --pico-primary: var(--color-lasalle-blue);
+    /* Azul mais claro e moderno para os botoes do sistema */
+    --pico-primary: #0275d8;
     --pico-border-radius: 0.75rem;
 }
 
 body {
     background-color: var(--color-bg-light);
     font-family: 'Noto Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.page-footer {
+    margin: auto 0 0 0;
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+    background-color: var(--pico-primary);
+    color: #ffffff;
+    font-size: 0.92rem;
+    width: 100%;
+}
+
+.page-footer p {
+    margin: 0;
+    color: #ffffff;
 }
 
 /* --- 2. Cabeçalho Refinado --- */

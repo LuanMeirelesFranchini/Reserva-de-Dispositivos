@@ -6,7 +6,6 @@
     "start": "node index.js",
     "setup": "node setup.js",
     "migrate": "node migrate.js",
-    "migrate:sqlite": "node scripts/migrate-sqlite-to-mysql.js",
     "test": "node scripts/check-js-syntax.js",
     "docs": "jsdoc -c jsdoc.json"
   },
@@ -28,9 +27,9 @@
     "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
-    "clean-jsdoc-theme": "^2.2.15",
+    "better-docs": "^2.7.3",
+    "docdash": "^2.0.2",
     "jsdoc": "^4.0.5",
-    "playwright": "^1.59.1",
-    "sqlite3": "^6.0.1"
+    "playwright": "^1.59.1"
   }
 }

@@ -3,7 +3,8 @@ const { google } = require("googleapis");
 const { dbAll, dbGet, dbRun } = require("./database");
 const { decryptToken } = require("./helpers/token-crypto");
 const {
-  calcularDisponiveisNoPeriodo,
+  calcularDisponiveisComBloqueios,
+  calcularPicoBloqueado,
   calcularPicoDeUso,
 } = require("./services/reservation-service");
 
@@ -44,7 +45,8 @@ module.exports = (db, middlewares, helpers) => {
 
   router.get("/minhas-reservas", isAuthenticated, async (req, res) => {
     try {
-      const sql = `SELECT r.*, c.nome as nome_carrinho FROM reservas r JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.usuario_id = ? AND r.status = 'Ativa' ORDER BY r.data_retirada ASC`;
+      const sql =
+        "SELECT r.*, c.nome as nome_carrinho FROM reservas r JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.usuario_id = ? AND r.status = 'Ativa' ORDER BY r.data_retirada ASC";
       const reservas = await dbAll(db, sql, [req.user.id]);
       res.render("minhas-reservas", {
         reservas,
@@ -62,16 +64,17 @@ module.exports = (db, middlewares, helpers) => {
     try {
       const reserva = await dbGet(
         db,
-        `SELECT r.*, c.nome as nome_carrinho FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.id = ?`,
+        "SELECT r.*, c.nome as nome_carrinho FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.id = ?",
         [reservaId],
       );
       if (
         !reserva ||
         (reserva.usuario_id !== req.user.id && req.user.role !== "admin")
-      )
+      ) {
         return res
           .status(403)
-          .send("Você não tem permissão para cancelar esta reserva.");
+          .send("Voce nao tem permissao para cancelar esta reserva.");
+      }
       await dbRun(db, "UPDATE reservas SET status = 'Cancelada' WHERE id = ?", [
         reservaId,
       ]);
@@ -104,10 +107,10 @@ module.exports = (db, middlewares, helpers) => {
       try {
         const reserva = await dbGet(
           db,
-          `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id LEFT JOIN usuarios u ON r.usuario_id = u.id WHERE r.id = ?`,
+          "SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id LEFT JOIN usuarios u ON r.usuario_id = u.id WHERE r.id = ?",
           [reservaId],
         );
-        if (!reserva) return res.status(404).send("Reserva não encontrada.");
+        if (!reserva) return res.status(404).send("Reserva nao encontrada.");
         await dbRun(
           db,
           "UPDATE reservas SET status = 'Concluida', concluido_por = ? WHERE id = ?",
@@ -139,7 +142,7 @@ module.exports = (db, middlewares, helpers) => {
   router.post("/reservar-recorrente", isAuthenticated, async (req, res) =>
     res.redirect(
       "/?erro=" +
-        encodeURIComponent("Reservas recorrentes ainda não estão ativas."),
+        encodeURIComponent("Reservas recorrentes ainda nao estao ativas."),
     ),
   );
 
@@ -151,8 +154,9 @@ module.exports = (db, middlewares, helpers) => {
       carrinhoId <= 0 ||
       !data_retirada ||
       !data_devolucao
-    )
-      return res.status(400).json({ error: "Parâmetros faltando." });
+    ) {
+      return res.status(400).json({ error: "Parametros faltando." });
+    }
 
     const inicioNovaReserva = new Date(data_retirada);
     const fimNovaReserva = new Date(data_devolucao);
@@ -160,8 +164,9 @@ module.exports = (db, middlewares, helpers) => {
       isNaN(inicioNovaReserva) ||
       isNaN(fimNovaReserva) ||
       fimNovaReserva <= inicioNovaReserva
-    )
-      return res.status(400).json({ error: "Datas inválidas." });
+    ) {
+      return res.status(400).json({ error: "Datas invalidas." });
+    }
 
     try {
       const carrinhoDb = await dbGet(
@@ -170,10 +175,10 @@ module.exports = (db, middlewares, helpers) => {
         [carrinhoId],
       );
       const carrinho = carrinhoDb ? normalizarCarrinho(carrinhoDb) : null;
-      if (!carrinho)
-        return res.status(404).json({ error: "Carrinho não encontrado." });
+      if (!carrinho) {
+        return res.status(404).json({ error: "Carrinho nao encontrado." });
+      }
 
-      // Query Otimizada: Traz apenas reservas que se sobrepõem ao período solicitado
       const reservasAtivas = await dbAll(
         db,
         "SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa' AND data_retirada < ? AND data_devolucao > ?",
@@ -183,11 +188,21 @@ module.exports = (db, middlewares, helpers) => {
           toMySQLDateTime(data_retirada),
         ],
       );
+      const bloqueiosAtivos = await dbAll(
+        db,
+        "SELECT quantidade, data_inicio, data_fim FROM carrinho_bloqueios WHERE carrinho_id = ? AND data_inicio < ? AND data_fim > ?",
+        [
+          carrinhoId,
+          toMySQLDateTime(data_devolucao),
+          toMySQLDateTime(data_retirada),
+        ],
+      );
 
       res.json({
-        disponiveis: calcularDisponiveisNoPeriodo(
+        disponiveis: calcularDisponiveisComBloqueios(
           carrinho,
           reservasAtivas,
+          bloqueiosAtivos,
           inicioNovaReserva,
           fimNovaReserva,
         ),
@@ -213,20 +228,21 @@ module.exports = (db, middlewares, helpers) => {
     const blocoSelecionado = (bloco || "").trim();
     const salaSelecionada = (sala || "").trim();
 
-    if (!Number.isInteger(carrinhoId) || carrinhoId <= 0)
+    if (!Number.isInteger(carrinhoId) || carrinhoId <= 0) {
       return res.redirect(
         "/?erro=" + encodeURIComponent("Selecione um carrinho valido."),
       );
+    }
 
-    if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0)
-      return res.redirect(
-        "/?erro=" + encodeURIComponent("Quantidade invalida."),
-      );
-    if (!blocoSelecionado || !salaSelecionada)
+    if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0) {
+      return res.redirect("/?erro=" + encodeURIComponent("Quantidade invalida."));
+    }
+    if (!blocoSelecionado || !salaSelecionada) {
       return res.redirect(
         "/?erro=" +
           encodeURIComponent("Selecione o bloco e a sala da reserva."),
       );
+    }
 
     const inicioSolicitado = new Date(data_retirada);
     const fimSolicitado = new Date(data_devolucao);
@@ -236,35 +252,38 @@ module.exports = (db, middlewares, helpers) => {
       isNaN(inicioSolicitado.getTime()) ||
       isNaN(fimSolicitado.getTime()) ||
       fimSolicitado <= inicioSolicitado
-    )
+    ) {
       return res.redirect("/?erro=" + encodeURIComponent("Periodo invalido."));
-    if (inicioSolicitado < agora)
+    }
+    if (inicioSolicitado < agora) {
       return res.redirect(
         "/?erro=" +
           encodeURIComponent("A data de retirada nao pode estar no passado."),
       );
+    }
 
     if (req.user.role !== "admin") {
       const minimo = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
       const maximo = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
-      if (inicioSolicitado < minimo)
+      if (inicioSolicitado < minimo) {
         return res.redirect(
           "/?erro=" +
             encodeURIComponent(
               "As reservas devem ser feitas com pelo menos 24 horas de antecedencia.",
             ),
         );
-      if (inicioSolicitado > maximo || fimSolicitado > maximo)
+      }
+      if (inicioSolicitado > maximo || fimSolicitado > maximo) {
         return res.redirect(
-          "/?erro=" + encodeURIComponent("Máximo de 30 dias de antecedencia."),
+          "/?erro=" + encodeURIComponent("Maximo de 30 dias de antecedencia."),
         );
+      }
     }
 
     let lastID = null;
     let carrinho = null;
     let salaFormatada = "";
 
-    // ==== TRANSAÇÃO PARA EVITAR RACE CONDITION ====
     const connection = await db.pool.getConnection();
     await connection.beginTransaction();
     try {
@@ -272,19 +291,28 @@ module.exports = (db, middlewares, helpers) => {
         "SELECT capacidade, indisponiveis, nome FROM carrinhos WHERE id = ? FOR UPDATE",
         [carrinhoId],
       );
-      if (!cartRows.length) throw new Error("Carrinho não encontrado.");
+      if (!cartRows.length) throw new Error("Carrinho nao encontrado.");
       carrinho = normalizarCarrinho(cartRows[0]);
 
       const [salaRows] = await connection.execute(
         "SELECT bloco, nome FROM salas WHERE bloco = ? AND nome = ?",
         [blocoSelecionado, salaSelecionada],
       );
-      if (!salaRows.length)
+      if (!salaRows.length) {
         throw new Error("A sala selecionada nao pertence ao bloco informado.");
+      }
       salaFormatada = `${formatarLocal(salaRows[0].bloco)} - ${formatarLocal(salaRows[0].nome)}`;
 
       const [reservasAtivas] = await connection.execute(
         "SELECT quantidade, data_retirada, data_devolucao FROM reservas WHERE carrinho_id = ? AND status = 'Ativa' AND data_retirada < ? AND data_devolucao > ?",
+        [
+          carrinhoId,
+          toMySQLDateTime(data_devolucao),
+          toMySQLDateTime(data_retirada),
+        ],
+      );
+      const [bloqueiosAtivos] = await connection.execute(
+        "SELECT quantidade, data_inicio, data_fim FROM carrinho_bloqueios WHERE carrinho_id = ? AND data_inicio < ? AND data_fim > ?",
         [
           carrinhoId,
           toMySQLDateTime(data_devolucao),
@@ -297,14 +325,24 @@ module.exports = (db, middlewares, helpers) => {
         inicioSolicitado,
         fimSolicitado,
       );
+      const picoBloqueado = calcularPicoBloqueado(
+        bloqueiosAtivos,
+        inicioSolicitado,
+        fimSolicitado,
+      );
+      const disponiveisNoPeriodo = Math.max(
+        carrinho.disponiveis - picoBloqueado - picoDeUso,
+        0,
+      );
 
-      if (quantidadeNum > carrinho.disponiveis - picoDeUso)
+      if (quantidadeNum > disponiveisNoPeriodo) {
         throw new Error(
-          `Erro: só há ${Math.max(carrinho.disponiveis - picoDeUso, 0)} disponíveis.`,
+          `Erro: so ha ${disponiveisNoPeriodo} disponiveis para esse periodo.`,
         );
+      }
 
       const [result] = await connection.execute(
-        `INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        "INSERT INTO reservas (carrinho_id, quantidade, usuario_id, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
           carrinhoId,
           quantidadeNum,
@@ -324,11 +362,9 @@ module.exports = (db, middlewares, helpers) => {
         : err.message;
       return res.redirect("/?erro=" + encodeURIComponent(message));
     } finally {
-      if (connection) connection.release();
+      connection.release();
     }
-    // ==============================================
 
-    // Ações secundárias fora da transação
     await registrarAuditoria(req, {
       acao: "RESERVA_CRIADA",
       entidade: "reserva",
@@ -346,7 +382,7 @@ module.exports = (db, middlewares, helpers) => {
 
     const tituloEvento = `Reserva de ${quantidadeNum} Chromebooks (${carrinho.nome})`;
     const descricaoEvento = `Reserva realizada por ${req.user.nome}. ID da Reserva: ${lastID}`;
-    const localEvento = `${salaFormatada}, Colégio La Salle`;
+    const localEvento = `${salaFormatada}, Colegio La Salle`;
     const linkGoogleCalendar = gerarLinkGoogleCalendar(
       tituloEvento,
       descricaoEvento,
@@ -366,13 +402,13 @@ module.exports = (db, middlewares, helpers) => {
     try {
       await sendReservationEmail({
         to: req.user.email,
-        subject: "Confirmação da sua reserva",
-        text: `Sua reserva foi feita com sucesso. Adicione à sua agenda: ${linkGoogleCalendar}`,
-        html: `<p>Sua reserva foi feita com sucesso!</p>`,
+        subject: "Confirmacao da sua reserva",
+        text: `Sua reserva foi feita com sucesso. Adicione a sua agenda: ${linkGoogleCalendar}`,
+        html: "<p>Sua reserva foi feita com sucesso!</p>",
         attachments: [{ filename: "reserva.ics", content: arquivoICS }],
       });
     } catch (emailErr) {
-      avisos.push("O e-mail de confirmação não pôde ser enviado.");
+      avisos.push("O e-mail de confirmacao nao pode ser enviado.");
     }
 
     let googleRefreshToken = null;
@@ -420,8 +456,9 @@ module.exports = (db, middlewares, helpers) => {
 
     let redirectUrl =
       "/?sucesso=" + encodeURIComponent("Sua reserva foi feita com sucesso!");
-    if (avisos.length > 0)
+    if (avisos.length > 0) {
       redirectUrl = appendFlashMessage(redirectUrl, "erro", avisos.join(" "));
+    }
     res.redirect(redirectUrl);
   });
 

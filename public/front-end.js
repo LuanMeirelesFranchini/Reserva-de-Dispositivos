@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Seleciona os elementos principais da interface
     const btnReservar = document.getElementById('btnReservar') || document.querySelector('button[type="submit"]');
     const disponibilidadeResultEl = document.getElementById('disponibilidade-resultado');
+    const inputQuantidade = document.getElementById('quantidade');
     const isAdmin = document.documentElement.dataset.userRole === 'admin';
 
     // --- CONFIGURACAO BASE PARA O FLATPICKR (Calendario) ---
@@ -65,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const carrinhoId = document.getElementById('carrinho').value;
         const dataRetirada = document.getElementById('retirada').value;
         const dataDevolucao = document.getElementById('devolucao').value;
+        let quantidadeAtual = parseInt(inputQuantidade?.value || '0', 10);
 
         // Se faltarem dados, reinicia o estado visual
         if (!carrinhoId || !dataRetirada || !dataDevolucao) {
@@ -116,9 +118,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             disponibilidadeResultEl.textContent = `${data.disponiveis} Chromebooks disponiveis`;
+            if (inputQuantidade) {
+                inputQuantidade.max = data.disponiveis;
+                inputQuantidade.placeholder = data.disponiveis > 0
+                    ? `Maximo neste horario: ${data.disponiveis}`
+                    : 'Sem disponibilidade neste horario';
+
+                if (quantidadeAtual > data.disponiveis && data.disponiveis >= 0) {
+                    inputQuantidade.value = data.disponiveis > 0 ? String(data.disponiveis) : '';
+                    quantidadeAtual = parseInt(inputQuantidade.value || '0', 10);
+                }
+            }
 
             if (data.disponiveis <= 0) {
                 disponibilidadeResultEl.style.color = 'red';
+                if (btnReservar) btnReservar.disabled = true;
+            } else if (quantidadeAtual > data.disponiveis) {
+                disponibilidadeResultEl.textContent += '. Ajuste a quantidade para seguir.';
+                disponibilidadeResultEl.style.color = '#d97706';
                 if (btnReservar) btnReservar.disabled = true;
             } else {
                 disponibilidadeResultEl.style.color = 'green';
@@ -134,4 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Escuta mudancas na selecao do carrinho
     document.getElementById('carrinho').addEventListener('change', verificarDisponibilidade);
+    if (inputQuantidade) {
+        inputQuantidade.addEventListener('input', verificarDisponibilidade);
+    }
 });

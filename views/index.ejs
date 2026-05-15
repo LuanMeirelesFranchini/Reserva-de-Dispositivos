@@ -11,35 +11,8 @@
 </head>
 <body>
     <main class="container-fluid">
-        <header class="logo-header">
-            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
-                <img src="/images/logo_azul.png" alt="Logo do Colégio">
-            </a>
-            <a href="/" class="title-link" aria-label="Ir para a página inicial">
-                <h1>Sistema de Reservas</h1>
-            </a>
-            
-            <div class="user-menu-container">
-                <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
-                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-                <div class="dropdown-content">
-                    <a href="/minhas-reservas">Minhas Reservas</a>
-                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
-                        <a href="/admin">Painel de Gestão</a>
-                        <a href="/admin/dashboard">Dashboard de Reservas</a>
-                    <% } %>
-                    <% if (user.role === 'admin') { %>
-                        <a href="/admin/inventario">Gestão de Inventário</a>
-                        <a href="/admin/audit">Auditoria do Sistema</a>
-                    <% } %>
-                    <hr style="margin: 0; opacity: 0.1;">
-                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
-                </div>
-            </div>
-        </header>
-    
+        <%- include('partials/app-header', { title: 'Sistema de Reservas', user }) %>
+
         <% if (typeof erro !== 'undefined' && erro) { %>
         <article style="background-color: #ffebee; border-color: #e57373;">
             <p style="color: #c62828;"><%= erro %></p>
@@ -58,9 +31,8 @@
                 <thead>
                     <tr>
                         <th>Carrinho</th>
-                        <th>Localização</th>
+                        <th>Localizacao</th>
                         <th style="text-align: center;">Capacidade Total</th>
-                       
                     </tr>
                 </thead>
                 <tbody>
@@ -69,7 +41,6 @@
                         <td><%= c.nome %></td>
                         <td><%= c.localizacao %></td>
                         <td style="text-align: center;"><strong><%= c.capacidade %></strong></td>
-                        
                     </tr>
                     <% }) %>
                 </tbody>
@@ -98,7 +69,7 @@
                     <label for="retirada">Data e Hora de Retirada:
                         <input type="text" id="retirada" name="data_retirada" required placeholder="Selecione data e hora...">
                     </label>
-                    <label for="devolucao">Data e Hora de Devolução:
+                    <label for="devolucao">Data e Hora de Devolucao:
                         <input type="text" id="devolucao" name="data_devolucao" required placeholder="Selecione data e hora...">
                     </label>
                 </div>
@@ -119,12 +90,13 @@
                     </label>
                 </div>
                 
-                <p><b>Disponibilidade para este horário: <span id="disponibilidade-resultado">--</span></b></p>
+                <p><b>Disponibilidade para este horario: <span id="disponibilidade-resultado">--</span></b></p>
         
                 <button type="submit" id="btnReservar">Reservar</button>
             </form>
         </details>
     </main>
+    <%- include('partials/footer') %>
     
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
@@ -143,21 +115,18 @@
             return acc;
         }, {});
 
-        // MUDANÇA: Lógica de limite dinâmico
         selectCarrinho.addEventListener('change', function() {
             const option = this.options[this.selectedIndex];
             const maxDisponivel = option.getAttribute('data-max');
             
             inputQuantidade.max = maxDisponivel;
-            inputQuantidade.placeholder = `Máximo: ${maxDisponivel} unidades`;
+            inputQuantidade.placeholder = `Maximo: ${maxDisponivel} unidades`;
             
-            // Se o usuário já digitou algo maior que o novo máximo, ajusta
             if (parseInt(inputQuantidade.value) > parseInt(maxDisponivel)) {
                 inputQuantidade.value = maxDisponivel;
             }
         });
 
-        // Validação extra durante a digitação
         inputQuantidade.addEventListener("input", function(){
             const max = parseInt(this.max);
             if (max && parseInt(this.value) > max) {
@@ -189,7 +158,6 @@
             preencherSalasDoBloco(this.value);
         });
 
-        // Lógica de Loading no Botão
         const form = document.getElementById('formReserva');
         const btn = document.getElementById('btnReservar');
 

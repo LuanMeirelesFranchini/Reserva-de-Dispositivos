@@ -22,46 +22,23 @@
 </head>
 <body>
     <main class="container-fluid">
-        <header class="logo-header">
-            <a href="/" class="brand-link" aria-label="Ir para a pagina inicial">
-                <img src="/images/logo_azul.png" alt="Logo do Colegio">
-            </a>
-            <a href="/" class="title-link" aria-label="Ir para a pagina inicial">
-                <h1>Auditoria do Sistema</h1>
-            </a>
-            <div style="margin-left: auto; text-align: right;">
-                <p style="margin: 0;"><%= user.nome.split(' ')[0] %> (<%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>)</p>
-                <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
-            </div>
-        </header>
-
-        <nav class="nav-pills-container">
-            <a href="/" class="nav-pill">Fazer Nova Reserva</a>
-            <a href="/admin" class="nav-pill">Gerenciar Reservas</a>
-            <a href="/admin/users" class="nav-pill">Gerir Utilizadores</a>
-            <a href="/admin/history" class="nav-pill">Historico de Reservas</a>
-            <a href="/admin/audit" class="nav-pill active">Auditoria</a>
-            <a href="/admin/dashboard" class="nav-pill">Dashboard de Reservas</a>
-        </nav>
+        <%- include('partials/app-header', { title: 'Auditoria do Sistema', user }) %>
+        <%- include('partials/admin-nav', { user, activePage: 'audit' }) %>
 
         <form action="/admin/audit" method="GET" style="max-width: 600px;">
-    <label for="acao">Filtrar por ação</label>
-    <div class="grid" style="align-items: center;">
-        <!-- Select -->
-        <select id="acao" name="acao" style="margin-bottom: 0;">
-            <option value="">Todas as ações</option>
-            <% acoes.forEach(acao => { %>
-                <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
-            <% }) %>
-        </select>
+            <label for="acao">Filtrar por acao</label>
+            <div class="grid" style="align-items: center;">
+                <select id="acao" name="acao" style="margin-bottom: 0;">
+                    <option value="">Todas as acoes</option>
+                    <% acoes.forEach(acao => { %>
+                        <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
+                    <% }) %>
+                </select>
 
-        <!-- Botão Filtrar -->
-        <button type="submit" style="margin-bottom: 0;">Filtrar</button>
-
-        <!-- Botão Limpar -->
-        <a href="/admin/audit" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
-    </div>
-</form>
+                <button type="submit" style="margin-bottom: 0;">Filtrar</button>
+                <a href="/admin/audit" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
+            </div>
+        </form>
         <div class="table-container">
             <table class="striped">
                 <thead>
@@ -111,5 +88,6 @@
             </table>
         </div>
     </main>
+    <%- include('partials/footer') %>
 </body>
 </html>

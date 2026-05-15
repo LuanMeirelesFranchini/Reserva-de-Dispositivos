@@ -8,14 +8,75 @@
     <link rel="stylesheet" href="/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .stats-grid {
+        .section-stack {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            gap: 1.5rem;
         }
 
-        .stat-card {
+        .period-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 1rem 1.2rem;
+            border: 1px solid #dfe7ef;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #123b6d 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 12px 28px rgba(29, 78, 216, 0.18);
+        }
+
+        .period-banner h2,
+        .period-banner p {
+            margin: 0;
+        }
+
+        .period-banner h2 {
+            color: #ffffff;
+        }
+
+        .period-banner p {
+            color: rgba(255, 255, 255, 0.82);
+        }
+
+        .period-banner nav {
+            display: flex;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .period-banner nav a,
+        .period-banner nav span {
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.34);
+            margin: 0;
+        }
+
+        .period-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.55rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-weight: 700;
+        }
+
+        .stats-grid,
+        .alerts-grid,
+        .panel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .panel-grid {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        }
+
+        .stat-card,
+        .alert-card {
             padding: 1.1rem 1.2rem;
             border: 1px solid #dfe7ef;
             border-radius: 12px;
@@ -23,7 +84,8 @@
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
         }
 
-        .stat-card small {
+        .stat-card small,
+        .alert-card small {
             color: #5f6b7a;
             display: block;
         }
@@ -43,25 +105,47 @@
             font-size: 0.92rem;
         }
 
-        .insights-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .insight-card {
+        .alert-card {
             margin: 0;
         }
 
-        .insight-card p:last-child {
+        .alert-card header {
+            margin-bottom: 0.75rem;
+        }
+
+        .alert-card h3,
+        .alert-card p {
+            margin: 0;
+        }
+
+        .alert-card ul {
+            margin: 0;
+            padding-left: 1rem;
+        }
+
+        .alert-card li {
+            margin-bottom: 0.45rem;
+            color: #243041;
+        }
+
+        .alert-card li:last-child {
             margin-bottom: 0;
         }
 
-        .panel-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1rem;
+        .alert-critical {
+            border-left: 4px solid #dc2626;
+        }
+
+        .alert-warning {
+            border-left: 4px solid #d97706;
+        }
+
+        .alert-info {
+            border-left: 4px solid #0891b2;
+        }
+
+        .alert-neutral {
+            border-left: 4px solid #64748b;
         }
 
         .chart-card {
@@ -79,10 +163,220 @@
             margin: 0;
         }
 
+        .calendar-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .calendar-shell {
+            border: 1px solid #dfe7ef;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+            padding: 1.2rem;
+        }
+
+        .calendar-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-title h2,
+        .calendar-title p {
+            margin: 0;
+        }
+
+        .calendar-title p {
+            color: #5f6b7a;
+            font-size: 0.95rem;
+        }
+
+        .calendar-actions,
+        .calendar-nav {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .calendar-nav a {
+            text-decoration: none;
+        }
+
+        .calendar-toggle {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .calendar-content[hidden] {
+            display: none !important;
+        }
+
+        .calendar-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-summary article {
+            margin: 0;
+            padding: 0.9rem 1rem;
+            border-radius: 14px;
+            border: 1px solid #dfe7ef;
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .calendar-summary strong,
+        .calendar-summary span,
+        .calendar-summary small {
+            display: block;
+        }
+
+        .calendar-summary strong {
+            color: #123b6d;
+            font-size: 1.4rem;
+        }
+
+        .calendar-summary small,
+        .calendar-summary span {
+            color: #5f6b7a;
+        }
+
+        .calendar-legend {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            color: #415266;
+            font-size: 0.92rem;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .legend-green { background: #dcfce7; }
+        .legend-yellow { background: #fef3c7; }
+        .legend-red { background: #fee2e2; }
+
+        .calendar-weekdays,
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 0.55rem;
+        }
+
+        .calendar-weekdays {
+            margin-bottom: 0.55rem;
+        }
+
+        .calendar-weekdays span {
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #5f6b7a;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .calendar-cell {
+            min-height: 126px;
+        }
+
+        .calendar-empty {
+            border-radius: 14px;
+            background: rgba(226, 232, 240, 0.28);
+        }
+
+        .calendar-day {
+            display: block;
+            height: 100%;
+            padding: 0.75rem;
+            border-radius: 14px;
+            text-decoration: none;
+            border: 1px solid transparent;
+            color: #172033;
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .calendar-day:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+            border-color: rgba(18, 59, 109, 0.18);
+        }
+
+        .calendar-day.green {
+            background: linear-gradient(180deg, #ecfdf3 0%, #dcfce7 100%);
+        }
+
+        .calendar-day.yellow {
+            background: linear-gradient(180deg, #fff8db 0%, #fef3c7 100%);
+        }
+
+        .calendar-day.red {
+            background: linear-gradient(180deg, #fff1f2 0%, #fee2e2 100%);
+        }
+
+        .calendar-day.today {
+            border-color: #123b6d;
+            box-shadow: inset 0 0 0 1px rgba(18, 59, 109, 0.12);
+        }
+
+        .calendar-day header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.55rem;
+        }
+
+        .calendar-day header strong {
+            font-size: 1.05rem;
+        }
+
+        .calendar-pill {
+            border-radius: 999px;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #123b6d;
+            background: rgba(255, 255, 255, 0.74);
+        }
+
+        .calendar-day p,
+        .calendar-day small {
+            margin: 0;
+        }
+
+        .calendar-day p {
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .calendar-day small {
+            display: block;
+            margin-top: 0.2rem;
+            color: #415266;
+        }
+
         @media (max-width: 768px) {
             .stats-grid,
-            .insights-grid,
-            .panel-grid {
+            .alerts-grid,
+            .panel-grid,
+            .calendar-summary {
                 grid-template-columns: minmax(0, 1fr);
             }
 
@@ -93,134 +387,299 @@
             .chart-wrap {
                 min-height: 220px;
             }
+
+            .calendar-weekdays,
+            .calendar-grid {
+                gap: 0.4rem;
+            }
+
+            .calendar-cell {
+                min-height: 96px;
+            }
+
+            .calendar-day {
+                padding: 0.55rem;
+            }
+
+            .calendar-day p {
+                font-size: 0.82rem;
+            }
         }
     </style>
 </head>
 <body>
     <main class="container-fluid">
-        <header class="logo-header">
-            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
-                <img src="/images/logo_azul.png" alt="Logo La Salle">
-            </a>
-            <a href="/" class="title-link" aria-label="Ir para a página inicial">
-                <h1>Dashboard de Reservas</h1>
-            </a>
+        <%- include('partials/app-header', { title: 'Dashboard de Reservas', user }) %>
 
-            <div class="user-menu-container">
-                <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
-                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-                <div class="dropdown-content">
-                    <a href="/">Fazer Nova Reserva</a>
-                    <a href="/minhas-reservas">Minhas Reservas</a>
-                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
-                        <a href="/admin">Painel de Gestão</a>
-                        <a href="/admin/dashboard">Dashboard de Reservas</a>
-                    <% } %>
-                    <% if (user.role === 'admin') { %>
-                        <a href="/admin/inventario">Gestão de Inventário</a>
-                        <a href="/admin/audit">Auditoria do Sistema</a>
-                    <% } %>
-                    <hr style="margin:0; opacity: 0.1;">
-                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
+        <div class="section-stack">
+            <section class="period-banner">
+                <div>
+                    <h2><%= calendarMonth.label %></h2>
+                    <p>Todos os indicadores abaixo refletem o mesmo mes, o que deixa a leitura do dashboard mais consistente.</p>
                 </div>
-            </div>
-        </header>
+                <nav>
+                    <a href="/admin/dashboard?month=<%= calendarMonth.previousMonthParam %>" role="button" class="secondary outline">Mes anterior</a>
+                    <span class="period-chip"><%= calendarMonth.label %></span>
+                    <a href="/admin/dashboard?month=<%= calendarMonth.nextMonthParam %>" role="button" class="secondary outline">Proximo mes</a>
+                </nav>
+            </section>
 
-        <section class="stats-grid">
-            <article class="stat-card">
-                <small>Total de reservas</small>
-                <strong><%= resumo.totalReservas %></strong>
-            </article>
-            <article class="stat-card">
-                <small>Reservas ativas</small>
-                <strong><%= resumo.totalAtivas %></strong>
-            </article>
-            <article class="stat-card">
-                <small>Reservas concluídas</small>
-                <strong><%= resumo.totalConcluidas %></strong>
-            </article>
-            <article class="stat-card">
-                <small>Reservas canceladas</small>
-                <strong><%= resumo.totalCanceladas %></strong>
-                <span>Taxa: <%= resumo.taxaCancelamento %>%</span>
-            </article>
-            <article class="stat-card">
-                <small>Chromebooks reservados</small>
-                <strong><%= resumo.totalChromebooks %></strong>
-            </article>
-           
-        </section>
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <small>Total de reservas no mes</small>
+                    <strong><%= resumo.totalReservas %></strong>
+                </article>
+                <article class="stat-card">
+                    <small>Reservas ativas no mes</small>
+                    <strong><%= resumo.totalAtivas %></strong>
+                </article>
+                <article class="stat-card">
+                    <small>Reservas concluidas no mes</small>
+                    <strong><%= resumo.totalConcluidas %></strong>
+                </article>
+                <article class="stat-card">
+                    <small>Reservas canceladas no mes</small>
+                    <strong><%= resumo.totalCanceladas %></strong>
+                    <span>Taxa: <%= resumo.taxaCancelamento %>%</span>
+                </article>
+                <article class="stat-card">
+                    <small>Chromebooks reservados no mes</small>
+                    <strong><%= resumo.totalChromebooks %></strong>
+                    <span>Media de duracao: <%= resumo.mediaHoras %>h</span>
+                </article>
+            </section>
 
-        <section class="panel-grid">
-            <article class="chart-card">
-                <header><strong>Reservas por status</strong></header>
-                <% if (statsStatus.length) { %>
-                    <div class="chart-wrap">
-                        <canvas id="chartStatus"></canvas>
+            <section class="alerts-grid">
+                <article class="alert-card alert-critical">
+                    <header>
+                        <small>Pressao operacional</small>
+                        <h3>Dias criticos nos proximos 7 dias</h3>
+                    </header>
+                    <% if (alertas.criticosProximos.length) { %>
+                        <ul>
+                            <% alertas.criticosProximos.forEach(item => { %>
+                                <li><strong><%= item.dateKey %></strong>: <%= item.ocupacao %>% da capacidade, <%= item.reservadoNoPico %> reservados no pico.</li>
+                            <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <p class="empty-state">Nenhum dia critico previsto para a proxima semana.</p>
+                    <% } %>
+                </article>
+
+                <article class="alert-card alert-warning">
+                    <header>
+                        <small>Atencao antecipada</small>
+                        <h3>Dias em alerta nos proximos 7 dias</h3>
+                    </header>
+                    <% if (alertas.atencaoProxima.length) { %>
+                        <ul>
+                            <% alertas.atencaoProxima.forEach(item => { %>
+                                <li><strong><%= item.dateKey %></strong>: <%= item.ocupacao %>% de ocupacao com <%= item.bloqueadoNoPico %> bloqueados.</li>
+                            <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <p class="empty-state">Sem dias amarelos no horizonte imediato.</p>
+                    <% } %>
+                </article>
+
+                <article class="alert-card alert-info">
+                    <header>
+                        <small>Retiradas do dia</small>
+                        <h3>Reservas com retirada hoje</h3>
+                    </header>
+                    <% if (alertas.retiradasHoje.length) { %>
+                        <ul>
+                            <% alertas.retiradasHoje.forEach(item => { %>
+                                <li><strong><%= item.nome_professor %></strong>: <%= item.quantidade %> no <%= item.nome_carrinho %> as <%= new Date(item.data_retirada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>.</li>
+                            <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <p class="empty-state">Nenhuma retirada ativa com inicio hoje.</p>
+                    <% } %>
+                </article>
+
+                <article class="alert-card alert-neutral">
+                    <header>
+                        <small>Manutencao planejada</small>
+                        <h3>Bloqueios programados proximos</h3>
+                    </header>
+                    <% if (alertas.bloqueiosProximos.length) { %>
+                        <ul>
+                            <% alertas.bloqueiosProximos.forEach(item => { %>
+                                <li><strong><%= item.nome_carrinho %></strong>: <%= item.quantidade %> entre <%= item.data_inicio.replace('T', ' ').slice(0, 16) %> e <%= item.data_fim.replace('T', ' ').slice(0, 16) %>.</li>
+                            <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <p class="empty-state">Nenhum bloqueio previsto para os proximos dias.</p>
+                    <% } %>
+                </article>
+            </section>
+
+            <section class="panel-grid">
+                <article class="chart-card">
+                    <header><strong>Reservas por status no mes</strong></header>
+                    <% if (statsStatus.length) { %>
+                        <div class="chart-wrap">
+                            <canvas id="chartStatus"></canvas>
+                        </div>
+                    <% } else { %>
+                        <p class="empty-state">Nenhuma reserva encontrada para montar este grafico.</p>
+                    <% } %>
+                </article>
+
+                <article class="chart-card">
+                    <header><strong>Top 5 carrinhos do mes</strong></header>
+                    <% if (statsCarrinhos.length) { %>
+                        <div class="chart-wrap">
+                            <canvas id="chartCarrinhos"></canvas>
+                        </div>
+                    <% } else { %>
+                        <p class="empty-state">Ainda nao ha uso suficiente para este ranking.</p>
+                    <% } %>
+                </article>
+
+                <article class="chart-card">
+                    <header><strong>Top 5 professores do mes</strong></header>
+                    <% if (statsProfessores.length) { %>
+                        <div class="chart-wrap">
+                            <canvas id="chartProfessores"></canvas>
+                        </div>
+                    <% } else { %>
+                        <p class="empty-state">Nenhum professor apareceu nas reservas do periodo.</p>
+                    <% } %>
+                </article>
+
+                <article class="chart-card">
+                    <header><strong>Reservas ao longo de <%= calendarMonth.label %></strong></header>
+                    <% if (statsDias.length) { %>
+                        <div class="chart-wrap">
+                            <canvas id="chartDias"></canvas>
+                        </div>
+                    <% } else { %>
+                        <p class="empty-state">Nao houve reservas registradas neste mes.</p>
+                    <% } %>
+                </article>
+
+                <article class="chart-card">
+                    <header><strong>Horarios mais usados no mes</strong></header>
+                    <% if (statsHorarios.length) { %>
+                        <div class="chart-wrap">
+                            <canvas id="chartHorarios"></canvas>
+                        </div>
+                    <% } else { %>
+                        <p class="empty-state">Ainda nao existem dados suficientes para este grafico.</p>
+                    <% } %>
+                </article>
+
+                <article class="chart-card">
+                    <header><strong>Top 5 salas do mes</strong></header>
+                    <% if (statsSalas.length) { %>
+                        <div class="chart-wrap">
+                            <canvas id="chartSalas"></canvas>
+                        </div>
+                    <% } else { %>
+                        <p class="empty-state">Nenhuma sala apareceu nas reservas do periodo.</p>
+                    <% } %>
+                </article>
+            </section>
+
+            <section class="calendar-section">
+                <div class="calendar-shell">
+                    <div class="calendar-topbar">
+                        <div class="calendar-title">
+                            <h2>Calendario de ocupacao</h2>
+                            <p>Leitura diaria da pressao sobre os chromebooks. Clique em um dia para abrir as reservas dele.</p>
+                        </div>
+                        <div class="calendar-actions">
+                            <button
+                                type="button"
+                                id="calendar-toggle"
+                                class="secondary outline calendar-toggle"
+                                aria-expanded="true"
+                                aria-controls="calendar-content"
+                            >
+                                Ocultar calendario
+                            </button>
+                            <div class="calendar-nav">
+                                <a href="/admin/dashboard?month=<%= calendarMonth.previousMonthParam %>" role="button" class="secondary outline">Mes anterior</a>
+                                <a href="/admin/dashboard" role="button" class="secondary outline">Mes atual</a>
+                                <a href="/admin/dashboard?month=<%= calendarMonth.nextMonthParam %>" role="button" class="secondary outline">Proximo mes</a>
+                            </div>
+                        </div>
                     </div>
-                <% } else { %>
-                    <p class="empty-state">Nenhuma reserva encontrada para montar este gráfico.</p>
-                <% } %>
-            </article>
 
-            <article class="chart-card">
-                <header><strong>Top 5 carrinhos mais reservados</strong></header>
-                <% if (statsCarrinhos.length) { %>
-                    <div class="chart-wrap">
-                        <canvas id="chartCarrinhos"></canvas>
-                    </div>
-                <% } else { %>
-                    <p class="empty-state">Ainda não há uso suficiente para este ranking.</p>
-                <% } %>
-            </article>
+                    <div id="calendar-content" class="calendar-content">
+                        <div class="calendar-summary">
+                            <article>
+                                <small>Mes exibido</small>
+                                <strong><%= calendarMonth.label %></strong>
+                                <span>Base operacional: <%= occupancyCalendar.summary.capacidadeBase %> chromebooks</span>
+                            </article>
+                            <article>
+                                <small>Pico do mes</small>
+                                <strong>
+                                    <%= occupancyCalendar.summary.worstDay ? `${occupancyCalendar.summary.worstDay.ocupacao}%` : '0%' %>
+                                </strong>
+                                <span>
+                                    <%= occupancyCalendar.summary.worstDay ? `${occupancyCalendar.summary.worstDay.reservadoNoPico} reservados em ${occupancyCalendar.summary.worstDay.dateKey}` : 'Sem reservas neste mes' %>
+                                </span>
+                            </article>
+                            <article>
+                                <small>Dias com uso</small>
+                                <strong><%= occupancyCalendar.summary.occupiedDays %></strong>
+                                <span><%= occupancyCalendar.summary.warningDays %> em alerta e <%= occupancyCalendar.summary.criticalDays %> criticos</span>
+                            </article>
+                            <article>
+                                <small>Media diaria</small>
+                                <strong><%= occupancyCalendar.summary.mediaOcupacao %>%</strong>
+                                <span>Ocupacao media considerando a capacidade efetiva de cada dia</span>
+                            </article>
+                        </div>
 
-            <article class="chart-card">
-                <header><strong>Top 5 professores com mais reservas</strong></header>
-                <% if (statsProfessores.length) { %>
-                    <div class="chart-wrap">
-                        <canvas id="chartProfessores"></canvas>
-                    </div>
-                <% } else { %>
-                    <p class="empty-state">Nenhum professor apareceu nas reservas até o momento.</p>
-                <% } %>
-            </article>
+                        <div class="calendar-legend">
+                            <span class="legend-item"><span class="legend-dot legend-green"></span>Verde: ate 60% da capacidade efetiva</span>
+                            <span class="legend-item"><span class="legend-dot legend-yellow"></span>Amarelo: de 60,1% a 85%</span>
+                            <span class="legend-item"><span class="legend-dot legend-red"></span>Vermelho: acima de 85%</span>
+                        </div>
 
-            <article class="chart-card">
-                <header><strong>Reservas nos últimos 7 dias</strong></header>
-                <% if (statsDias.length) { %>
-                    <div class="chart-wrap">
-                        <canvas id="chartDias"></canvas>
-                    </div>
-                <% } else { %>
-                    <p class="empty-state">Não houve reservas registradas nos últimos 7 dias.</p>
-                <% } %>
-            </article>
+                        <div class="calendar-weekdays" aria-hidden="true">
+                            <span>Seg</span>
+                            <span>Ter</span>
+                            <span>Qua</span>
+                            <span>Qui</span>
+                            <span>Sex</span>
+                            <span>Sab</span>
+                            <span>Dom</span>
+                        </div>
 
-            <article class="chart-card">
-                <header><strong>Horários de pico</strong></header>
-                <% if (statsHorarios.length) { %>
-                    <div class="chart-wrap">
-                        <canvas id="chartHorarios"></canvas>
+                        <div class="calendar-grid">
+                            <% occupancyCalendar.weeks.forEach(week => { %>
+                                <% week.forEach(day => { %>
+                                    <div class="calendar-cell <%= day ? '' : 'calendar-empty' %>">
+                                        <% if (day) { %>
+                                            <a href="/admin?data=<%= day.dateKey %>" class="calendar-day <%= day.nivel %> <%= day.isToday ? 'today' : '' %>">
+                                                <header>
+                                                    <strong><%= day.dayNumber %></strong>
+                                                    <% if (day.isToday) { %>
+                                                        <span class="calendar-pill">Hoje</span>
+                                                    <% } %>
+                                                </header>
+                                                <p><%= day.reservadoNoPico %> chromes</p>
+                                                <small>Pico do dia</small>
+                                                <small><%= day.ocupacao %>% da capacidade efetiva</small>
+                                                <small><%= day.bloqueadoNoPico %> bloqueados no pico</small>
+                                            </a>
+                                        <% } %>
+                                    </div>
+                                <% }) %>
+                            <% }) %>
+                        </div>
                     </div>
-                <% } else { %>
-                    <p class="empty-state">Ainda não existem dados suficientes para este gráfico.</p>
-                <% } %>
-            </article>
-
-            <article class="chart-card">
-                <header><strong>Top 5 salas com mais reservas</strong></header>
-                <% if (statsSalas.length) { %>
-                    <div class="chart-wrap">
-                        <canvas id="chartSalas"></canvas>
-                    </div>
-                <% } else { %>
-                    <p class="empty-state">Nenhuma sala apareceu nas reservas registradas.</p>
-                <% } %>
-            </article>
-        </section>
+                </div>
+            </section>
+        </div>
     </main>
+    <%- include('partials/footer') %>
 
     <script src="/menu.js"></script>
     <script>
@@ -260,7 +719,7 @@
                     labels: statsStatus.map(item => statusLabels[item.status] || item.status),
                     datasets: [{
                         data: statsStatus.map(item => item.qtd),
-                        backgroundColor: [palette.blue, palette.red, palette.green,  palette.amber, palette.slate]
+                        backgroundColor: [palette.blue, palette.red, palette.green, palette.amber, palette.slate]
                     }]
                 },
                 options: {
@@ -395,6 +854,40 @@
                         legend: { display: false }
                     }
                 }
+            });
+        }
+
+        const calendarToggle = document.getElementById('calendar-toggle');
+        const calendarContent = document.getElementById('calendar-content');
+        const calendarStorageKey = 'admin-dashboard-calendar-collapsed';
+
+        function setCalendarCollapsed(collapsed) {
+            if (!calendarToggle || !calendarContent) return;
+
+            calendarContent.hidden = collapsed;
+            calendarToggle.setAttribute('aria-expanded', String(!collapsed));
+            calendarToggle.textContent = collapsed ? 'Mostrar calendario' : 'Ocultar calendario';
+
+            try {
+                localStorage.setItem(calendarStorageKey, collapsed ? 'true' : 'false');
+            } catch (error) {
+                // Ignora falhas de armazenamento local sem impactar o dashboard.
+            }
+        }
+
+        if (calendarToggle && calendarContent) {
+            let shouldCollapse = false;
+
+            try {
+                shouldCollapse = localStorage.getItem(calendarStorageKey) === 'true';
+            } catch (error) {
+                shouldCollapse = false;
+            }
+
+            setCalendarCollapsed(shouldCollapse);
+
+            calendarToggle.addEventListener('click', () => {
+                setCalendarCollapsed(!calendarContent.hidden);
             });
         }
     </script>

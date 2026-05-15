@@ -3,15 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Inventário - La Salle</title>
+    <title>Gestao de Inventario - La Salle</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <style>
+        .page-stack {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .summary-card,
+        .panel-card {
+            border: 1px solid #dfe7ef;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+            padding: 1rem 1.1rem;
+        }
+
+        .summary-card small,
+        .summary-card span {
+            color: #5f6b7a;
+            display: block;
+        }
+
+        .summary-card strong {
+            display: block;
+            font-size: 1.8rem;
+            color: #123b6d;
+            margin-top: 0.2rem;
+        }
+
         .input-quantidade {
             max-width: 100px;
             margin-bottom: 0;
             text-align: center;
         }
+
         .inventory-grid {
             display: flex;
             gap: 0.75rem;
@@ -19,23 +53,41 @@
             align-items: center;
             flex-wrap: wrap;
         }
+
         .inventory-grid label {
             margin-bottom: 0;
             min-width: 110px;
         }
-        .inventory-grid small {
+
+        .inventory-grid small,
+        .schedule-form small {
             display: block;
             margin-bottom: 0.25rem;
         }
+
         .status-badge {
             padding: 2px 8px;
             border-radius: 4px;
             font-size: 0.8rem;
             font-weight: bold;
         }
+
         .online { background-color: #e8f5e9; color: #2e7d32; }
         .offline { background-color: #ffebee; color: #c62828; }
-        
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.9rem;
+        }
+
+        .schedule-form footer {
+            margin-top: 1rem;
+        }
+
+        .message-card {
+            margin: 0;
+        }
+
         #status-message {
             position: fixed;
             top: 20px;
@@ -46,54 +98,66 @@
             display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+
+        @media (max-width: 768px) {
+            .summary-grid,
+            .schedule-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
     <main class="container-fluid">
-        <header class="logo-header">
-            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
-                <img src="/images/logo_azul.png" alt="Logo La Salle">
-            </a>
-            <a href="/" class="title-link" aria-label="Ir para a página inicial">
-                <h1>Gestão de Inventário</h1>
-            </a>
-            
-            <div class="user-menu-container">
-                <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
-                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-                <div class="dropdown-content">
-                    <a href="/">Fazer Nova Reserva</a>
-                    <a href="/minhas-reservas">Minhas Reservas</a>
-                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
-                        <a href="/admin">Painel de Gestão</a>
-                        <a href="/admin/dashboard">Dashboard de Reservas</a>
-                        <a href="/admin/audit">Auditoria do Sistema</a>
-                    <% } %>
-                    <hr style="margin:0; opacity: 0.1;">
-                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
-                </div>
-            </div>
-        </header>
+        <%- include('partials/app-header', { title: 'Gestao de Inventario', user }) %>
 
-        <section>
+        <div class="page-stack">
+            <% if (erro) { %>
+                <article class="message-card" style="background-color: #ffebee; border-color: #ef9a9a;">
+                    <p style="color: #c62828; margin: 0;"><%= erro %></p>
+                </article>
+            <% } %>
+
+            <% if (sucesso) { %>
+                <article class="message-card" style="background-color: #e8f5e9; border-color: #81c784;">
+                    <p style="color: #2e7d32; margin: 0;"><%= sucesso %></p>
+                </article>
+            <% } %>
+
             <div id="status-message"></div>
 
-            <article>
+            <section class="summary-grid">
+                <article class="summary-card">
+                    <small>Carrinhos monitorados</small>
+                    <strong><%= carrinhos.length %></strong>
+                    <span>Base total da operacao</span>
+                </article>
+                <article class="summary-card">
+                    <small>Bloqueios programados</small>
+                    <strong><%= resumoBloqueios.total %></strong>
+                    <span>Entradas ativas ou futuras cadastradas</span>
+                </article>
+                <article class="summary-card">
+                    <small>Bloqueados agora</small>
+                    <strong><%= resumoBloqueios.bloqueadosAgora %></strong>
+                    <span>Quantidade ja retirada da capacidade por agenda</span>
+                </article>
+            </section>
+
+            <article class="panel-card">
                 <header>
-                    <strong>Capacidade e manutenção por carrinho</strong>
+                    <strong>Capacidade e manutencao por carrinho</strong>
                 </header>
                 
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
-                                <th>Carrinho / Localização</th>
+                                <th>Carrinho / Localizacao</th>
                                 <th>Status</th>
-                                <th style="text-align: center;">Capacidade / Manutenção</th>
-                                <th style="text-align: center;">Disponíveis</th>
-                                <th style="text-align: right;">Ações</th>
+                                <th style="text-align: center;">Capacidade / Manutencao</th>
+                                <th style="text-align: center;">Disponiveis</th>
+                                <th style="text-align: right;">Acoes</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,10 +165,9 @@
                                 <tr>
                                     <td>
                                         <strong><%= carrinho.nome %></strong><br>
-                                        <small><%= carrinho.localizacao || 'Local não definido' %></small>
+                                        <small><%= carrinho.localizacao || 'Local nao definido' %></small>
                                     </td>
                                     <td>
-                                        <!-- CORREÇÃO AQUI: Adicionado fallback caso status seja undefined -->
                                         <% const statusAtual = carrinho.status || 'online'; %>
                                         <span class="status-badge <%= statusAtual === 'online' ? 'online' : 'offline' %>">
                                             <%= statusAtual.toUpperCase() %>
@@ -121,7 +184,7 @@
                                                        min="0">
                                             </label>
                                             <label for="indisponiveis-<%= carrinho.id %>">
-                                                <small>Em manutenção</small>
+                                                <small>Em manutencao fixa</small>
                                                 <input type="number"
                                                        id="indisponiveis-<%= carrinho.id %>"
                                                        value="<%= carrinho.indisponiveis %>"
@@ -146,14 +209,103 @@
                     </table>
                 </div>
                 <footer>
-                    <small>* Use "Capacidade total" para mudanças permanentes e "Em manutenção" para indisponibilidades temporárias.</small>
+                    <small>* Use "Em manutencao fixa" para indisponibilidades permanentes ou prolongadas.</small>
                 </footer>
             </article>
-        </section>
+
+            <article class="panel-card schedule-form">
+                <header>
+                    <strong>Agendar indisponibilidade</strong>
+                    <p style="margin: 0.35rem 0 0; color: #5f6b7a;">Ideal para manutencao preventiva, eventos e reducao planejada de capacidade.</p>
+                </header>
+
+                <form action="/admin/inventario/bloqueios" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <div class="schedule-grid">
+                        <label for="carrinho_id">
+                            <small>Carrinho</small>
+                            <select id="carrinho_id" name="carrinho_id" required>
+                                <option value="" disabled selected>Selecione um carrinho</option>
+                                <% carrinhos.forEach(carrinho => { %>
+                                    <option value="<%= carrinho.id %>"><%= carrinho.nome %> - <%= carrinho.localizacao %></option>
+                                <% }) %>
+                            </select>
+                        </label>
+
+                        <label for="quantidade">
+                            <small>Quantidade bloqueada</small>
+                            <input type="number" id="quantidade" name="quantidade" min="1" required>
+                        </label>
+
+                        <label for="data_inicio">
+                            <small>Inicio</small>
+                            <input type="datetime-local" id="data_inicio" name="data_inicio" required>
+                        </label>
+
+                        <label for="data_fim">
+                            <small>Fim</small>
+                            <input type="datetime-local" id="data_fim" name="data_fim" required>
+                        </label>
+                    </div>
+
+                    <label for="motivo">
+                        <small>Motivo</small>
+                        <input type="text" id="motivo" name="motivo" maxlength="255" placeholder="Ex.: manutencao da bateria, evento externo, troca de tela" required>
+                    </label>
+
+                    <footer>
+                        <button type="submit">Salvar bloqueio programado</button>
+                    </footer>
+                </form>
+            </article>
+
+            <article class="panel-card">
+                <header>
+                    <strong>Bloqueios programados</strong>
+                </header>
+
+                <% if (bloqueiosProgramados.length) { %>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Carrinho</th>
+                                    <th>Quantidade</th>
+                                    <th>Inicio</th>
+                                    <th>Fim</th>
+                                    <th>Motivo</th>
+                                    <th style="text-align: right;">Acao</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% bloqueiosProgramados.forEach(bloqueio => { %>
+                                    <tr>
+                                        <td><strong><%= bloqueio.nome_carrinho %></strong></td>
+                                        <td><%= bloqueio.quantidade %></td>
+                                        <td><%= bloqueio.data_inicio.replace('T', ' ').slice(0, 16) %></td>
+                                        <td><%= bloqueio.data_fim.replace('T', ' ').slice(0, 16) %></td>
+                                        <td><%= bloqueio.motivo %></td>
+                                        <td style="text-align: right;">
+                                            <form action="/admin/inventario/bloqueios/<%= bloqueio.id %>/delete" method="POST" style="margin: 0;" onsubmit="return confirm('Deseja remover este bloqueio programado?');">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <button type="submit" class="secondary outline">Remover</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <p class="empty-state">Nenhum bloqueio programado cadastrado no momento.</p>
+                <% } %>
+            </article>
+        </div>
     </main>
+    <%- include('partials/footer') %>
 
     <script src="/menu.js"></script>
-        <script>
+    <script>
         const csrfToken = "<%= csrfToken %>";
 
         async function salvarAlteracao(event, id) {
@@ -165,19 +317,19 @@
             const btn = event.currentTarget;
 
             if (!Number.isInteger(novaCapacidade) || novaCapacidade < 0) {
-                mostrarMensagem("Capacidade inválida. Use zero ou um número maior.", "#ffebee", "#c62828");
+                mostrarMensagem("Capacidade invalida. Use zero ou um numero maior.", "#ffebee", "#c62828");
                 inputCapacidade.focus();
                 return;
             }
 
             if (!Number.isInteger(novosIndisponiveis) || novosIndisponiveis < 0) {
-                mostrarMensagem("Quantidade em manutenção inválida. Use zero ou um número maior.", "#ffebee", "#c62828");
+                mostrarMensagem("Quantidade em manutencao invalida. Use zero ou um numero maior.", "#ffebee", "#c62828");
                 inputIndisponiveis.focus();
                 return;
             }
 
             if (novosIndisponiveis > novaCapacidade) {
-                mostrarMensagem("Em manutenção não pode ser maior que a capacidade total.", "#ffebee", "#c62828");
+                mostrarMensagem("Em manutencao nao pode ser maior que a capacidade total.", "#ffebee", "#c62828");
                 inputIndisponiveis.focus();
                 return;
             }
@@ -203,7 +355,7 @@
                 }
 
                 campoDisponiveis.textContent = data.disponiveis;
-                mostrarMensagem("Sucesso: Inventário atualizado!", "#e8f5e9", "#2e7d32");
+                mostrarMensagem("Sucesso: inventario atualizado!", "#e8f5e9", "#2e7d32");
             } catch (error) {
                 mostrarMensagem("Erro: " + error.message, "#ffebee", "#c62828");
             } finally {

@@ -1,0 +1,10 @@
+<nav class="nav-pills-container">
+    <a href="/" class="nav-pill <%= activePage === 'new-reservation' ? 'active' : '' %>">Fazer Nova Reserva</a>
+    <a href="/admin" class="nav-pill <%= activePage === 'admin' ? 'active' : '' %>">Gerenciar Reservas</a>
+    <% if (user.role === 'admin') { %>
+        <a href="/admin/users" class="nav-pill <%= activePage === 'users' ? 'active' : '' %>">Gerir Utilizadores</a>
+        <a href="/admin/audit" class="nav-pill <%= activePage === 'audit' ? 'active' : '' %>">Auditoria</a>
+    <% } %>
+    <a href="/admin/history" class="nav-pill <%= activePage === 'history' ? 'active' : '' %>">Historico de Reservas</a>
+    <a href="/admin/dashboard" class="nav-pill <%= activePage === 'dashboard' ? 'active' : '' %>">Dashboard de Reservas</a>
+</nav>

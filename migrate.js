@@ -88,6 +88,22 @@ async function main() {
     `);
   console.log("Tabela 'audit_logs' pronta para uso.");
 
+  await run(`
+        CREATE TABLE IF NOT EXISTS carrinho_bloqueios (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            carrinho_id INT NOT NULL,
+            quantidade INT NOT NULL,
+            data_inicio DATETIME NOT NULL,
+            data_fim DATETIME NOT NULL,
+            motivo VARCHAR(255) NOT NULL,
+            criado_por_usuario_id INT,
+            criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (carrinho_id) REFERENCES carrinhos(id),
+            FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+  console.log("Tabela 'carrinho_bloqueios' pronta para uso.");
+
   await initializeSalasTable(db);
   console.log("Tabela 'salas' pronta para uso.");
 

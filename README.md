@@ -225,7 +225,6 @@ Se o usuario marcar a opcao de adicionar ao calendario e possuir `google_refresh
 npm start           # Inicia o servidor
 npm run setup       # Cria tabelas e dados iniciais
 npm run migrate     # Aplica migracoes incrementais
-npm run migrate:sqlite # Migra dados do SQLite antigo para MySQL
 ```
 
 ## Observacoes de Manutencao

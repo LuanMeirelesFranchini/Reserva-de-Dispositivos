@@ -1,59 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Global</title>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> Global</title>
 
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/third-party/ionicons.min.css">
-    <link type="text/css" rel="stylesheet" href="styles/third-party/prettify-tomorrow.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
-    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-base.css">
-    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-light.css">
-    
-    
-    
-<svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none">
-    <defs>
-        <symbol id="copy-icon" viewbox="0 0 488.3 488.3">
-            <g>
-                <path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/>
-                <path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/>
-            </g>
-        </symbol>
-    </defs>
-</svg>
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
 
+  
 </head>
-<body>
-<input type="checkbox" id="nav-trigger" class="nav-trigger" />
-<label for="nav-trigger" class="navicon-button x">
-  <div class="navicon"></div>
-</label>
 
-<label for="nav-trigger" class="overlay"></label>
 
-<nav>
-    <h2><a href="index.html"><div class="text">Home</div></a></h2><div class="search-box"><input type="text" placeholder="Search..." id="search-box" /><div class="search-item-container" id="search-item-container"><ul class="search-item-ul" id="search-item-ul"></ul></div></div><div class="sidebar-list-div"><h3><a href="global.html">Global</a></h3><ul><li><a href="global.html#appendFlashMessage">appendFlashMessage</a></li><li><a href="global.html#calcularDisponiveisNoPeriodo">calcularDisponiveisNoPeriodo</a></li><li><a href="global.html#calcularPicoDeUso">calcularPicoDeUso</a></li><li><a href="global.html#createAppHelpers">createAppHelpers</a></li><li><a href="global.html#normalizarCarrinho">normalizarCarrinho</a></li><li><a href="global.html#toMySQLDateTime">toMySQLDateTime</a></li><li><a href="global.html#toTimestamp">toTimestamp</a></li></ul></div>
-</nav>
 
-<div id="main">
-    
-    <h1 id='page-title' class="page-title">Global</h1>
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
     
 
-    
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Global</h3><ul><li><a href="global.html#appendFlashMessage">appendFlashMessage</a></li><li><a href="global.html#calcularDisponiveisNoPeriodo">calcularDisponiveisNoPeriodo</a></li><li><a href="global.html#calcularPicoDeUso">calcularPicoDeUso</a></li><li><a href="global.html#createAppHelpers">createAppHelpers</a></li><li><a href="global.html#normalizarCarrinho">normalizarCarrinho</a></li><li><a href="global.html#toMySQLDateTime">toMySQLDateTime</a></li><li><a href="global.html#toTimestamp">toTimestamp</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p></p>
+                    <h1>Global</h1>
+                </header>
+                
 
 
 
 
 <section>
 
-
+<header>
+    
+        <h2></h2>
+        
+    
+</header>
 
 <article>
     <div class="container-overview">
@@ -61,9 +96,52 @@
         
 
         
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+</dl>
+
+
         
     
     </div>
+    
+    
+
+    
+
+    
 
     
 
@@ -71,137 +149,143 @@
 
     
 
-     
-
     
 
     
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
+        <div class='vertical-section'>
+            <h1>Methods</h1>
+            <div class="members">
             
+                <div class="member">
+
 
     
-
     <h4 class="name" id="appendFlashMessage">
-        <a href="#appendFlashMessage">#</a>
-        <span class="type-signature"></span>appendFlashMessage<span class="signature">(urlBase, field, message)</span><span class="type-signature"> &rarr; {string}</span>
+        <a class="href-link" href="#appendFlashMessage">#</a>
+        
+        <span class="code-name">
+            
+                appendFlashMessage<span class="signature">(urlBase, field, message)</span><span class="type-signature"> &rarr; {string}</span>
+            
+        </span>
     </h4>
-
     
 
-
-
+    
+    
     <div class="description">
         Adiciona uma mensagem de flash (querystring) a uma URL de redirecionamento.
     </div>
-
-
-
-
-
-
-
-
-
-    <div class="method-member-container flex flex-col w-100 overflow-auto mt-20">
-        <strong>Parameters:</strong>
-        
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
         <tr>
             
-                <td class="name"><code>urlBase</code></td>
+            <th>Name</th>
             
 
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
+            <th>Type</th>
 
             
 
             
 
-            <td class="description last">URL original.</td>
+            <th class="last">Description</th>
         </tr>
+        </thead>
 
-    
-
-        <tr>
-            
-                <td class="name"><code>field</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
+        <tbody>
+        
 
             
-            </td>
+<tr class="deep-level-0">
+  
+      <td class="name"><code>urlBase</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">string</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">URL original.</td>
+</tr>
+
+
+        
 
             
+<tr class="deep-level-0">
+  
+      <td class="name"><code>field</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">string</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Nome do campo (ex: 'erro', 'sucesso').</td>
+</tr>
+
+
+        
 
             
+<tr class="deep-level-0">
+  
+      <td class="name"><code>message</code></td>
+  
 
-            <td class="description last">Nome do campo (ex: 'erro', 'sucesso').</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>message</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
+  <td class="type">
+  
+      
+<code class="param-type">string</code>
 
 
-            
-            </td>
+  
+  </td>
 
-            
+  
 
-            
+  
 
-            <td class="description last">A mensagem a ser exibida.</td>
-        </tr>
+  <td class="description last">A mensagem a ser exibida.</td>
+</tr>
 
-    
-    </tbody>
-</table>
 
-    </div>
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -232,20 +316,19 @@
     
 
     
+    
 
     
-        <div class="details-item-container">
-            <dt class="tag-source">Source:</dt>
-            <dd class="tag-source"><ul class="dummy"><li>
+
+    
+
+    
+        <p class="tag-source">
+            <a href="helpers_app-helpers.js.html" class="button">View Source</a>
+            <span>
                 <a href="helpers_app-helpers.js.html">helpers/app-helpers.js</a>, <a href="helpers_app-helpers.js.html#line16">line 16</a>
-            </li></ul></dd>
-        </div>
-    
-
-    
-
-    
-
+            </span>
+        </p>
     
 </dl>
 
@@ -261,184 +344,202 @@
 
 
 
-    <div class="method-member-container mt-20">
-    <strong>Returns:</strong>
-        
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
             
-<div class="param-desc">
-    A URL modificada.
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>A URL modificada.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">string</code>
+
+
+    </div>
+    
 </div>
 
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">string</span>
-
-
-    </dd>
-</dl>
-
+                
+        </div>
     </div>
 
 
 
 
-        
+</div>
             
+                <div class="member">
+
 
     
-
     <h4 class="name" id="calcularDisponiveisNoPeriodo">
-        <a href="#calcularDisponiveisNoPeriodo">#</a>
-        <span class="type-signature"></span>calcularDisponiveisNoPeriodo<span class="signature">(carrinho, reservasAtivas, inicio, fim)</span><span class="type-signature"> &rarr; {number}</span>
+        <a class="href-link" href="#calcularDisponiveisNoPeriodo">#</a>
+        
+        <span class="code-name">
+            
+                calcularDisponiveisNoPeriodo<span class="signature">(carrinho, reservasAtivas, inicio, fim)</span><span class="type-signature"> &rarr; {number}</span>
+            
+        </span>
     </h4>
-
     
 
-
-
+    
+    
     <div class="description">
         Calcula a quantidade de dispositivos disponíveis em um carrinho.
     </div>
-
-
-
-
-
-
-
-
-
-    <div class="method-member-container flex flex-col w-100 overflow-auto mt-20">
-        <strong>Parameters:</strong>
-        
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
         <tr>
             
-                <td class="name"><code>carrinho</code></td>
+            <th>Name</th>
             
 
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
+            <th>Type</th>
 
             
 
             
 
-            <td class="description last">Objeto do carrinho contendo a propriedade `disponiveis`.</td>
+            <th class="last">Description</th>
         </tr>
+        </thead>
 
-    
-
-        <tr>
-            
-                <td class="name"><code>reservasAtivas</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;Object></span>
-
+        <tbody>
+        
 
             
-            </td>
+<tr class="deep-level-0">
+  
+      <td class="name"><code>carrinho</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">Object</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Objeto do carrinho contendo a propriedade `disponiveis`.</td>
+</tr>
+
+
+        
 
             
+<tr class="deep-level-0">
+  
+      <td class="name"><code>reservasAtivas</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">Array.&lt;Object></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Lista de reservas ativas.</td>
+</tr>
+
+
+        
 
             
+<tr class="deep-level-0">
+  
+      <td class="name"><code>inicio</code></td>
+  
 
-            <td class="description last">Lista de reservas ativas.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>inicio</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Date</span>
+  <td class="type">
+  
+      
+<code class="param-type">Date</code>
 |
 
-<span class="param-type">string</span>
+<code class="param-type">string</code>
 
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Data e hora de retirada.</td>
+</tr>
+
+
+        
 
             
-            </td>
+<tr class="deep-level-0">
+  
+      <td class="name"><code>fim</code></td>
+  
 
-            
-
-            
-
-            <td class="description last">Data e hora de retirada.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>fim</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Date</span>
+  <td class="type">
+  
+      
+<code class="param-type">Date</code>
 |
 
-<span class="param-type">string</span>
+<code class="param-type">string</code>
 
 
-            
-            </td>
+  
+  </td>
 
-            
+  
 
-            
+  
 
-            <td class="description last">Data e hora de devolução.</td>
-        </tr>
+  <td class="description last">Data e hora de devolução.</td>
+</tr>
 
-    
-    </tbody>
-</table>
 
-    </div>
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -469,20 +570,19 @@
     
 
     
+    
 
     
-        <div class="details-item-container">
-            <dt class="tag-source">Source:</dt>
-            <dd class="tag-source"><ul class="dummy"><li>
+
+    
+
+    
+        <p class="tag-source">
+            <a href="services_reservation-service.js.html" class="button">View Source</a>
+            <span>
                 <a href="services_reservation-service.js.html">services/reservation-service.js</a>, <a href="services_reservation-service.js.html#line67">line 67</a>
-            </li></ul></dd>
-        </div>
-    
-
-    
-
-    
-
+            </span>
+        </p>
     
 </dl>
 
@@ -498,162 +598,177 @@
 
 
 
-    <div class="method-member-container mt-20">
-    <strong>Returns:</strong>
-        
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
             
-<div class="param-desc">
-    Quantidade disponível (mínimo 0).
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>Quantidade disponível (mínimo 0).</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">number</code>
+
+
+    </div>
+    
 </div>
 
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">number</span>
-
-
-    </dd>
-</dl>
-
+                
+        </div>
     </div>
 
 
 
 
-        
+</div>
             
+                <div class="member">
+
 
     
-
     <h4 class="name" id="calcularPicoDeUso">
-        <a href="#calcularPicoDeUso">#</a>
-        <span class="type-signature"></span>calcularPicoDeUso<span class="signature">(reservasAtivas, inicioReserva, fimReserva)</span><span class="type-signature"> &rarr; {number}</span>
+        <a class="href-link" href="#calcularPicoDeUso">#</a>
+        
+        <span class="code-name">
+            
+                calcularPicoDeUso<span class="signature">(reservasAtivas, inicioReserva, fimReserva)</span><span class="type-signature"> &rarr; {number}</span>
+            
+        </span>
     </h4>
-
     
 
-
-
+    
+    
     <div class="description">
-        Calcula o pico máximo de uso de dispositivos durante um determinado período
-utilizando o algoritmo de Sweep-line (Eventos).
+        Calcula o pico máximo de uso de dispositivos durante um determinado períodoutilizando o algoritmo de Sweep-line (Eventos).
     </div>
-
-
-
-
-
-
-
-
-
-    <div class="method-member-container flex flex-col w-100 overflow-auto mt-20">
-        <strong>Parameters:</strong>
-        
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
         <tr>
             
-                <td class="name"><code>reservasAtivas</code></td>
+            <th>Name</th>
             
 
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;Object></span>
-
-
-            
-            </td>
+            <th>Type</th>
 
             
 
             
 
-            <td class="description last">Lista de reservas ativas.</td>
+            <th class="last">Description</th>
         </tr>
+        </thead>
 
-    
+        <tbody>
+        
 
-        <tr>
             
-                <td class="name"><code>inicioReserva</code></td>
-            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>reservasAtivas</code></td>
+  
 
-            <td class="type">
+  <td class="type">
+  
+      
+<code class="param-type">Array.&lt;Object></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Lista de reservas ativas.</td>
+</tr>
+
+
+        
+
             
-                
-<span class="param-type">Date</span>
+<tr class="deep-level-0">
+  
+      <td class="name"><code>inicioReserva</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">Date</code>
 |
 
-<span class="param-type">string</span>
+<code class="param-type">string</code>
 
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Data de início do período.</td>
+</tr>
+
+
+        
 
             
-            </td>
+<tr class="deep-level-0">
+  
+      <td class="name"><code>fimReserva</code></td>
+  
 
-            
-
-            
-
-            <td class="description last">Data de início do período.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>fimReserva</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Date</span>
+  <td class="type">
+  
+      
+<code class="param-type">Date</code>
 |
 
-<span class="param-type">string</span>
+<code class="param-type">string</code>
 
 
-            
-            </td>
+  
+  </td>
 
-            
+  
 
-            
+  
 
-            <td class="description last">Data final do período.</td>
-        </tr>
+  <td class="description last">Data final do período.</td>
+</tr>
 
-    
-    </tbody>
-</table>
 
-    </div>
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -684,20 +799,19 @@ utilizando o algoritmo de Sweep-line (Eventos).
     
 
     
+    
 
     
-        <div class="details-item-container">
-            <dt class="tag-source">Source:</dt>
-            <dd class="tag-source"><ul class="dummy"><li>
+
+    
+
+    
+        <p class="tag-source">
+            <a href="services_reservation-service.js.html" class="button">View Source</a>
+            <span>
                 <a href="services_reservation-service.js.html">services/reservation-service.js</a>, <a href="services_reservation-service.js.html#line20">line 20</a>
-            </li></ul></dd>
-        </div>
-    
-
-    
-
-    
-
+            </span>
+        </p>
     
 </dl>
 
@@ -713,109 +827,121 @@ utilizando o algoritmo de Sweep-line (Eventos).
 
 
 
-    <div class="method-member-container mt-20">
-    <strong>Returns:</strong>
-        
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
             
-<div class="param-desc">
-    O pico de uso calculado.
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>O pico de uso calculado.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">number</code>
+
+
+    </div>
+    
 </div>
 
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">number</span>
-
-
-    </dd>
-</dl>
-
+                
+        </div>
     </div>
 
 
 
 
-        
+</div>
             
+                <div class="member">
+
 
     
-
     <h4 class="name" id="createAppHelpers">
-        <a href="#createAppHelpers">#</a>
-        <span class="type-signature"></span>createAppHelpers<span class="signature">(db)</span><span class="type-signature"> &rarr; {Object}</span>
+        <a class="href-link" href="#createAppHelpers">#</a>
+        
+        <span class="code-name">
+            
+                createAppHelpers<span class="signature">(db)</span><span class="type-signature"> &rarr; {Object}</span>
+            
+        </span>
     </h4>
-
     
 
-
-
+    
+    
     <div class="description">
         Cria e retorna os helpers da aplicação com injeção de dependência do banco.
     </div>
-
-
-
-
-
-
-
-
-
-    <div class="method-member-container flex flex-col w-100 overflow-auto mt-20">
-        <strong>Parameters:</strong>
-        
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
         <tr>
             
-                <td class="name"><code>db</code></td>
+            <th>Name</th>
             
 
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
+            <th>Type</th>
 
             
 
             
 
-            <td class="description last">Instância do banco de dados MySQL.</td>
+            <th class="last">Description</th>
         </tr>
+        </thead>
 
-    
-    </tbody>
-</table>
+        <tbody>
+        
 
-    </div>
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>db</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">Object</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Instância do banco de dados MySQL.</td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -846,20 +972,19 @@ utilizando o algoritmo de Sweep-line (Eventos).
     
 
     
+    
 
     
-        <div class="details-item-container">
-            <dt class="tag-source">Source:</dt>
-            <dd class="tag-source"><ul class="dummy"><li>
+
+    
+
+    
+        <p class="tag-source">
+            <a href="helpers_app-helpers.js.html" class="button">View Source</a>
+            <span>
                 <a href="helpers_app-helpers.js.html">helpers/app-helpers.js</a>, <a href="helpers_app-helpers.js.html#line63">line 63</a>
-            </li></ul></dd>
-        </div>
-    
-
-    
-
-    
-
+            </span>
+        </p>
     
 </dl>
 
@@ -875,188 +1000,176 @@ utilizando o algoritmo de Sweep-line (Eventos).
 
 
 
-    <div class="method-member-container mt-20">
-    <strong>Returns:</strong>
-        
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
             
-<div class="param-desc">
-    Um objeto contendo todas as funções auxiliares.
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>Um objeto contendo todas as funções auxiliares.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">Object</code>
+
+
+    </div>
+    
 </div>
 
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-
-
-    </dd>
-</dl>
-
+                
+        </div>
     </div>
 
 
 
 
-        
+</div>
             
+                <div class="member">
+
 
     
-
     <h4 class="name" id="normalizarCarrinho">
-        <a href="#normalizarCarrinho">#</a>
-        <span class="type-signature"></span>normalizarCarrinho<span class="signature">(carrinho)</span><span class="type-signature"> &rarr; {Object}</span>
+        <a class="href-link" href="#normalizarCarrinho">#</a>
+        
+        <span class="code-name">
+            
+                normalizarCarrinho<span class="signature">(carrinho)</span><span class="type-signature"> &rarr; {Object}</span>
+            
+        </span>
     </h4>
-
     
 
-
-
+    
+    
     <div class="description">
-        Normaliza os dados do carrinho garantindo que capacidade e indisponíveis
-sejam números inteiros, e calcula os dispositivos disponíveis.
+        Normaliza os dados do carrinho garantindo que capacidade e indisponíveissejam números inteiros, e calcula os dispositivos disponíveis.
     </div>
-
-
-
-
-
-
-
-
-
-    <div class="method-member-container flex flex-col w-100 overflow-auto mt-20">
-        <strong>Parameters:</strong>
-        
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
-        <tr>
-            
-                <td class="name"><code>carrinho</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
 
 
-            
-            </td>
 
-            
 
-            
 
-            <td class="description last">Objeto do carrinho vindo do banco de dados.
-                <h6>Properties</h6>
-                
 
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
 
-        <th>Type</th>
 
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
+    <h5>Parameters:</h5>
     
-
+<div class="table-container">
+    <table class="params table">
+        <thead>
         <tr>
             
-                <td class="name"><code>capacidade</code></td>
+            <th>Name</th>
             
 
-            <td class="type">
+            <th>Type</th>
+
             
-                
-<span class="param-type">number</span>
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>carrinho</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">Object</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Objeto do carrinho vindo do banco de dados.</td>
+</tr>
+
+  
+  
+    
+<tr class="deep-level-1">
+  
+      <td class="name"><code>capacidade</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">number</code>
 |
 
-<span class="param-type">string</span>
+<code class="param-type">string</code>
 
 
-            
-            </td>
+  
+  </td>
 
-            
+  
 
-            
+  
 
-            <td class="description last">Capacidade total.</td>
-        </tr>
+  <td class="description last">Capacidade total.</td>
+</tr>
 
+  
     
+<tr class="deep-level-1">
+  
+      <td class="name"><code>indisponiveis</code></td>
+  
 
-        <tr>
-            
-                <td class="name"><code>indisponiveis</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
+  <td class="type">
+  
+      
+<code class="param-type">number</code>
 |
 
-<span class="param-type">string</span>
+<code class="param-type">string</code>
 
 
-            
-            </td>
+  
+  </td>
 
-            
+  
 
-            
+  
 
-            <td class="description last">Dispositivos em manutenção.</td>
-        </tr>
+  <td class="description last">Dispositivos em manutenção.</td>
+</tr>
 
-    
-    </tbody>
-</table>
+  
 
-            </td>
-        </tr>
 
-    
-    </tbody>
-</table>
-
-    </div>
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -1087,20 +1200,19 @@ sejam números inteiros, e calcula os dispositivos disponíveis.
     
 
     
+    
 
     
-        <div class="details-item-container">
-            <dt class="tag-source">Source:</dt>
-            <dd class="tag-source"><ul class="dummy"><li>
+
+    
+
+    
+        <p class="tag-source">
+            <a href="helpers_app-helpers.js.html" class="button">View Source</a>
+            <span>
                 <a href="helpers_app-helpers.js.html">helpers/app-helpers.js</a>, <a href="helpers_app-helpers.js.html#line41">line 41</a>
-            </li></ul></dd>
-        </div>
-    
-
-    
-
-    
-
+            </span>
+        </p>
     
 </dl>
 
@@ -1116,112 +1228,124 @@ sejam números inteiros, e calcula os dispositivos disponíveis.
 
 
 
-    <div class="method-member-container mt-20">
-    <strong>Returns:</strong>
-        
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
             
-<div class="param-desc">
-    Objeto do carrinho com a propriedade `disponiveis` calculada.
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>Objeto do carrinho com a propriedade `disponiveis` calculada.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">Object</code>
+
+
+    </div>
+    
 </div>
 
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-
-
-    </dd>
-</dl>
-
+                
+        </div>
     </div>
 
 
 
 
-        
+</div>
             
+                <div class="member">
+
 
     
-
     <h4 class="name" id="toMySQLDateTime">
-        <a href="#toMySQLDateTime">#</a>
-        <span class="type-signature"></span>toMySQLDateTime<span class="signature">(value)</span><span class="type-signature"> &rarr; {string|null}</span>
+        <a class="href-link" href="#toMySQLDateTime">#</a>
+        
+        <span class="code-name">
+            
+                toMySQLDateTime<span class="signature">(value)</span><span class="type-signature"> &rarr; {string|null}</span>
+            
+        </span>
     </h4>
-
     
 
-
-
+    
+    
     <div class="description">
         Converte um valor de data para o formato padrão do MySQL (YYYY-MM-DD HH:MM:SS).
     </div>
-
-
-
-
-
-
-
-
-
-    <div class="method-member-container flex flex-col w-100 overflow-auto mt-20">
-        <strong>Parameters:</strong>
-        
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
         <tr>
             
-                <td class="name"><code>value</code></td>
+            <th>Name</th>
             
 
-            <td class="type">
+            <th>Type</th>
+
             
-                
-<span class="param-type">string</span>
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>value</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">string</code>
 |
 
-<span class="param-type">Date</span>
+<code class="param-type">Date</code>
 
 
-            
-            </td>
+  
+  </td>
 
-            
+  
 
-            
+  
 
-            <td class="description last">A data a ser convertida.</td>
-        </tr>
+  <td class="description last">A data a ser convertida.</td>
+</tr>
 
-    
-    </tbody>
-</table>
 
-    </div>
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -1252,20 +1376,19 @@ sejam números inteiros, e calcula os dispositivos disponíveis.
     
 
     
+    
 
     
-        <div class="details-item-container">
-            <dt class="tag-source">Source:</dt>
-            <dd class="tag-source"><ul class="dummy"><li>
+
+    
+
+    
+        <p class="tag-source">
+            <a href="helpers_app-helpers.js.html" class="button">View Source</a>
+            <span>
                 <a href="helpers_app-helpers.js.html">helpers/app-helpers.js</a>, <a href="helpers_app-helpers.js.html#line27">line 27</a>
-            </li></ul></dd>
-        </div>
-    
-
-    
-
-    
-
+            </span>
+        </p>
     
 </dl>
 
@@ -1281,115 +1404,127 @@ sejam números inteiros, e calcula os dispositivos disponíveis.
 
 
 
-    <div class="method-member-container mt-20">
-    <strong>Returns:</strong>
-        
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
             
-<div class="param-desc">
-    A data formatada ou null caso seja inválida.
-</div>
+                    
 
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
+<div class="columns">
+    
+    <div class='param-desc column is-7'>A data formatada ou null caso seja inválida.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
         
-<span class="param-type">string</span>
+<code class="param-type">string</code>
 |
 
-<span class="param-type">null</span>
+<code class="param-type">null</code>
 
 
-    </dd>
-</dl>
+    </div>
+    
+</div>
 
+                
+        </div>
     </div>
 
 
 
 
-        
+</div>
             
+                <div class="member">
+
 
     
-
     <h4 class="name" id="toTimestamp">
-        <a href="#toTimestamp">#</a>
-        <span class="type-signature"></span>toTimestamp<span class="signature">(value)</span><span class="type-signature"> &rarr; {number}</span>
+        <a class="href-link" href="#toTimestamp">#</a>
+        
+        <span class="code-name">
+            
+                toTimestamp<span class="signature">(value)</span><span class="type-signature"> &rarr; {number}</span>
+            
+        </span>
     </h4>
-
     
 
-
-
+    
+    
     <div class="description">
         Converte um valor de data para timestamp (milissegundos).
     </div>
-
-
-
-
-
-
-
-
-
-    <div class="method-member-container flex flex-col w-100 overflow-auto mt-20">
-        <strong>Parameters:</strong>
-        
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
         <tr>
             
-                <td class="name"><code>value</code></td>
+            <th>Name</th>
             
 
-            <td class="type">
+            <th>Type</th>
+
             
-                
-<span class="param-type">string</span>
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>value</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">string</code>
 |
 
-<span class="param-type">Date</span>
+<code class="param-type">Date</code>
 
 
-            
-            </td>
+  
+  </td>
 
-            
+  
 
-            
+  
 
-            <td class="description last">O valor da data a ser convertida.</td>
-        </tr>
+  <td class="description last">O valor da data a ser convertida.</td>
+</tr>
 
-    
-    </tbody>
-</table>
 
-    </div>
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -1420,20 +1555,19 @@ sejam números inteiros, e calcula os dispositivos disponíveis.
     
 
     
+    
 
     
-        <div class="details-item-container">
-            <dt class="tag-source">Source:</dt>
-            <dd class="tag-source"><ul class="dummy"><li>
+
+    
+
+    
+        <p class="tag-source">
+            <a href="services_reservation-service.js.html" class="button">View Source</a>
+            <span>
                 <a href="services_reservation-service.js.html">services/reservation-service.js</a>, <a href="services_reservation-service.js.html#line7">line 7</a>
-            </li></ul></dd>
-        </div>
-    
-
-    
-
-    
-
+            </span>
+        </p>
     
 </dl>
 
@@ -1449,34 +1583,43 @@ sejam números inteiros, e calcula os dispositivos disponíveis.
 
 
 
-    <div class="method-member-container mt-20">
-    <strong>Returns:</strong>
-        
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
             
-<div class="param-desc">
-    O timestamp correspondente.
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>O timestamp correspondente.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">number</code>
+
+
+    </div>
+    
 </div>
 
-
-
-<dl class="param-type">
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">number</span>
-
-
-    </dd>
-</dl>
-
+                
+        </div>
     </div>
 
 
 
 
-        
+</div>
+            
+            </div>
+        </div>
     
 
     
@@ -1489,26 +1632,26 @@ sejam números inteiros, e calcula os dispositivos disponíveis.
 
 
 
-</div>
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
 
-<footer id="footer">
-  
-</footer>
 
-<script src="scripts/third-party/prettify.js"></script>
-<script src="scripts/third-party/lang-css.js"></script>
-<script src="scripts/search.js"></script>
-<script src="scripts/third-party/fuse.js"></script>
-
-<script>prettyPrint();</script>
-<script src="scripts/linenumber.js"></script>
-<script src="scripts/fix-code-block.js"></script>
-<script>
-var list = [{"title":"appendFlashMessage","link":"<a href=\"global.html#appendFlashMessage\">Global &rtrif; appendFlashMessage</a>"},{"title":"calcularDisponiveisNoPeriodo","link":"<a href=\"global.html#calcularDisponiveisNoPeriodo\">Global &rtrif; calcularDisponiveisNoPeriodo</a>"},{"title":"calcularPicoDeUso","link":"<a href=\"global.html#calcularPicoDeUso\">Global &rtrif; calcularPicoDeUso</a>"},{"title":"createAppHelpers","link":"<a href=\"global.html#createAppHelpers\">Global &rtrif; createAppHelpers</a>"},{"title":"normalizarCarrinho","link":"<a href=\"global.html#normalizarCarrinho\">Global &rtrif; normalizarCarrinho</a>"},{"title":"toMySQLDateTime","link":"<a href=\"global.html#toMySQLDateTime\">Global &rtrif; toMySQLDateTime</a>"},{"title":"toTimestamp","link":"<a href=\"global.html#toTimestamp\">Global &rtrif; toTimestamp</a>"}];
-setupSearch(list)
-</script>
-
- 
-<script type="text/javascript" src="scripts/misc.js"></script>
 </body>
 </html>

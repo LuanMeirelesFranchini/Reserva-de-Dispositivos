@@ -1,45 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="white">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Histórico de Reservas</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
-        <link rel="stylesheet" href="/style.css">
-        <style>
-            .col-carrinho {
-                white-space: nowrap;
-                min-width: 130px;
-            }
-        </style>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historico de Reservas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .col-carrinho { white-space: nowrap; min-width: 130px; }
+    </style>
+</head>
 <body>
     <main class="container-fluid">
-        <header class="logo-header">
-            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
-                <img src="/images/logo_azul.png" alt="Logo do Colégio">
-            </a>
-            <a href="/" class="title-link" aria-label="Ir para a página inicial">
-                <h1>Painel de Gestão</h1>
-            </a>
-            <div style="margin-left: auto; text-align: right;">
-                <p style="margin: 0;"><%= user.nome.split(' ')[0] %> (<%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>)</p>
-                <a href="/logout" role="button" class="secondary outline" style="padding: 5px 10px; margin-top: 5px;">Sair</a>
-            </div>
-        </header>
+        <%- include('partials/app-header', { title: 'Painel de Gestao', user }) %>
+        <%- include('partials/admin-nav', { user, activePage: 'history' }) %>
 
-        <!-- NAVEGAÇÃO CENTRALIZADA (PILLS) -->
-        <nav class="nav-pills-container">
-            <a href="/" class="nav-pill">Fazer Nova Reserva</a>
-            <a href="/admin" class="nav-pill active">Gerenciar Reservas</a>
-            <% if (user.role === 'admin') { %>
-                <a href="/admin/users" class="nav-pill">Gerir Utilizadores</a>
-                <a href="/admin/audit" class="nav-pill">Auditoria</a>
-            <% } %>
-            <a href="/admin/history" class="nav-pill">Histórico de Reservas</a>
-        </nav>
-
-        <h2>Reservas concluídas e ativas no sistema</h2>
+        <h2>Reservas concluidas e ativas no sistema</h2>
         
        <div class="table-container">
             <table class="striped">
@@ -50,18 +26,17 @@
                         <th>Carrinho</th>
                         <th>Feita em</th>
                         <th>Retirada</th>
-                        <th>Devolução</th>
+                        <th>Devolucao</th>
                         <th>Sala</th>
-                        <th style="text-align: center;">Concluída por</th>
+                        <th style="text-align: center;">Concluida por</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <% 
-                    // Definição da função de formatação ANTES de usar no loop
+                    <%
                     function formatarDataSimples(dataIso){
                         if(!dataIso) return '---';
                         const data = new Date(dataIso);
-                        if (isNaN(data.getTime())) return 'Data Inválida';
+                        if (isNaN(data.getTime())) return 'Data Invalida';
                         
                         const dia = String(data.getDate()).padStart(2, '0');
                         const mes = String(data.getMonth()+1).padStart(2, '0');
@@ -77,37 +52,24 @@
                                 <td><strong><%= reserva.nome_professor %></strong></td>
                                 <td><%= reserva.quantidade %></td>
                                 <td class="col-carrinho"><%= reserva.nome_carrinho %></td>
-                                
-                                <!-- Data de Criação (Feita em) -->
-                                <td style="white-space: nowrap;">
-                                    <%= formatarDataSimples(reserva.data_reserva) %>
-                                </td>
-
-                                <!-- Data de Retirada -->
-                                <td style="white-space: nowrap;">
-                                    <%= formatarDataSimples(reserva.data_retirada) %>
-                                </td>
-
-                                <!-- Data de Devolução -->
-                                <td style="white-space: nowrap;">
-                                    <%= formatarDataSimples(reserva.data_devolucao) %>
-                                </td>
-
+                                <td style="white-space: nowrap;"><%= formatarDataSimples(reserva.data_reserva) %></td>
+                                <td style="white-space: nowrap;"><%= formatarDataSimples(reserva.data_retirada) %></td>
+                                <td style="white-space: nowrap;"><%= formatarDataSimples(reserva.data_devolucao) %></td>
                                 <td><%= reserva.sala %></td>
-                                
                                 <td style="text-align: center;">
                                     <mark style="background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; text-transform: uppercase; font-weight: bold;">
-                                        <%= reserva.concluido_por || 'Concluída' %>
+                                        <%= reserva.concluido_por || 'Concluida' %>
                                     </mark>
                                 </td>
                             </tr>
                         <% }) %>
                     <% } else { %>
-                        <tr><td colspan="8" style="text-align: center; padding: 2rem;">Nenhum registro encontrado no histórico.</td></tr>
+                        <tr><td colspan="8" style="text-align: center; padding: 2rem;">Nenhum registro encontrado no historico.</td></tr>
                     <% } %>
                 </tbody>
             </table>
         </div>
     </main>
+    <%- include('partials/footer') %>
 </body>
 </html>

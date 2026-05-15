@@ -86,7 +86,7 @@ class MySQLDatabase {
   async execute(sql, params = []) {
     await this.ready;
 
-    // Garante que nenhum undefined trave o mysql2 (emulando a tolerância do SQLite)
+    // Garante que nenhum undefined trave o mysql2.
     const safeParams = Array.isArray(params)
       ? params.map((param) => (param === undefined ? null : param))
       : params;

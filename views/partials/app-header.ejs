@@ -1,0 +1,33 @@
+<header class="logo-header">
+    <a href="/" class="brand-link" aria-label="Ir para a pagina inicial">
+        <img src="/images/logo_azul.png" alt="Logo La Salle">
+    </a>
+    <a href="/" class="title-link" aria-label="Ir para a pagina inicial">
+        <h1><%= title %></h1>
+    </a>
+
+    <div class="user-menu-container">
+        <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
+            <span>Ola, <strong><%= user.nome.split(' ')[0] %></strong></span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-content">
+            <% if (typeof showNewReservation === 'undefined' || showNewReservation !== false) { %>
+                <a href="/">Fazer Nova Reserva</a>
+            <% } %>
+            <% if (typeof showMyReservations === 'undefined' || showMyReservations !== false) { %>
+                <a href="/minhas-reservas">Minhas Reservas</a>
+            <% } %>
+            <% if (user.role === 'admin' || user.role === 'operacional') { %>
+                <a href="/admin">Painel de Gestao</a>
+                <a href="/admin/dashboard">Dashboard de Reservas</a>
+            <% } %>
+            <% if (user.role === 'admin') { %>
+                <a href="/admin/inventario">Gestao de Inventario</a>
+                <a href="/admin/audit">Auditoria do Sistema</a>
+            <% } %>
+            <hr style="margin: 0; opacity: 0.1;">
+            <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
+        </div>
+    </div>
+</header>

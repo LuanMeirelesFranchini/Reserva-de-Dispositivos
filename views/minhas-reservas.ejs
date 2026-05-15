@@ -9,31 +9,7 @@
 </head>
 <body>
     <main class="container-fluid">
-        <header class="logo-header">
-            <a href="/" class="brand-link" aria-label="Ir para a página inicial">
-                <img src="/images/logo_azul.png" alt="Logo La Salle">
-            </a>
-            
-            <a href="/" class="title-link" aria-label="Ir para a página inicial">
-                <h1>Minhas Reservas</h1>
-            </a>
-            
-            <div class="user-menu-container">
-                <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
-                    <span>Olá, <strong><%= user.nome.split(' ')[0] %></strong></span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-                <div class="dropdown-content">
-                    <a href="/">Fazer Nova Reserva</a>
-                    <% if (user.role === 'admin' || user.role === 'operacional') { %>
-                        <a href="/admin">Painel de Gestão</a>
-                        <a href="/admin/dashboard">Dashboard de Reservas</a>
-                    <% } %>
-                    <hr style="margin:0; opacity: 0.1;">
-                    <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
-                </div>
-            </div>
-        </header>
+        <%- include('partials/app-header', { title: 'Minhas Reservas', user, showMyReservations: false }) %>
 
         <% if (typeof erro !== 'undefined' && erro) { %>
             <article style="background-color: #ffebee; border-color: #e57373;">
@@ -49,7 +25,7 @@
 
         <% if (reservas.length === 0) { %>
             <article>
-                <p>Você não possui reservas ativas no momento.</p>
+                <p>Voce nao possui reservas ativas no momento.</p>
                 <a href="/" role="button">Fazer minha primeira reserva</a>
             </article>
         <% } else { %>
@@ -63,7 +39,7 @@
                 const hora = String(data.getHours()).padStart(2, '0');
                 const minuto = String(data.getMinutes()).padStart(2, '0');
 
-                return `${dia}/${mes}/${ano} às ${hora}:${minuto}`;
+                return `${dia}/${mes}/${ano} as ${hora}:${minuto}`;
             } %>
 
             <div class="table-container">
@@ -73,9 +49,9 @@
                             <th>Carrinho</th>
                             <th>Quantidade</th>
                             <th>Retirada</th>
-                            <th>Devolução</th>
+                            <th>Devolucao</th>
                             <th>Sala</th>
-                            <th>Ações</th>
+                            <th>Acoes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -99,6 +75,7 @@
             </div>
         <% } %>
     </main>
+    <%- include('partials/footer') %>
     <script src="/menu.js"></script>
 </body>
 </html>
