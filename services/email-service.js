@@ -3,6 +3,19 @@ const nodemailer = require("nodemailer");
 function createEmailService() {
   const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
   const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+  const hasSmtpAuth = Boolean(smtpUser && smtpPass);
+
+  if (!hasSmtpAuth) {
+    console.warn(
+      "SMTP nao configurado. E-mails de confirmacao ficarao desativados.",
+    );
+
+    return {
+      sendReservationEmail: async () => {
+        throw new Error("SMTP nao configurado.");
+      },
+    };
+  }
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",

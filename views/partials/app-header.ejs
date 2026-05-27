@@ -27,7 +27,10 @@
                 <a href="/admin/audit">Auditoria do Sistema</a>
             <% } %>
             <hr style="margin: 0; opacity: 0.1;">
-            <a href="/logout" style="color: #d32f2f;">Sair da Conta</a>
+            <form action="/logout" method="POST" style="margin: 0;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="logout-menu-button">Sair da Conta</button>
+            </form>
         </div>
     </div>
 </header>

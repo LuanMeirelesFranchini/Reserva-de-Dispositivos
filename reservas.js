@@ -60,7 +60,11 @@ module.exports = (db, middlewares, helpers) => {
   });
 
   router.post("/reservas/cancelar/:id", isAuthenticated, async (req, res) => {
-    const reservaId = req.params.id;
+    const reservaId = parseInt(req.params.id, 10);
+    if (!Number.isInteger(reservaId) || reservaId <= 0) {
+      return res.status(400).send("Reserva invalida.");
+    }
+
     try {
       const reserva = await dbGet(
         db,
@@ -69,15 +73,29 @@ module.exports = (db, middlewares, helpers) => {
       );
       if (
         !reserva ||
-        (reserva.usuario_id !== req.user.id && req.user.role !== "admin")
+        (Number(reserva.usuario_id) !== Number(req.user.id) &&
+          req.user.role !== "admin")
       ) {
         return res
           .status(403)
           .send("Voce nao tem permissao para cancelar esta reserva.");
       }
-      await dbRun(db, "UPDATE reservas SET status = 'Cancelada' WHERE id = ?", [
-        reservaId,
-      ]);
+
+      if (reserva.status !== "Ativa") {
+        return res
+          .status(409)
+          .send("Apenas reservas ativas podem ser canceladas.");
+      }
+
+      const result = await dbRun(
+        db,
+        "UPDATE reservas SET status = 'Cancelada' WHERE id = ? AND status = 'Ativa'",
+        [reservaId],
+      );
+      if (result.changes === 0) {
+        return res.status(409).send("Esta reserva ja foi alterada.");
+      }
+
       await registrarAuditoria(req, {
         acao: "RESERVA_CANCELADA",
         entidade: "reserva",
@@ -92,7 +110,10 @@ module.exports = (db, middlewares, helpers) => {
           usuario_reserva_id: reserva.usuario_id,
         },
       });
-      res.redirect("/minhas-reservas?sucesso=Reserva cancelada com sucesso.");
+      res.redirect(
+        "/minhas-reservas?sucesso=" +
+          encodeURIComponent("Reserva cancelada com sucesso."),
+      );
     } catch (err) {
       res.status(500).send("Erro ao cancelar reserva.");
     }
@@ -102,7 +123,11 @@ module.exports = (db, middlewares, helpers) => {
     "/reservas/concluir/:id",
     canManageReservations,
     async (req, res) => {
-      const reservaId = req.params.id;
+      const reservaId = parseInt(req.params.id, 10);
+      if (!Number.isInteger(reservaId) || reservaId <= 0) {
+        return res.status(400).send("Reserva invalida.");
+      }
+
       const nomeQuemConcluiu = req.user.nome;
       try {
         const reserva = await dbGet(
@@ -111,11 +136,22 @@ module.exports = (db, middlewares, helpers) => {
           [reservaId],
         );
         if (!reserva) return res.status(404).send("Reserva nao encontrada.");
-        await dbRun(
+
+        if (reserva.status !== "Ativa") {
+          return res
+            .status(409)
+            .send("Apenas reservas ativas podem ser concluidas.");
+        }
+
+        const result = await dbRun(
           db,
-          "UPDATE reservas SET status = 'Concluida', concluido_por = ? WHERE id = ?",
+          "UPDATE reservas SET status = 'Concluida', concluido_por = ? WHERE id = ? AND status = 'Ativa'",
           [nomeQuemConcluiu, reservaId],
         );
+        if (result.changes === 0) {
+          return res.status(409).send("Esta reserva ja foi alterada.");
+        }
+
         await registrarAuditoria(req, {
           acao: "RESERVA_CONCLUIDA",
           entidade: "reserva",

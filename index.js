@@ -98,6 +98,8 @@ function csrfProtection(req, res, next) {
 
 function securityHeaders(req, res, next) {
   res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-DNS-Prefetch-Control", "off");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
@@ -121,6 +123,36 @@ function securityHeaders(req, res, next) {
   }
 
   next();
+}
+
+function createRateLimiter({ windowMs, max, message }) {
+  const hits = new Map();
+
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of hits.entries()) {
+      if (entry.resetAt <= now) hits.delete(key);
+    }
+  }, windowMs).unref();
+
+  return (req, res, next) => {
+    const key = `${req.ip}:${req.path}`;
+    const now = Date.now();
+    const entry = hits.get(key);
+
+    if (!entry || entry.resetAt <= now) {
+      hits.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    entry.count += 1;
+    if (entry.count > max) {
+      res.setHeader("Retry-After", Math.ceil((entry.resetAt - now) / 1000));
+      return res.status(429).send(message);
+    }
+
+    return next();
+  };
 }
 
 app.set("view engine", "ejs");
@@ -178,6 +210,11 @@ app.use(passport.session());
 app.use(csrfProtection);
 
 const helpers = createAppHelpers(db);
+const authRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+});
 
 app.get("/login", (req, res) =>
   res.render("login", { erro: req.query.error || "" }),
@@ -185,6 +222,7 @@ app.get("/login", (req, res) =>
 
 app.get(
   "/auth/google",
+  authRateLimiter,
   passport.authenticate("google", {
     scope: googleScopes,
     accessType: "offline",
@@ -193,16 +231,34 @@ app.get(
 
 app.get(
   "/auth/google/callback",
-  passport.authenticate("google", {
-    successRedirect: "/",
-    failureRedirect: "/login?error=true",
-  }),
+  authRateLimiter,
+  (req, res, next) => {
+    passport.authenticate("google", (err, user) => {
+      if (err) return next(err);
+      if (!user) return res.redirect("/login?error=true");
+
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) return next(regenerateErr);
+
+        req.logIn(user, (loginErr) => {
+          if (loginErr) return next(loginErr);
+          req.session.csrfToken = crypto.randomBytes(32).toString("hex");
+          return res.redirect("/");
+        });
+      });
+    })(req, res, next);
+  },
 );
 
-app.get("/logout", (req, res, next) => {
+app.post("/logout", (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
-    res.redirect("/login");
+
+    req.session.destroy((destroyErr) => {
+      if (destroyErr) return next(destroyErr);
+      res.clearCookie("connect.sid");
+      return res.redirect("/login");
+    });
   });
 });
 

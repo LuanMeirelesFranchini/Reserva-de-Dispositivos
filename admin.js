@@ -762,9 +762,13 @@ module.exports = (db, middlewares, helpers) => {
 
   router.post("/set-role/:id", isAdmin, async (req, res) => {
     const { role } = req.body;
-    const userId = req.params.id;
+    const userId = parseInt(req.params.id, 10);
 
-    if (req.user.id == userId) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).send("Utilizador invalido.");
+    }
+
+    if (Number(req.user.id) === userId) {
       return res.status(400).send("Voce nao pode alterar seu proprio papel.");
     }
 
@@ -808,9 +812,13 @@ module.exports = (db, middlewares, helpers) => {
   });
 
   router.post("/delete/:id", isAdmin, async (req, res) => {
-    const userId = req.params.id;
+    const userId = parseInt(req.params.id, 10);
 
-    if (req.user.id == userId) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).send("Utilizador invalido.");
+    }
+
+    if (Number(req.user.id) === userId) {
       return res.status(400).send("Voce nao pode excluir a si mesmo.");
     }
 
