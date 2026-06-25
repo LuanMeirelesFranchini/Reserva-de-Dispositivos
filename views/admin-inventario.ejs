@@ -110,18 +110,21 @@
 <body>
     <main class="container-fluid">
         <%- include('partials/app-header', { title: 'Gestao de Inventario', user }) %>
+        <%- include('partials/admin-nav', { user, activePage: 'inventario' }) %>
+
+        <h2 style="margin-top: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Gestão de Inventário</h2>
 
         <div class="page-stack">
             <% if (erro) { %>
-                <article class="message-card" style="background-color: #ffebee; border-color: #ef9a9a;">
-                    <p style="color: #c62828; margin: 0;"><%= erro %></p>
-                </article>
+                <div style="background: var(--pico-del-color); color: var(--pico-primary-inverse); padding: 1rem; border-radius: var(--pico-border-radius); margin-bottom: 1rem;">
+                    <p style="margin: 0;"><%= erro %></p>
+                </div>
             <% } %>
 
             <% if (sucesso) { %>
-                <article class="message-card" style="background-color: #e8f5e9; border-color: #81c784;">
-                    <p style="color: #2e7d32; margin: 0;"><%= sucesso %></p>
-                </article>
+                <div style="background: var(--pico-ins-color); color: var(--pico-primary-inverse); padding: 1rem; border-radius: var(--pico-border-radius); margin-bottom: 1rem;">
+                    <p style="margin: 0;"><%= sucesso %></p>
+                </div>
             <% } %>
 
             <div id="status-message"></div>

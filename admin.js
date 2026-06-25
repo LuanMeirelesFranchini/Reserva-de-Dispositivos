@@ -222,9 +222,14 @@ module.exports = (db, middlewares, helpers) => {
 
   router.get("/", canManageReservations, async (req, res) => {
     try {
-      const dataFiltro = req.query.data;
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = parseInt(req.query.limit, 10) || 20;
+      const offset = (page - 1) * limit;
+      const dataFiltro = req.query.data || "";
+
       const params = [];
-      let sql = `
+      let countSql = "SELECT COUNT(*) as count FROM reservas r WHERE r.status = 'Ativa'";
+      let dataSql = `
         SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor
         FROM reservas r
         JOIN carrinhos c ON r.carrinho_id = c.id
@@ -232,18 +237,32 @@ module.exports = (db, middlewares, helpers) => {
         WHERE r.status = 'Ativa'
       `;
 
+      const ordem = req.query.ordem === 'recentes' ? 'DESC' : 'ASC';
+
       if (dataFiltro) {
-        sql += " AND DATE(r.data_retirada) = DATE(?)";
+        countSql += " AND DATE(r.data_retirada) = DATE(?)";
+        dataSql += " AND DATE(r.data_retirada) = DATE(?)";
         params.push(dataFiltro);
       }
 
-      sql += " ORDER BY r.data_retirada ASC";
+      dataSql += ` ORDER BY r.data_retirada ${ordem} LIMIT ${limit} OFFSET ${offset}`;
 
-      const reservas = await dbAll(db, sql, params);
+      const totalResult = await dbGet(db, countSql, params);
+      const totalCount = totalResult ? totalResult.count : 0;
+      const totalPages = Math.ceil(totalCount / limit) || 1;
+
+      const reservas = await dbAll(db, dataSql, params);
+      
+      // Ensure we pass csrfToken if it exists in the app context, though it's usually res.locals.csrfToken
+      // We pass the new pagination data
       res.render("admin", {
         reservas,
         user: req.user,
-        dataFiltro: dataFiltro || "",
+        dataFiltro,
+        currentPage: page,
+        totalPages,
+        currentLimit: limit,
+        ordemFiltro: req.query.ordem || 'antigas'
       });
     } catch (err) {
       console.error("Erro interno em GET /admin:", err);
@@ -266,16 +285,36 @@ module.exports = (db, middlewares, helpers) => {
 
   router.get("/history", canManageReservations, async (req, res) => {
     try {
-      const reservas = await dbAll(
-        db,
-        `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = parseInt(req.query.limit, 10) || 20;
+      const offset = (page - 1) * limit;
+      const dataFiltro = req.query.data || "";
+
+      let countSql = "SELECT COUNT(*) as count FROM reservas r WHERE r.status = 'Concluida'";
+      let dataSql = `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor
          FROM reservas r
          JOIN carrinhos c ON r.carrinho_id = c.id
          JOIN usuarios u ON r.usuario_id = u.id
-         WHERE r.status = 'Concluida'
-         ORDER BY r.data_devolucao DESC`,
-      );
-      res.render("admin-history", { reservas, user: req.user });
+         WHERE r.status = 'Concluida'`;
+      const params = [];
+
+      const ordem = req.query.ordem === 'antigas' ? 'ASC' : 'DESC';
+
+      if (dataFiltro) {
+        countSql += " AND DATE(r.data_retirada) = DATE(?)";
+        dataSql += " AND DATE(r.data_retirada) = DATE(?)";
+        params.push(dataFiltro);
+      }
+
+      dataSql += ` ORDER BY r.data_devolucao ${ordem} LIMIT ${limit} OFFSET ${offset}`;
+
+      const totalResult = await dbGet(db, countSql, params);
+      const totalCount = totalResult ? totalResult.count : 0;
+      const totalPages = Math.ceil(totalCount / limit) || 1;
+
+      const reservas = await dbAll(db, dataSql, params);
+
+      res.render("admin-history", { reservas, user: req.user, currentPage: page, totalPages, dataFiltro, currentLimit: limit, ordemFiltro: req.query.ordem || 'recentes' });
     } catch (err) {
       console.error("Erro interno em GET /admin/history:", err);
       res.status(500).send("Erro ao carregar historico.");

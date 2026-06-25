@@ -25,21 +25,32 @@
         <%- include('partials/app-header', { title: 'Auditoria do Sistema', user }) %>
         <%- include('partials/admin-nav', { user, activePage: 'audit' }) %>
 
-        <form action="/admin/audit" method="GET" style="max-width: 600px;">
-            <label for="acao">Filtrar por acao</label>
-            <div class="grid" style="align-items: center;">
-                <select id="acao" name="acao" style="margin-bottom: 0;">
-                    <option value="">Todas as acoes</option>
-                    <% acoes.forEach(acao => { %>
-                        <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
-                    <% }) %>
-                </select>
+        <h2 style="margin-top: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Auditoria do Sistema</h2>
 
-                <button type="submit" style="margin-bottom: 0;">Filtrar</button>
-                <a href="/admin/audit" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
-            </div>
-        </form>
-        <div class="table-container">
+        <div style="background: var(--pico-card-background-color); padding: 1rem 1.5rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); margin: 0 auto 1.5rem auto; box-shadow: var(--pico-box-shadow); max-width: fit-content;">
+            <form action="/admin/audit" method="GET" style="margin-bottom: 0;">
+                <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0;">
+                    <div style="margin-bottom: 0;">
+                        <label for="acao" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Filtrar por acao</label>
+                        <select id="acao" name="acao" style="margin-bottom: 0; min-width: 200px;" onchange="this.form.submit()">
+                            <option value="">Todas as acoes</option>
+                            <% acoes.forEach(acao => { %>
+                                <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 0;">
+                        <button type="submit" style="margin-bottom: 0;">Buscar</button>
+                    </div>
+                    <% if (typeof acaoFiltro !== 'undefined' && acaoFiltro) { %>
+                        <div style="margin-bottom: 0;">
+                            <a href="/admin/audit" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
+                        </div>
+                    <% } %>
+                </div>
+            </form>
+        </div>
+        <div class="table-container" style="overflow-x: auto; margin-bottom: 2rem;">
             <table class="striped">
                 <thead>
                     <tr>

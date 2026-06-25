@@ -20,24 +20,17 @@
             gap: 1rem;
             flex-wrap: wrap;
             padding: 1rem 1.2rem;
-            border: 1px solid #dfe7ef;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #123b6d 0%, #1d4ed8 100%);
-            color: #ffffff;
-            box-shadow: 0 12px 28px rgba(29, 78, 216, 0.18);
+            border: 1px solid var(--pico-primary-border);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-primary-background);
+            color: var(--pico-primary-inverse);
+            box-shadow: var(--pico-box-shadow);
         }
 
         .period-banner h2,
         .period-banner p {
             margin: 0;
-        }
-
-        .period-banner h2 {
-            color: #ffffff;
-        }
-
-        .period-banner p {
-            color: rgba(255, 255, 255, 0.82);
+            color: var(--pico-primary-inverse);
         }
 
         .period-banner nav {
@@ -78,22 +71,22 @@
         .stat-card,
         .alert-card {
             padding: 1.1rem 1.2rem;
-            border: 1px solid #dfe7ef;
-            border-radius: 12px;
-            background: #ffffff;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-card-background-color);
+            box-shadow: var(--pico-box-shadow);
         }
 
         .stat-card small,
         .alert-card small {
-            color: #5f6b7a;
+            color: var(--pico-muted-color);
             display: block;
         }
 
         .stat-card strong {
             display: block;
-            font-size: 1.9rem;
-            color: #123b6d;
+            font-size: 2rem;
+            color: var(--pico-color);
             margin-top: 0.35rem;
             line-height: 1.1;
         }
@@ -101,8 +94,7 @@
         .stat-card span {
             display: block;
             margin-top: 0.35rem;
-            color: #5f6b7a;
-            font-size: 0.92rem;
+            color: var(--pico-muted-color);
         }
 
         .alert-card {
@@ -119,25 +111,24 @@
         }
 
         .alert-card h3 {
-            font-size: 1.05rem;
+            font-size: 1.1rem;
             line-height: 1.25;
-            color: #172033;
+            color: var(--pico-color);
         }
 
         .alert-card small {
-            font-size: 0.82rem;
             font-weight: 700;
             letter-spacing: 0.02em;
         }
 
         .alert-card ul {
             margin: 0;
-            padding-left: 1rem;
+            padding-left: 1.5rem;
         }
 
         .alert-card li {
             margin-bottom: 0.45rem;
-            color: #243041;
+            color: var(--pico-color);
         }
 
         .alert-card li:last-child {
@@ -145,19 +136,19 @@
         }
 
         .alert-critical {
-            border-left: 4px solid #dc2626;
+            border-left: 4px solid var(--pico-del-color);
         }
 
         .alert-warning {
-            border-left: 4px solid #d97706;
+            border-left: 4px solid #d97706; /* Aviso */
         }
 
         .alert-info {
-            border-left: 4px solid #0891b2;
+            border-left: 4px solid var(--pico-primary);
         }
 
         .alert-neutral {
-            border-left: 4px solid #64748b;
+            border-left: 4px solid var(--pico-muted-color);
         }
 
         .chart-card {
@@ -180,10 +171,10 @@
         }
 
         .calendar-shell {
-            border: 1px solid #dfe7ef;
-            border-radius: 18px;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-card-background-color);
+            box-shadow: var(--pico-box-shadow);
             padding: 1.2rem;
         }
 
@@ -249,13 +240,13 @@
         }
 
         .calendar-summary strong {
-            color: #123b6d;
-            font-size: 1.4rem;
+            color: var(--pico-color);
+            font-size: 1.5rem;
         }
 
         .calendar-summary small,
         .calendar-summary span {
-            color: #5f6b7a;
+            color: var(--pico-muted-color);
         }
 
         .calendar-legend {
@@ -297,9 +288,8 @@
 
         .calendar-weekdays span {
             text-align: center;
-            font-size: 0.82rem;
             font-weight: 700;
-            color: #5f6b7a;
+            color: var(--pico-muted-color);
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
@@ -320,7 +310,7 @@
             border-radius: 14px;
             text-decoration: none;
             border: 1px solid transparent;
-            color: #172033;
+            color: var(--pico-color);
             box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
             transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
         }
@@ -374,14 +364,13 @@
         }
 
         .calendar-day p {
-            font-size: 0.92rem;
             font-weight: 700;
         }
 
         .calendar-day small {
             display: block;
             margin-top: 0.2rem;
-            color: #415266;
+            color: var(--pico-muted-color);
         }
 
         @media (max-width: 768px) {
@@ -422,6 +411,9 @@
 <body>
     <main class="container-fluid">
         <%- include('partials/app-header', { title: 'Dashboard de Reservas', user }) %>
+        <%- include('partials/admin-nav', { user, activePage: 'dashboard' }) %>
+
+        <h2 style="margin-top: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Dashboard de Reservas</h2>
 
         <div class="section-stack">
             <section class="period-banner">

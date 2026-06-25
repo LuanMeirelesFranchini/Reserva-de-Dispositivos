@@ -13,31 +13,42 @@
         <%- include('partials/app-header', { title: 'Painel de Gestao', user }) %>
         <%- include('partials/admin-nav', { user, activePage: 'admin' }) %>
 
-        <div style="display: flex; justify-content: flex-end;">
-            <article style="max-width: 650px; padding: 1rem; margin-bottom: 1.5rem;">
-                <form action="/admin" method="GET" style="margin-bottom: 0;">
-                    <div class="grid" style="align-items: flex-end; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
-                        <div style="margin-bottom: 0;">
-                            <label for="data" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Filtrar por dia:</label>
-                            <input type="date" id="data" name="data" value="<%= dataFiltro %>" style="margin-bottom: 0; height: 45px;">
-                        </div>
-                        <div>
-                            <button type="submit" style="margin-bottom: 0; height: 45px; padding: 0;">Filtrar</button>
-                        </div>
-                        <div>
-                            <a href="/admin" role="button" class="secondary outline" style="margin-bottom: 0; height: 45px; padding: 0; display: flex; align-items: center; justify-content: center;">Limpar</a>
-                        </div>
-                    </div>
-                </form>
-                <% if (dataFiltro) { %>
-                    <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.8rem; color: #1b5e20;">
-                        Mostrando: <strong><%= dataFiltro %></strong>
-                    </p>
-                <% } %>
-            </article>
-        </div>
+        <h2 style="margin-top: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Reservas Ativas no Sistema</h2>
 
-        <h2 style="font-weight: bold;">Reservas Ativas no Sistema</h2>
+        <div style="background: var(--pico-card-background-color); padding: 1rem 1.5rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); margin: 0 auto 1.5rem auto; box-shadow: var(--pico-box-shadow); max-width: fit-content;">
+            <form action="/admin" method="GET" style="margin-bottom: 0;">
+                <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <div style="margin-bottom: 0;">
+                        <label for="limit" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Exibir:</label>
+                        <select name="limit" id="limit" style="margin-bottom: 0; min-width: 80px;" onchange="this.form.submit()">
+                            <option value="10" <%= (typeof currentLimit !== 'undefined' && currentLimit == 10) ? 'selected' : '' %>>10</option>
+                            <option value="20" <%= (typeof currentLimit === 'undefined' || currentLimit == 20) ? 'selected' : '' %>>20</option>
+                            <option value="50" <%= (typeof currentLimit !== 'undefined' && currentLimit == 50) ? 'selected' : '' %>>50</option>
+                            <option value="100" <%= (typeof currentLimit !== 'undefined' && currentLimit == 100) ? 'selected' : '' %>>100</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 0;">
+                        <label for="ordem" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Ordem:</label>
+                        <select name="ordem" id="ordem" style="margin-bottom: 0; min-width: 180px;" onchange="this.form.submit()">
+                            <option value="antigas" <%= typeof ordemFiltro !== 'undefined' && ordemFiltro === 'antigas' ? 'selected' : '' %>>Mais antigas primeiro</option>
+                            <option value="recentes" <%= typeof ordemFiltro !== 'undefined' && ordemFiltro === 'recentes' ? 'selected' : '' %>>Mais recentes primeiro</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 0;">
+                        <label for="data" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Data da Retirada:</label>
+                        <input type="date" id="data" name="data" value="<%= typeof dataFiltro !== 'undefined' ? dataFiltro : '' %>" style="margin-bottom: 0;">
+                    </div>
+                    <div style="margin-bottom: 0;">
+                        <button type="submit" style="margin-bottom: 0;">Buscar</button>
+                    </div>
+                    <% if (typeof dataFiltro !== 'undefined' && dataFiltro) { %>
+                        <div style="margin-bottom: 0;">
+                            <a href="/admin" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
+                        </div>
+                    <% } %>
+                </div>
+            </form>
+        </div>
 
         <div style="overflow-x: auto;">
             <table>
@@ -88,6 +99,28 @@
               </tbody>
             </table>
         </div>
+
+        <% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
+            <nav style="margin-top: 2rem; margin-bottom: 4rem; display: flex; justify-content: center;">
+                <div style="display: inline-flex; align-items: center; gap: 1rem; background: var(--pico-card-background-color); padding: 0.5rem 1rem; border-radius: 2rem; box-shadow: var(--pico-box-shadow); border: 1px solid var(--pico-muted-border-color);">
+                    <% if (currentPage > 1) { %>
+                        <a href="/admin?page=<%= currentPage - 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">&laquo; Anterior</a>
+                    <% } else { %>
+                        <span style="opacity: 0.5; font-size: 0.9rem;">&laquo; Anterior</span>
+                    <% } %>
+                    
+                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--pico-color);">
+                        Página <%= currentPage %> de <%= totalPages %>
+                    </span>
+                    
+                    <% if (currentPage < totalPages) { %>
+                        <a href="/admin?page=<%= currentPage + 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">Próxima &raquo;</a>
+                    <% } else { %>
+                        <span style="opacity: 0.5; font-size: 0.9rem;">Próxima &raquo;</span>
+                    <% } %>
+                </div>
+            </nav>
+        <% } %>
     </main>
     <%- include('partials/footer') %>
 </body>

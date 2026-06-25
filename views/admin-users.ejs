@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <style>
-        .toolbar { display: flex; gap: 1rem; align-items: end; margin-bottom: 1rem; flex-wrap: wrap; }
-        .toolbar label { margin-bottom: 0; min-width: 260px; flex: 1; }
         .action-stack { display: flex; gap: 10px; align-items: center; justify-content: flex-start; flex-wrap: nowrap; min-width: 600px; }
         .role-form { display: flex; gap: 0.5rem; align-items: center; margin: 0; flex: 1; }
         .action-stack form { margin: 0; }
@@ -25,18 +23,20 @@
         <%- include('partials/app-header', { title: 'Painel do Administrador', user }) %>
         <%- include('partials/admin-nav', { user, activePage: 'users' }) %>
 
-        <h2>Usuarios que efetuaram login no sistema</h2>
-        <p class="muted-note">Use o filtro para localizar rapidamente um usuario e altere o perfil pelo seletor.</p>
+        <h2 style="margin-top: 1rem; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Usuarios que efetuaram login no sistema</h2>
+        <p class="muted-note" style="margin-bottom: 1.5rem;">Use o filtro para localizar rapidamente um usuario e altere o perfil pelo seletor.</p>
 
-        <div class="toolbar">
-            <label for="filtro-usuarios">
-                Procurar usuario
-                <input type="search" id="filtro-usuarios" placeholder="Digite nome, e-mail ou perfil">
-            </label>
+        <div style="background: var(--pico-card-background-color); padding: 1rem 1.5rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); margin: 0 auto 1.5rem auto; box-shadow: var(--pico-box-shadow); max-width: fit-content;">
+            <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0;">
+                <div style="margin-bottom: 0;">
+                    <label for="filtro-usuarios" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Procurar usuario</label>
+                    <input type="search" id="filtro-usuarios" placeholder="Digite nome, e-mail ou perfil" style="margin-bottom: 0; min-width: 350px;">
+                </div>
+            </div>
         </div>
         
-        <div style="overflow-x: auto;">
-            <table class="users-table">
+        <div class="table-container" style="overflow-x: auto; margin-bottom: 2rem;">
+            <table class="users-table striped">
               <thead>
                 <tr>
                   <th class="col-nome">Nome</th>
