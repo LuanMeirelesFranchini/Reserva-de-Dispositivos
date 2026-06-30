@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="white">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestao de Inventario - La Salle</title>
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <style>
@@ -115,18 +116,6 @@
         <h2 style="margin-top: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Gestão de Inventário</h2>
 
         <div class="page-stack">
-            <% if (erro) { %>
-                <div style="background: var(--pico-del-color); color: var(--pico-primary-inverse); padding: 1rem; border-radius: var(--pico-border-radius); margin-bottom: 1rem;">
-                    <p style="margin: 0;"><%= erro %></p>
-                </div>
-            <% } %>
-
-            <% if (sucesso) { %>
-                <div style="background: var(--pico-ins-color); color: var(--pico-primary-inverse); padding: 1rem; border-radius: var(--pico-border-radius); margin-bottom: 1rem;">
-                    <p style="margin: 0;"><%= sucesso %></p>
-                </div>
-            <% } %>
-
             <div id="status-message"></div>
 
             <section class="summary-grid">

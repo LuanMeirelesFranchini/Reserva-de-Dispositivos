@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="white">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestao - Sistema de Reservas</title>
+    <title>Painel de Gestao - La Salle</title>
+    <script src="/theme.js"></script>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
@@ -35,13 +37,24 @@
                         </select>
                     </div>
                     <div style="margin-bottom: 0;">
+                        <label for="bloco" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Bloco:</label>
+                        <select name="bloco" id="bloco" style="margin-bottom: 0; min-width: 150px;" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            <% if (typeof blocosSalas !== 'undefined') { %>
+                                <% blocosSalas.forEach(bloco => { %>
+                                    <option value="<%= bloco.valor %>" <%= (typeof blocoFiltro !== 'undefined' && blocoFiltro === bloco.valor) ? 'selected' : '' %>><%= bloco.label %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 0;">
                         <label for="data" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Data da Retirada:</label>
                         <input type="date" id="data" name="data" value="<%= typeof dataFiltro !== 'undefined' ? dataFiltro : '' %>" style="margin-bottom: 0;">
                     </div>
                     <div style="margin-bottom: 0;">
                         <button type="submit" style="margin-bottom: 0;">Buscar</button>
                     </div>
-                    <% if (typeof dataFiltro !== 'undefined' && dataFiltro) { %>
+                    <% if ((typeof dataFiltro !== 'undefined' && dataFiltro) || (typeof blocoFiltro !== 'undefined' && blocoFiltro)) { %>
                         <div style="margin-bottom: 0;">
                             <a href="/admin" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
                         </div>
@@ -50,20 +63,22 @@
             </form>
         </div>
 
-        <div style="overflow-x: auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Professor</th>
-                  <th>Qtde</th>
-                  <th>Carrinho</th>
-                  <th>Retirada</th>
-                  <th>Devolucao</th>
-                  <th>Sala</th>
-                  <th>Acoes</th>
-                </tr>
-              </thead>
-              <tbody>
+        <% if (reservas.length > 0) { %>
+            <input type="search" class="live-search" placeholder="Busca instantânea...">
+            <div style="overflow-x: auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Professor</th>
+                      <th>Qtde</th>
+                      <th>Carrinho</th>
+                      <th>Retirada</th>
+                      <th>Devolucao</th>
+                      <th>Sala</th>
+                      <th>Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                 <% function formatarData(dataIso){
                   const data = new Date(dataIso);
                   const dia = String(data.getDate()).padStart(2, '0');
@@ -74,7 +89,6 @@
                   return `${hora}:${minuto} ${dia}/${mes}/${ano}`;
                 } %>
               
-                <% if (reservas.length > 0) { %>
                     <% reservas.forEach(reserva => { %>
                       <tr class="teste2">
                         <td><%= reserva.nome_professor %></td>
@@ -91,20 +105,27 @@
                         </td>
                       </tr>
                     <% }) %>
-                <% } else { %>
-                    <tr>
-                        <td colspan="7" style="text-align: center;">Nenhuma reserva ativa no momento.</td>
-                    </tr>
-                <% } %>
-              </tbody>
-            </table>
-        </div>
+                  </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <article class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <h3>Nenhuma reserva encontrada</h3>
+                <p>Nao ha nenhuma reserva ativa para os filtros selecionados no momento.</p>
+            </article>
+        <% } %>
 
         <% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
             <nav style="margin-top: 2rem; margin-bottom: 4rem; display: flex; justify-content: center;">
                 <div style="display: inline-flex; align-items: center; gap: 1rem; background: var(--pico-card-background-color); padding: 0.5rem 1rem; border-radius: 2rem; box-shadow: var(--pico-box-shadow); border: 1px solid var(--pico-muted-border-color);">
                     <% if (currentPage > 1) { %>
-                        <a href="/admin?page=<%= currentPage - 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">&laquo; Anterior</a>
+                        <a href="/admin?page=<%= currentPage - 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof blocoFiltro !== 'undefined' && blocoFiltro) ? '&bloco=' + encodeURIComponent(blocoFiltro) : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">&laquo; Anterior</a>
                     <% } else { %>
                         <span style="opacity: 0.5; font-size: 0.9rem;">&laquo; Anterior</span>
                     <% } %>
@@ -114,7 +135,7 @@
                     </span>
                     
                     <% if (currentPage < totalPages) { %>
-                        <a href="/admin?page=<%= currentPage + 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">Próxima &raquo;</a>
+                        <a href="/admin?page=<%= currentPage + 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof blocoFiltro !== 'undefined' && blocoFiltro) ? '&bloco=' + encodeURIComponent(blocoFiltro) : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">Próxima &raquo;</a>
                     <% } else { %>
                         <span style="opacity: 0.5; font-size: 0.9rem;">Próxima &raquo;</span>
                     <% } %>

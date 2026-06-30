@@ -1,36 +1,80 @@
 <header class="logo-header">
     <a href="/" class="brand-link" aria-label="Ir para a pagina inicial">
-        <img src="/images/logo_azul.png" alt="Logo La Salle">
+        <img id="app-logo" src="/images/logo_azul.png" alt="Logo La Salle">
     </a>
     <a href="/" class="title-link" aria-label="Ir para a pagina inicial">
         <h1><%= title %></h1>
     </a>
 
-    <div class="user-menu-container">
-        <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false">
-            <span>Ola, <strong><%= user.nome.split(' ')[0] %></strong></span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
-        <div class="dropdown-content">
-            <% if (typeof showNewReservation === 'undefined' || showNewReservation !== false) { %>
-                <a href="/">Fazer Nova Reserva</a>
-            <% } %>
-            <% if (typeof showMyReservations === 'undefined' || showMyReservations !== false) { %>
-                <a href="/minhas-reservas">Minhas Reservas</a>
-            <% } %>
-            <% if (user.role === 'admin' || user.role === 'operacional') { %>
-                <a href="/admin">Painel de Gestao</a>
-                <a href="/admin/dashboard">Dashboard de Reservas</a>
-            <% } %>
-            <% if (user.role === 'admin') { %>
-                <a href="/admin/inventario">Gestao de Inventario</a>
-                <a href="/admin/audit">Auditoria do Sistema</a>
-            <% } %>
-            <hr style="margin: 0; opacity: 0.1;">
-            <form action="/logout" method="POST" style="margin: 0;">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="logout-menu-button">Sair da Conta</button>
-            </form>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <div class="user-menu-container" style="display: flex; align-items: center; margin: 0;">
+            <button type="button" class="user-menu-button" aria-haspopup="true" aria-expanded="false" style="margin: 0; min-height: 42px;">
+                <span>Ola, <strong><%= user.nome.split(' ')[0] %></strong></span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="dropdown-content">
+                <% if (typeof showNewReservation === 'undefined' || showNewReservation !== false) { %>
+                    <a href="/">Fazer Nova Reserva</a>
+                <% } %>
+                <% if (typeof showMyReservations === 'undefined' || showMyReservations !== false) { %>
+                    <a href="/minhas-reservas">Minhas Reservas</a>
+                <% } %>
+                <% if (user.role === 'admin' || user.role === 'operacional') { %>
+                    <a href="/admin">Painel de Gestao</a>
+                    <a href="/admin/dashboard">Dashboard de Reservas</a>
+                <% } %>
+                <% if (user.role === 'admin') { %>
+                    <a href="/admin/inventario">Gestao de Inventario</a>
+                    <a href="/admin/audit">Auditoria do Sistema</a>
+                <% } %>
+                <hr style="margin: 0; opacity: 0.1;">
+                <form action="/logout" method="POST" style="margin: 0;">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="logout-menu-button">Sair da Conta</button>
+                </form>
+            </div>
         </div>
+        
+        <button type="button" id="theme-toggle" onclick="toggleTheme(event)" aria-label="Alternar tema" style="padding: 0; width: 42px; height: 42px; min-height: 42px; border-radius: 50px; background: var(--pico-card-background-color); border: 1px solid var(--pico-muted-border-color); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--color-lasalle-blue); margin: 0;">
+            <span id="theme-icon" style="display: flex; align-items: center; justify-content: center;">
+                <!-- O icone sera injetado via JS -->
+            </span>
+        </button>
     </div>
 </header>
+<%- include('toasts') %>
+
+<!-- Skeletons Overlay & Global Premium Scripts -->
+<div class="page-transition-overlay" id="skeleton-overlay">
+    <div class="skeleton-box" style="height: 60px; width: 100%; margin-bottom: 2rem;"></div>
+    <div class="skeleton-box" style="height: 40px; width: 40%;"></div>
+    <div class="skeleton-box" style="height: 200px; width: 100%;"></div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Skeleton logic
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && link.href && !link.target && link.host === window.location.host && !link.pathname.includes('#') && !link.hasAttribute('download')) {
+                const overlay = document.getElementById('skeleton-overlay');
+                if (overlay) overlay.style.display = 'flex';
+            }
+        });
+
+        // Live search logic
+        const searchInput = document.querySelector('input.live-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const table = document.querySelector('table');
+                if (!table) return;
+                
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const text = row.innerText.toLowerCase();
+                    row.style.display = text.includes(query) ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>

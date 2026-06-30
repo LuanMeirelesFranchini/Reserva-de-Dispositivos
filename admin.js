@@ -378,8 +378,6 @@ module.exports = (db, middlewares, helpers) => {
           total: resumoAtual?.total || 0,
           bloqueadosAgora: resumoAtual?.bloqueadosAgora || 0,
         },
-        erro: req.query.erro || "",
-        sucesso: req.query.sucesso || "",
       });
     } catch (err) {
       res.status(500).send("Erro ao carregar inventario.");
@@ -459,29 +457,20 @@ module.exports = (db, middlewares, helpers) => {
     const dataFim = new Date(req.body.data_fim);
 
     if (!Number.isInteger(carrinhoId) || carrinhoId <= 0) {
-      return res.redirect(
-        "/admin/inventario?erro=" + encodeURIComponent("Carrinho invalido."),
-      );
+      { req.session.erro = "Carrinho invalido."; return res.redirect("/admin/inventario"); }
     }
     if (!Number.isInteger(quantidade) || quantidade <= 0) {
-      return res.redirect(
-        "/admin/inventario?erro=" +
-          encodeURIComponent("Quantidade do bloqueio invalida."),
-      );
+      { req.session.erro = "Quantidade do bloqueio invalida."; return res.redirect("/admin/inventario"); }
     }
     if (!motivo) {
-      return res.redirect(
-        "/admin/inventario?erro=" + encodeURIComponent("Informe o motivo."),
-      );
+      { req.session.erro = "Informe o motivo."; return res.redirect("/admin/inventario"); }
     }
     if (
       isNaN(dataInicio.getTime()) ||
       isNaN(dataFim.getTime()) ||
       dataFim <= dataInicio
     ) {
-      return res.redirect(
-        "/admin/inventario?erro=" + encodeURIComponent("Periodo invalido."),
-      );
+      { req.session.erro = "Periodo invalido."; return res.redirect("/admin/inventario"); }
     }
 
     try {
@@ -492,18 +481,10 @@ module.exports = (db, middlewares, helpers) => {
       );
 
       if (!carrinho) {
-        return res.redirect(
-          "/admin/inventario?erro=" +
-            encodeURIComponent("Carrinho nao encontrado."),
-        );
+        { req.session.erro = "Carrinho nao encontrado."; return res.redirect("/admin/inventario"); }
       }
       if (quantidade > carrinho.capacidade) {
-        return res.redirect(
-          "/admin/inventario?erro=" +
-            encodeURIComponent(
-              "Bloqueio nao pode ser maior que a capacidade total do carrinho.",
-            ),
-        );
+        { req.session.erro = "Bloqueio nao pode ser maior que a capacidade total do carrinho."; return res.redirect("/admin/inventario"); }
       }
 
       const result = await dbRun(
@@ -534,24 +515,16 @@ module.exports = (db, middlewares, helpers) => {
         },
       });
 
-      res.redirect(
-        "/admin/inventario?sucesso=" +
-          encodeURIComponent("Bloqueio programado salvo com sucesso."),
-      );
+      { req.session.sucesso = "Bloqueio programado salvo com sucesso."; res.redirect("/admin/inventario"); }
     } catch (err) {
-      res.redirect(
-        "/admin/inventario?erro=" +
-          encodeURIComponent("Nao foi possivel salvar o bloqueio."),
-      );
+      { req.session.erro = "Nao foi possivel salvar o bloqueio."; res.redirect("/admin/inventario"); }
     }
   });
 
   router.post("/inventario/bloqueios/:id/delete", isAdmin, async (req, res) => {
     const bloqueioId = parseInt(req.params.id, 10);
     if (!Number.isInteger(bloqueioId) || bloqueioId <= 0) {
-      return res.redirect(
-        "/admin/inventario?erro=" + encodeURIComponent("Bloqueio invalido."),
-      );
+      { req.session.erro = "Bloqueio invalido."; return res.redirect("/admin/inventario"); }
     }
 
     try {
@@ -565,10 +538,7 @@ module.exports = (db, middlewares, helpers) => {
       );
 
       if (!bloqueio) {
-        return res.redirect(
-          "/admin/inventario?erro=" +
-            encodeURIComponent("Bloqueio nao encontrado."),
-        );
+        { req.session.erro = "Bloqueio nao encontrado."; return res.redirect("/admin/inventario"); }
       }
 
       await dbRun(db, "DELETE FROM carrinho_bloqueios WHERE id = ?", [bloqueioId]);
@@ -586,15 +556,9 @@ module.exports = (db, middlewares, helpers) => {
         },
       });
 
-      res.redirect(
-        "/admin/inventario?sucesso=" +
-          encodeURIComponent("Bloqueio removido com sucesso."),
-      );
+      { req.session.sucesso = "Bloqueio removido com sucesso."; res.redirect("/admin/inventario"); }
     } catch (err) {
-      res.redirect(
-        "/admin/inventario?erro=" +
-          encodeURIComponent("Nao foi possivel remover o bloqueio."),
-      );
+      { req.session.erro = "Nao foi possivel remover o bloqueio."; res.redirect("/admin/inventario"); }
     }
   });
 

@@ -1,0 +1,30 @@
+﻿<% if ((typeof erro !== 'undefined' && erro) || (typeof sucesso !== 'undefined' && sucesso)) { %>
+    <div class="toast-container" id="toast-container">
+        <% if (typeof erro !== 'undefined' && erro) { %>
+            <div class="toast error">
+                <div class="toast-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f44336" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </div>
+                <div class="toast-content"><%= erro %></div>
+            </div>
+        <% } %>
+        <% if (typeof sucesso !== 'undefined' && sucesso) { %>
+            <div class="toast success">
+                <div class="toast-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <div class="toast-content"><%= sucesso %></div>
+            </div>
+        <% } %>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('toast-container');
+            if (container) {
+                setTimeout(() => {
+                    container.remove();
+                }, 3800);
+            }
+        });
+    </script>
+<% } %>

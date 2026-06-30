@@ -209,6 +209,16 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(csrfProtection);
 
+app.use((req, res, next) => {
+  res.locals.sucesso = req.session.sucesso || "";
+  res.locals.erro = req.session.erro || "";
+  res.locals.msg = req.session.msg || "";
+  req.session.sucesso = null;
+  req.session.erro = null;
+  req.session.msg = null;
+  next();
+});
+
 const helpers = createAppHelpers(db);
 const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
@@ -217,7 +227,7 @@ const authRateLimiter = createRateLimiter({
 });
 
 app.get("/login", (req, res) =>
-  res.render("login", { erro: req.query.error || "" }),
+  res.render("login")
 );
 
 app.get(
@@ -235,7 +245,10 @@ app.get(
   (req, res, next) => {
     passport.authenticate("google", (err, user) => {
       if (err) return next(err);
-      if (!user) return res.redirect("/login?error=true");
+      if (!user) {
+        req.session.erro = "Falha na autenticacao com o Google.";
+        return res.redirect("/login");
+      }
 
       req.session.regenerate((regenerateErr) => {
         if (regenerateErr) return next(regenerateErr);
@@ -274,7 +287,8 @@ app.use((err, req, res, next) => {
 
   // Intercepta erros de expiração/falha de código do Google OAuth
   if (err.name === "TokenError" || err.code === "invalid_grant") {
-    return res.redirect("/login?error=true");
+    req.session.erro = "Sessao expirada ou invalida. Por favor, faca login novamente.";
+    return res.redirect("/login");
   }
 
   if (req.originalUrl.startsWith("/api/")) {

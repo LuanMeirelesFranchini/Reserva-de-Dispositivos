@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="white">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Reservas - La Salle</title>
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -19,7 +20,7 @@
             align-items: center;
             gap: 1rem;
             flex-wrap: wrap;
-            padding: 1rem 1.2rem;
+            padding: 0.5rem 1.2rem;
             border: 1px solid var(--pico-primary-border);
             border-radius: var(--pico-border-radius);
             background: var(--pico-primary-background);
@@ -70,7 +71,7 @@
 
         .stat-card,
         .alert-card {
-            padding: 1.1rem 1.2rem;
+            padding: 0.75rem 1rem;
             border: 1px solid var(--pico-muted-border-color);
             border-radius: var(--pico-border-radius);
             background: var(--pico-card-background-color);
@@ -85,9 +86,9 @@
 
         .stat-card strong {
             display: block;
-            font-size: 2rem;
+            font-size: 1.6rem;
             color: var(--pico-color);
-            margin-top: 0.35rem;
+            margin-top: 0.2rem;
             line-height: 1.1;
         }
 
@@ -229,8 +230,8 @@
             margin: 0;
             padding: 0.9rem 1rem;
             border-radius: 14px;
-            border: 1px solid #dfe7ef;
-            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--pico-muted-border-color);
+            background: var(--pico-form-element-background-color);
         }
 
         .calendar-summary strong,
@@ -254,7 +255,7 @@
             gap: 0.75rem;
             flex-wrap: wrap;
             margin-bottom: 1rem;
-            color: #415266;
+            color: var(--pico-color);
             font-size: 0.92rem;
         }
 
@@ -300,7 +301,8 @@
 
         .calendar-empty {
             border-radius: 14px;
-            background: rgba(226, 232, 240, 0.28);
+            background: var(--pico-form-element-background-color);
+            opacity: 0.5;
         }
 
         .calendar-day {
@@ -334,8 +336,8 @@
         }
 
         .calendar-day.today {
-            border-color: #123b6d;
-            box-shadow: inset 0 0 0 1px rgba(18, 59, 109, 0.12);
+            border-color: var(--pico-primary);
+            box-shadow: inset 0 0 0 1px var(--pico-primary);
         }
 
         .calendar-day header {
@@ -354,8 +356,8 @@
             padding: 0.15rem 0.5rem;
             font-size: 0.72rem;
             font-weight: 700;
-            color: #123b6d;
-            background: rgba(255, 255, 255, 0.74);
+            color: var(--pico-primary-inverse);
+            background: var(--pico-primary);
         }
 
         .calendar-day p,
@@ -406,10 +408,52 @@
                 font-size: 0.82rem;
             }
         }
+        .tabs-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+            padding-bottom: 0;
+            overflow-x: auto;
+            justify-content: flex-start;
+        }
+        .tab-btn {
+            background: transparent !important;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--pico-muted-color);
+            padding: 0.75rem 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0;
+            margin-bottom: -1px;
+            white-space: nowrap;
+            box-shadow: none !important;
+            opacity: 1 !important;
+        }
+        .tab-btn:hover {
+            color: var(--pico-primary) !important;
+            opacity: 1 !important;
+        }
+        .tab-btn.active {
+            color: var(--pico-primary);
+            border-bottom-color: var(--pico-primary);
+        }
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
-    <main class="container-fluid">
+    <main class="container-fluid" style="margin-bottom: 4rem;">
         <%- include('partials/app-header', { title: 'Dashboard de Reservas', user }) %>
         <%- include('partials/admin-nav', { user, activePage: 'dashboard' }) %>
 
@@ -428,7 +472,14 @@
                 </nav>
             </section>
 
-            <section class="stats-grid">
+            <div class="tabs-nav" role="tablist" aria-label="Navegação do Dashboard">
+                <button class="tab-btn active" data-target="tab-overview">Visão Geral</button>
+                <button class="tab-btn" data-target="tab-charts">Gráficos e Estatísticas</button>
+                <button class="tab-btn" data-target="tab-calendar">Calendário de Ocupação</button>
+            </div>
+
+            <div id="tab-overview" class="tab-pane active">
+                <section class="stats-grid">
                 <article class="stat-card">
                     <small>Total de reservas no mes</small>
                     <strong><%= resumo.totalReservas %></strong>
@@ -518,7 +569,9 @@
                     <% } %>
                 </article>
             </section>
+            </div>
 
+            <div id="tab-charts" class="tab-pane">
             <section class="panel-grid">
                 <article class="chart-card">
                     <header><strong>Reservas por status no mes</strong></header>
@@ -586,7 +639,9 @@
                     <% } %>
                 </article>
             </section>
+            </div>
 
+            <div id="tab-calendar" class="tab-pane">
             <section class="calendar-section">
                 <div class="calendar-shell">
                     <div class="calendar-topbar">
@@ -681,6 +736,7 @@
                     </div>
                 </div>
             </section>
+            </div>
         </div>
     </main>
     <%- include('partials/footer') %>
@@ -894,6 +950,17 @@
                 setCalendarCollapsed(!calendarContent.hidden);
             });
         }
+
+        // Tab system
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+                
+                button.classList.add('active');
+                document.getElementById(button.dataset.target).classList.add('active');
+            });
+        });
     </script>
 </body>
 </html>

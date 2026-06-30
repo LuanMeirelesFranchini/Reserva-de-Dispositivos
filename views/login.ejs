@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="light">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Reservas</title>
+    <title>Login - Reserva de Dispositivos</title>
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
     <style>
@@ -92,15 +93,6 @@
             background: #ffffff;
         }
 
-        .error-box {
-            color: #d32f2f;
-            font-size: 0.85rem;
-            font-weight: bold;
-            background: #fee2e2;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
     </style>
 </head>
 <body>
@@ -110,13 +102,9 @@
             
             <h1>Sistema de Reservas</h1>
             
-            <p>Por favor, acesse com sua conta Google La Salle</p>
+            <p>Por favor, selecione seu metodo de autenticacao para continuar.</p>
             
-            <% if (typeof erro !== 'undefined' && erro) { %>
-                <div class="error-box">
-                    <%= erro %>
-                </div>
-            <% } %>
+            <%- include('partials/toasts') %>
 
             <a href="/auth/google" role="button" class="btn-google">
                 <svg width="20" height="20" viewBox="0 0 24 24">

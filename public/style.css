@@ -3,6 +3,11 @@
     --color-lasalle-blue: #004587;
     --color-lasalle-gold: #ffcc00;
     --color-bg-light: #f4f7f9;
+/* --- 1. Definições Base e Cores --- */
+:root {
+    --color-lasalle-blue: #004587;
+    --color-lasalle-gold: #ffcc00;
+    --color-bg-light: #f4f7f9;
     --color-text-dark: #1a202c;
     /* Azul mais claro e moderno para os botoes do sistema */
     --pico-primary: #0275d8;
@@ -10,7 +15,7 @@
 }
 
 body {
-    background-color: var(--color-bg-light);
+    background-color: var(--pico-background-color);
     font-family: 'Noto Sans', sans-serif;
     display: flex;
     flex-direction: column;
@@ -34,7 +39,7 @@ body {
 
 /* --- 2. Cabeçalho Refinado --- */
 .logo-header {
-    background: #ffffff;
+    background: var(--pico-card-background-color);
     padding: 0.75rem 1.5rem;
     border-radius: var(--pico-border-radius);
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -87,13 +92,13 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: #f8fafc;
+    background: var(--pico-card-background-color);
     padding: 0.5rem 1rem;
     border-radius: 50px;
     cursor: pointer;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--pico-muted-border-color);
     transition: all 0.2s ease;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-lasalle-blue);
     margin-bottom: 0; /* Remove margem do Pico */
     appearance: none;
@@ -104,15 +109,15 @@ body {
 }
 
 .user-menu-button:hover {
-    background: #edf2f7;
-    border-color: var(--color-lasalle-blue);
+    background: var(--pico-form-element-background-color);
+    border-color: var(--pico-primary);
 }
 
 .user-menu-button:focus,
 .user-menu-button:focus-visible {
-    outline: 2px solid rgba(0, 69, 135, 0.25);
+    outline: 2px solid var(--pico-primary);
     outline-offset: 2px;
-    border-color: var(--color-lasalle-blue);
+    border-color: var(--pico-primary);
 }
 
 /* A caixa que aparece com os links */
@@ -120,19 +125,19 @@ body {
     display: none;
     position: absolute;
     right: 0;
-    top: calc(100% + 5px);
-    background-color: #ffffff;
-    min-width: 200px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
-    z-index: 1000;
+    top: 115%;
+    background-color: var(--pico-card-background-color);
+    min-width: 220px;
+    box-shadow: var(--pico-box-shadow);
     border-radius: var(--pico-border-radius);
-    border: 1px solid #e2e8f0;
+    z-index: 1000;
+    border: 1px solid var(--pico-muted-border-color);
     overflow: hidden;
 }
 
 .dropdown-content a,
 .logout-menu-button {
-    color: var(--color-text-dark);
+    color: var(--color-lasalle-blue);
     padding: 12px 16px;
     text-decoration: none;
     display: block;
@@ -156,13 +161,8 @@ body {
 .dropdown-content a:hover,
 .logout-menu-button:hover,
 .logout-menu-button:focus {
-    background-color: #f1f5f9;
-    color: var(--color-lasalle-blue);
-}
-
-.dropdown-content hr {
-    margin: 0;
-    opacity: 0.1;
+    background-color: var(--pico-form-element-background-color);
+    color: var(--pico-primary);
 }
 
 /* Mostrar o menu quando o container for focado ou pairado */
@@ -180,10 +180,104 @@ main.container-fluid {
 }
 
 .table-container {
-    background: #fff;
+    background: var(--pico-card-background-color);
     border-radius: var(--pico-border-radius);
     overflow-x: auto;
     box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+}
+
+/* --- Empty States --- */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 1rem;
+    text-align: center;
+    background: var(--pico-card-background-color);
+    border-radius: var(--pico-border-radius);
+    border: 2px dashed var(--pico-muted-border-color);
+    margin: 2rem 0;
+}
+.empty-state svg {
+    margin-bottom: 1.5rem;
+    color: var(--pico-muted-color);
+    width: 100px;
+    height: 100px;
+    opacity: 0.5;
+}
+.empty-state h3 {
+    margin-bottom: 0.5rem;
+    color: var(--pico-color);
+}
+.empty-state p {
+    color: var(--pico-muted-color);
+    margin-bottom: 1.5rem;
+    max-width: 400px;
+}
+
+/* --- Toasts --- */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.toast {
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, fadeOutToast 0.5s ease 3s forwards;
+    pointer-events: auto;
+}
+.toast.success { border-left: 4px solid #4caf50; }
+.toast.error { border-left: 4px solid #f44336; }
+.toast-icon { display: flex; align-items: center; justify-content: center; }
+.toast-content { color: var(--pico-color); font-size: 0.95rem; font-weight: 500; }
+
+@keyframes slideInRight {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOutToast {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+}
+
+/* --- Skeletons & Live Search --- */
+.page-transition-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--pico-background-color);
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    padding: 2rem;
+    gap: 1.5rem;
+    opacity: 0.95;
+}
+.skeleton-box {
+    background: linear-gradient(90deg, var(--pico-muted-border-color) 25%, var(--pico-card-background-color) 50%, var(--pico-muted-border-color) 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s infinite;
+    border-radius: var(--pico-border-radius);
+}
+@keyframes skeletonLoading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+input.live-search {
+    margin-bottom: 1.5rem;
+    max-width: 400px;
 }
 
 /* --- 5. Responsividade Mobile --- */
@@ -240,4 +334,22 @@ main.container-fluid {
     gap: 0.5rem;             /* ESPAÇO CURTO ENTRE BOTÕES */
     margin-bottom: 2rem;
     flex-wrap: wrap;         /* QUEBRA DE LINHA AUTOMÁTICA */
+}
+}
+
+/* --- Dark Mode Overrides --- */
+[data-theme="dark"] .logo-header h1 {
+    color: var(--pico-color); /* Branco/Cinza claro ao invés de Azul escuro */
+}
+
+[data-theme="dark"] .user-menu-button,
+[data-theme="dark"] #theme-toggle,
+[data-theme="dark"] .dropdown-content a {
+    color: var(--pico-color);
+}
+
+[data-theme="dark"] .user-menu-button:hover,
+[data-theme="dark"] .user-menu-button:focus,
+[data-theme="dark"] .user-menu-button:focus-visible {
+    border-color: var(--pico-color);
 }

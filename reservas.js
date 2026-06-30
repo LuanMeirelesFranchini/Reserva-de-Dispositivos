@@ -34,8 +34,6 @@ module.exports = (db, middlewares, helpers) => {
         carrinhos,
         blocosSalas,
         user: req.user,
-        erro: req.query.erro || "",
-        sucesso: req.query.sucesso || "",
       });
     } catch (err) {
       console.error("Erro ao carregar a pagina inicial:", err.message);
@@ -51,8 +49,6 @@ module.exports = (db, middlewares, helpers) => {
       res.render("minhas-reservas", {
         reservas,
         user: req.user,
-        erro: req.query.erro || "",
-        sucesso: req.query.sucesso || "",
       });
     } catch (err) {
       res.status(500).send("Erro ao carregar suas reservas.");
@@ -110,10 +106,7 @@ module.exports = (db, middlewares, helpers) => {
           usuario_reserva_id: reserva.usuario_id,
         },
       });
-      res.redirect(
-        "/minhas-reservas?sucesso=" +
-          encodeURIComponent("Reserva cancelada com sucesso."),
-      );
+      { req.session.sucesso = "Reserva cancelada com sucesso."; res.redirect("/minhas-reservas"); }
     } catch (err) {
       res.status(500).send("Erro ao cancelar reserva.");
     }
@@ -176,10 +169,7 @@ module.exports = (db, middlewares, helpers) => {
   );
 
   router.post("/reservar-recorrente", isAuthenticated, async (req, res) =>
-    res.redirect(
-      "/?erro=" +
-        encodeURIComponent("Reservas recorrentes ainda nao estao ativas."),
-    ),
+    { req.session.erro = "Reservas recorrentes ainda nao estao ativas."; res.redirect("/"); },
   );
 
   router.get("/api/availability", ensureAuthenticatedApi, async (req, res) => {
@@ -265,19 +255,14 @@ module.exports = (db, middlewares, helpers) => {
     const salaSelecionada = (sala || "").trim();
 
     if (!Number.isInteger(carrinhoId) || carrinhoId <= 0) {
-      return res.redirect(
-        "/?erro=" + encodeURIComponent("Selecione um carrinho valido."),
-      );
+      { req.session.erro = "Selecione um carrinho valido."; return res.redirect("/"); }
     }
 
     if (!Number.isInteger(quantidadeNum) || quantidadeNum <= 0) {
-      return res.redirect("/?erro=" + encodeURIComponent("Quantidade invalida."));
+      { req.session.erro = "Quantidade invalida."; return res.redirect("/"); }
     }
     if (!blocoSelecionado || !salaSelecionada) {
-      return res.redirect(
-        "/?erro=" +
-          encodeURIComponent("Selecione o bloco e a sala da reserva."),
-      );
+      { req.session.erro = "Selecione o bloco e a sala da reserva."; return res.redirect("/"); }
     }
 
     const inicioSolicitado = new Date(data_retirada);
@@ -289,30 +274,20 @@ module.exports = (db, middlewares, helpers) => {
       isNaN(fimSolicitado.getTime()) ||
       fimSolicitado <= inicioSolicitado
     ) {
-      return res.redirect("/?erro=" + encodeURIComponent("Periodo invalido."));
+      { req.session.erro = "Periodo invalido."; return res.redirect("/"); }
     }
     if (inicioSolicitado < agora) {
-      return res.redirect(
-        "/?erro=" +
-          encodeURIComponent("A data de retirada nao pode estar no passado."),
-      );
+      { req.session.erro = "A data de retirada nao pode estar no passado."; return res.redirect("/"); }
     }
 
     if (req.user.role !== "admin") {
       const minimo = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
       const maximo = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
       if (inicioSolicitado < minimo) {
-        return res.redirect(
-          "/?erro=" +
-            encodeURIComponent(
-              "As reservas devem ser feitas com pelo menos 24 horas de antecedencia.",
-            ),
-        );
+        { req.session.erro = "As reservas devem ser feitas com pelo menos 24 horas de antecedencia."; return res.redirect("/"); }
       }
       if (inicioSolicitado > maximo || fimSolicitado > maximo) {
-        return res.redirect(
-          "/?erro=" + encodeURIComponent("Maximo de 30 dias de antecedencia."),
-        );
+        { req.session.erro = "Maximo de 30 dias de antecedencia."; return res.redirect("/"); }
       }
     }
 
@@ -396,7 +371,7 @@ module.exports = (db, middlewares, helpers) => {
       const message = err.code
         ? "Nao foi possivel concluir a reserva."
         : err.message;
-      return res.redirect("/?erro=" + encodeURIComponent(message));
+      { req.session.erro = message; return res.redirect("/"); }
     } finally {
       connection.release();
     }

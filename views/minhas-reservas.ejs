@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="white">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minhas Reservas - La Salle</title>
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
     <link rel="stylesheet" href="/style.css">
 </head>
@@ -11,22 +12,17 @@
     <main class="container-fluid">
         <%- include('partials/app-header', { title: 'Minhas Reservas', user, showMyReservations: false }) %>
 
-        <% if (typeof erro !== 'undefined' && erro) { %>
-            <article style="background-color: #ffebee; border-color: #e57373;">
-                <p style="color: #c62828;"><%= erro %></p>
-            </article>
-        <% } %>
-
-        <% if (typeof sucesso !== 'undefined' && sucesso) { %>
-            <article style="background-color: #e8f5e9; border-color: #81c784;">
-                <p style="color: #2e7d32;"><%= sucesso %></p>
-            </article>
-        <% } %>
-
         <% if (reservas.length === 0) { %>
-            <article>
-                <p>Voce nao possui reservas ativas no momento.</p>
-                <a href="/" role="button">Fazer minha primeira reserva</a>
+            <article class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <h3>Sua agenda esta livre!</h3>
+                <p>Voce nao possui nenhuma reserva ativa no momento. Que tal fazer a sua primeira reserva e garantir os seus dispositivos?</p>
+                <a href="/" role="button">Fazer uma Reserva</a>
             </article>
         <% } else { %>
             <% function formatarDataBrasil(dataIso) {
@@ -42,40 +38,93 @@
                 return `${dia}/${mes}/${ano} as ${hora}:${minuto}`;
             } %>
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Carrinho</th>
-                            <th>Quantidade</th>
-                            <th>Retirada</th>
-                            <th>Devolucao</th>
-                            <th>Sala</th>
-                            <th>Acoes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% reservas.forEach(reserva => { %>
+            <form action="/reservas/cancelar-lote" method="POST" id="bulk-cancel-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem;">
+                    <input type="search" class="live-search" placeholder="Busca instantânea..." style="margin-bottom: 0; max-width: 300px;">
+                    <button type="submit" id="btn-bulk-cancel" class="contrast outline" style="width: auto; padding: 0.5rem 1rem; margin-bottom: 0;" disabled>Cancelar Selecionadas</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
                             <tr>
-                                <td><%= reserva.nome_carrinho %></td>
-                                <td><%= reserva.quantidade %></td>
-                                <td><%= formatarDataBrasil(reserva.data_retirada) %></td>
-                                <td><%= formatarDataBrasil(reserva.data_devolucao) %></td>
-                                <td><%= reserva.sala %></td>
-                                <td>
-                                    <form action="/reservas/cancelar/<%= reserva.id %>" method="POST" onsubmit="return confirm('Deseja realmente cancelar esta reserva?');" style="margin: 0;">
-                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                        <button type="submit" class="contrast outline" style="padding: 5px 10px;">Cancelar</button>
-                                    </form>
-                                </td>
+                                <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all" aria-label="Selecionar todas as reservas"></th>
+                                <th>Carrinho</th>
+                                <th>Quantidade</th>
+                                <th>Retirada</th>
+                                <th>Devolucao</th>
+                                <th>Sala</th>
+                                <th>Acoes</th>
                             </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            <% reservas.forEach(reserva => { %>
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <input type="checkbox" name="reservaIds" value="<%= reserva.id %>" class="reserva-checkbox" aria-label="Selecionar reserva">
+                                    </td>
+                                    <td><%= reserva.nome_carrinho %></td>
+                                    <td><%= reserva.quantidade %></td>
+                                    <td><%= formatarDataBrasil(reserva.data_retirada) %></td>
+                                    <td><%= formatarDataBrasil(reserva.data_devolucao) %></td>
+                                    <td><%= reserva.sala %></td>
+                                    <td>
+                                        <!-- O botao individual ainda funciona submetendo apenas aquele ID, porem eh bom usar o form-action ou js -->
+                                        <button type="submit" formaction="/reservas/cancelar/<%= reserva.id %>" class="contrast outline" style="padding: 5px 10px; margin: 0;">Cancelar</button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
         <% } %>
     </main>
     <%- include('partials/footer') %>
     <script src="/menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const selectAll = document.getElementById('select-all');
+            const checkboxes = document.querySelectorAll('.reserva-checkbox');
+            const btnBulkCancel = document.getElementById('btn-bulk-cancel');
+            const form = document.getElementById('bulk-cancel-form');
+
+            function updateBulkButtonState() {
+                if(!btnBulkCancel) return;
+                const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+                btnBulkCancel.disabled = !anyChecked;
+            }
+
+            if(selectAll) {
+                selectAll.addEventListener('change', (e) => {
+                    checkboxes.forEach(cb => cb.checked = e.target.checked);
+                    updateBulkButtonState();
+                });
+
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', () => {
+                        const allChecked = Array.from(checkboxes).every(c => c.checked);
+                        selectAll.checked = allChecked;
+                        updateBulkButtonState();
+                    });
+                });
+            }
+
+            if(form) {
+                form.addEventListener('submit', (e) => {
+                    // if it's the bulk cancel button, confirm for all
+                    if (e.submitter && e.submitter.id === 'btn-bulk-cancel') {
+                        if(!confirm('Deseja realmente cancelar TODAS as reservas selecionadas?')) {
+                            e.preventDefault();
+                        }
+                    } else if (e.submitter && e.submitter.hasAttribute('formaction')) {
+                        if(!confirm('Deseja realmente cancelar esta reserva?')) {
+                            e.preventDefault();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
