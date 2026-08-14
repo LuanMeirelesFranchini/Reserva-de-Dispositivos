@@ -14,7 +14,8 @@ function isAuthenticated(req, res, next) {
 
 function isAdmin(req, res, next) {
   if (hasActiveUser(req) && req.user.role === "admin") return next();
-  res.status(403).send("<h1>Acesso Negado</h1>");
+  req.session.erro = "Acesso Negado";
+  res.redirect("/");
 }
 
 function canManageReservations(req, res, next) {
@@ -25,7 +26,8 @@ function canManageReservations(req, res, next) {
     return next();
   }
 
-  res.status(403).send("<h1>Acesso Negado</h1>");
+  req.session.erro = "Acesso Negado";
+  res.redirect("/");
 }
 
 function ensureAuthenticatedApi(req, res, next) {
