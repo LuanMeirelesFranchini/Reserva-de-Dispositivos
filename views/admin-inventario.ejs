@@ -160,10 +160,10 @@
                                         <small><%= carrinho.localizacao || 'Local nao definido' %></small>
                                     </td>
                                     <td>
-                                        <% const statusAtual = carrinho.status || 'online'; %>
-                                        <span class="status-badge <%= statusAtual === 'online' ? 'online' : 'offline' %>">
-                                            <%= statusAtual.toUpperCase() %>
-                                        </span>
+                                        <select id="ativo-<%= carrinho.id %>" style="margin-bottom: 0; min-width: 100px;">
+                                            <option value="1" <%= carrinho.ativo === 1 ? 'selected' : '' %>>Ativo</option>
+                                            <option value="0" <%= carrinho.ativo === 0 ? 'selected' : '' %>>Inativo</option>
+                                        </select>
                                     </td>
                                     <td>
                                         <div class="inventory-grid">
@@ -303,9 +303,11 @@
         async function salvarAlteracao(event, id) {
             const inputCapacidade = document.getElementById(`capacidade-${id}`);
             const inputIndisponiveis = document.getElementById(`indisponiveis-${id}`);
+            const selectAtivo = document.getElementById(`ativo-${id}`);
             const campoDisponiveis = document.getElementById(`disponiveis-${id}`);
             const novaCapacidade = parseInt(inputCapacidade.value, 10);
             const novosIndisponiveis = parseInt(inputIndisponiveis.value, 10);
+            const novoAtivo = parseInt(selectAtivo.value, 10);
             const btn = event.currentTarget;
 
             if (!Number.isInteger(novaCapacidade) || novaCapacidade < 0) {
@@ -337,7 +339,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-Token': csrfToken
                     },
-                    body: JSON.stringify({ id: id, capacidade: novaCapacidade, indisponiveis: novosIndisponiveis })
+                    body: JSON.stringify({ id: id, capacidade: novaCapacidade, indisponiveis: novosIndisponiveis, ativo: novoAtivo })
                 });
 
                 const data = await response.json();

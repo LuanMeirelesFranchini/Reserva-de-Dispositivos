@@ -762,8 +762,16 @@
 
         const statusLabels = {
             Ativa: 'Ativa',
+            Retirada: 'Retirada',
             Concluida: 'Concluida',
             Cancelada: 'Cancelada'
+        };
+
+        const statusColors = {
+            Ativa: palette.blue,
+            Retirada: palette.amber,
+            Concluida: palette.green,
+            Cancelada: palette.red
         };
 
         function buildChart(elementId, config) {
@@ -779,7 +787,7 @@
                     labels: statsStatus.map(item => statusLabels[item.status] || item.status),
                     datasets: [{
                         data: statsStatus.map(item => item.qtd),
-                        backgroundColor: [palette.blue, palette.red, palette.green, palette.amber, palette.slate]
+                        backgroundColor: statsStatus.map(item => statusColors[item.status] || palette.slate)
                     }]
                 },
                 options: {

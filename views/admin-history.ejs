@@ -18,13 +18,100 @@
 
         <h2 style="margin-top: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Histórico de Reservas</h2>
 
+        <%
+        function buildPageUrl(p) {
+          const params = [];
+          if (p) params.push('page=' + encodeURIComponent(p));
+          if (typeof q !== 'undefined' && q) params.push('q=' + encodeURIComponent(q));
+          if (typeof dataFiltro !== 'undefined' && dataFiltro) {
+            params.push('data=' + encodeURIComponent(dataFiltro));
+          } else {
+            if (typeof dataInicioFiltro !== 'undefined' && dataInicioFiltro) params.push('data_inicio=' + encodeURIComponent(dataInicioFiltro));
+            if (typeof dataFimFiltro !== 'undefined' && dataFimFiltro) params.push('data_fim=' + encodeURIComponent(dataFimFiltro));
+          }
+          if (typeof currentLimit !== 'undefined' && currentLimit) params.push('limit=' + encodeURIComponent(currentLimit));
+          if (typeof ordemFiltro !== 'undefined' && ordemFiltro) params.push('ordem=' + encodeURIComponent(ordemFiltro));
+          return '/admin/history' + (params.length ? '?' + params.join('&') : '');
+        }
+        %>
+
+        <% function renderPagination(position) { %>
+            <% if (typeof paginacao !== 'undefined' && paginacao.totalItems > 0) { %>
+                <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; padding: 0.75rem 1rem; background: var(--pico-card-background-color); border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color);">
+                    <div style="font-size: 0.9rem; color: var(--pico-muted-color);">
+                        Exibindo <strong><%= paginacao.startIndex %>–<%= paginacao.endIndex %></strong> de <strong><%= paginacao.totalItems %></strong> reservas
+                    </div>
+                    
+                    <% if (paginacao.totalPages > 1) { %>
+                        <nav aria-label="Navegação de páginas" style="margin: 0; display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                            <!-- Primeira -->
+                            <% if (paginacao.currentPage > 1) { %>
+                                <a href="<%= buildPageUrl(1) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Primeira página">&laquo; Primeira</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">&laquo; Primeira</span>
+                            <% } %>
+
+                            <!-- Anterior -->
+                            <% if (paginacao.hasPrev) { %>
+                                <a href="<%= buildPageUrl(paginacao.prevPage) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Página anterior">&lsaquo; Anterior</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">&lsaquo; Anterior</span>
+                            <% } %>
+
+                            <!-- Números de página com reticências -->
+                            <% paginacao.pages.forEach(p => { %>
+                                <% if (p === '...') { %>
+                                    <span style="padding: 0.25rem 0.4rem; font-size: 0.85rem; color: var(--pico-muted-color);">...</span>
+                                <% } else if (p === paginacao.currentPage) { %>
+                                    <span role="button" class="primary" style="padding: 0.25rem 0.6rem; font-size: 0.85rem; font-weight: bold; cursor: default;"><%= p %></span>
+                                <% } else { %>
+                                    <a href="<%= buildPageUrl(p) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.6rem; font-size: 0.85rem;"><%= p %></a>
+                                <% } %>
+                            <% }) %>
+
+                            <!-- Próxima -->
+                            <% if (paginacao.hasNext) { %>
+                                <a href="<%= buildPageUrl(paginacao.nextPage) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Próxima página">Próxima &rsaquo;</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">Próxima &rsaquo;</span>
+                            <% } %>
+
+                            <!-- Última -->
+                            <% if (paginacao.currentPage < paginacao.totalPages) { %>
+                                <a href="<%= buildPageUrl(paginacao.totalPages) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Última página">Última &raquo;</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">Última &raquo;</span>
+                            <% } %>
+                        </nav>
+
+                        <!-- Formulário 'Ir para' -->
+                        <form action="/admin/history" method="GET" style="display: inline-flex; align-items: center; gap: 0.35rem; margin: 0;">
+                            <% if (typeof q !== 'undefined' && q) { %><input type="hidden" name="q" value="<%= q %>"><% } %>
+                            <% if (typeof dataFiltro !== 'undefined' && dataFiltro) { %><input type="hidden" name="data" value="<%= dataFiltro %>"><% } else { %>
+                                <% if (typeof dataInicioFiltro !== 'undefined' && dataInicioFiltro) { %><input type="hidden" name="data_inicio" value="<%= dataInicioFiltro %>"><% } %>
+                                <% if (typeof dataFimFiltro !== 'undefined' && dataFimFiltro) { %><input type="hidden" name="data_fim" value="<%= dataFimFiltro %>"><% } %>
+                            <% } %>
+                            <% if (typeof currentLimit !== 'undefined' && currentLimit) { %><input type="hidden" name="limit" value="<%= currentLimit %>"><% } %>
+                            <% if (typeof ordemFiltro !== 'undefined' && ordemFiltro) { %><input type="hidden" name="ordem" value="<%= ordemFiltro %>"><% } %>
+                            <label for="goto-page-history-<%= position %>" style="font-size: 0.85rem; margin: 0; white-space: nowrap;">Ir para:</label>
+                            <input type="number" id="goto-page-history-<%= position %>" name="page" min="1" max="<%= paginacao.totalPages %>" value="<%= paginacao.currentPage %>" style="width: 60px; padding: 0.2rem 0.4rem; font-size: 0.85rem; margin: 0; text-align: center;">
+                            <button type="submit" class="secondary outline" style="padding: 0.2rem 0.5rem; font-size: 0.85rem; margin: 0;">Ir</button>
+                        </form>
+                    <% } %>
+                </div>
+            <% } %>
+        <% } %>
+
         <div style="background: var(--pico-card-background-color); padding: 1rem 1.5rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); margin: 0 auto 1.5rem auto; box-shadow: var(--pico-box-shadow); max-width: fit-content;">
             <form action="/admin/history" method="GET" style="margin-bottom: 0;">
-                <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+                    <div style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                        <label for="q" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Buscar Professor ou Sala:</label>
+                        <input type="search" id="q" name="q" value="<%= typeof q !== 'undefined' ? q : '' %>" placeholder="Nome ou sala..." style="margin-bottom: 0;">
+                    </div>
                     <div style="margin-bottom: 0;">
                         <label for="limit" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Exibir:</label>
                         <select name="limit" id="limit" style="margin-bottom: 0; min-width: 80px;" onchange="this.form.submit()">
-                            <option value="10" <%= currentLimit == 10 ? 'selected' : '' %>>10</option>
                             <option value="20" <%= currentLimit == 20 ? 'selected' : '' %>>20</option>
                             <option value="50" <%= currentLimit == 50 ? 'selected' : '' %>>50</option>
                             <option value="100" <%= currentLimit == 100 ? 'selected' : '' %>>100</option>
@@ -44,7 +131,7 @@
                     <div style="margin-bottom: 0;">
                         <button type="submit" style="margin-bottom: 0;">Buscar</button>
                     </div>
-                    <% if (typeof dataFiltro !== 'undefined' && dataFiltro) { %>
+                    <% if ((typeof q !== 'undefined' && q) || (typeof dataFiltro !== 'undefined' && dataFiltro) || (typeof ordemFiltro !== 'undefined' && ordemFiltro !== 'recentes') || (typeof currentLimit !== 'undefined' && currentLimit != 20)) { %>
                         <div style="margin-bottom: 0;">
                             <a href="/admin/history" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
                         </div>
@@ -53,11 +140,13 @@
             </form>
         </div>
         
-        <input type="search" class="live-search" placeholder="Busca instantânea...">
+        <% renderPagination('top'); %>
+
        <div class="table-container">
             <table class="striped">
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>Professor</th>
                         <th>Qtde</th>
                         <th>Carrinho</th>
@@ -86,6 +175,7 @@
                     <% if (reservas.length > 0) { %>
                         <% reservas.forEach(reserva => { %>
                             <tr>
+                                <td><strong style="color: var(--pico-primary);"><%= reserva.id %></strong></td>
                                 <td><strong><%= reserva.nome_professor %></strong></td>
                                 <td><%= reserva.quantidade %></td>
                                 <td class="col-carrinho"><%= reserva.nome_carrinho %></td>
@@ -101,34 +191,15 @@
                             </tr>
                         <% }) %>
                     <% } else { %>
-                        <tr><td colspan="8" style="text-align: center; padding: 2rem;">Nenhum registro encontrado no historico.</td></tr>
+                        <tr><td colspan="9" style="text-align: center; padding: 2rem;">Nenhum registro encontrado no historico.</td></tr>
                     <% } %>
                 </tbody>
             </table>
         </div>
 
-        <% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
-            <nav style="margin-top: 2rem; margin-bottom: 4rem; display: flex; justify-content: center;">
-                <div style="display: inline-flex; align-items: center; gap: 1rem; background: var(--pico-card-background-color); padding: 0.5rem 1rem; border-radius: 2rem; box-shadow: var(--pico-box-shadow); border: 1px solid var(--pico-muted-border-color);">
-                    <% if (currentPage > 1) { %>
-                        <a href="/admin/history?page=<%= currentPage - 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %>&limit=<%= currentLimit %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">&laquo; Anterior</a>
-                    <% } else { %>
-                        <span style="opacity: 0.5; font-size: 0.9rem;">&laquo; Anterior</span>
-                    <% } %>
-                    
-                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--pico-color);">
-                        Página <%= currentPage %> de <%= totalPages %>
-                    </span>
-                    
-                    <% if (currentPage < totalPages) { %>
-                        <a href="/admin/history?page=<%= currentPage + 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %>&limit=<%= currentLimit %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">Próxima &raquo;</a>
-                    <% } else { %>
-                        <span style="opacity: 0.5; font-size: 0.9rem;">Próxima &raquo;</span>
-                    <% } %>
-                </div>
-            </nav>
-        <% } %>
+        <% renderPagination('bottom'); %>
     </main>
     <%- include('partials/footer') %>
 </body>
 </html>
+

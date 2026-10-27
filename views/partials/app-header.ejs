@@ -55,7 +55,7 @@
         // Skeleton logic
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a');
-            if (link && link.href && !link.target && link.host === window.location.host && !link.pathname.includes('#') && !link.hasAttribute('download')) {
+            if (link && link.href && !link.target && link.host === window.location.host && !link.hash && link.getAttribute('href') !== '#' && !link.hasAttribute('download')) {
                 const overlay = document.getElementById('skeleton-overlay');
                 if (overlay) overlay.style.display = 'flex';
             }

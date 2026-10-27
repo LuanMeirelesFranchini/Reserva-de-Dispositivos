@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestao - Sistema de Reservas</title>
     <title>Painel de Gestao - La Salle</title>
     <script src="/theme.js"></script>
     
@@ -17,13 +16,115 @@
 
         <h2 style="margin-top: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color);">Reservas Ativas no Sistema</h2>
 
-        <div style="background: var(--pico-card-background-color); padding: 1rem 1.5rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); margin: 0 auto 1.5rem auto; box-shadow: var(--pico-box-shadow); max-width: fit-content;">
+        <%
+        function buildPageUrl(p) {
+          const params = [];
+          if (p) params.push('page=' + encodeURIComponent(p));
+          if (typeof q !== 'undefined' && q) params.push('q=' + encodeURIComponent(q));
+          if (typeof statusFiltro !== 'undefined' && statusFiltro) params.push('status=' + encodeURIComponent(statusFiltro));
+          if (typeof dataFiltro !== 'undefined' && dataFiltro) {
+            params.push('data=' + encodeURIComponent(dataFiltro));
+          } else {
+            if (typeof dataInicioFiltro !== 'undefined' && dataInicioFiltro) params.push('data_inicio=' + encodeURIComponent(dataInicioFiltro));
+            if (typeof dataFimFiltro !== 'undefined' && dataFimFiltro) params.push('data_fim=' + encodeURIComponent(dataFimFiltro));
+          }
+          if (typeof blocoFiltro !== 'undefined' && blocoFiltro) params.push('bloco=' + encodeURIComponent(blocoFiltro));
+          if (typeof currentLimit !== 'undefined' && currentLimit) params.push('limit=' + encodeURIComponent(currentLimit));
+          if (typeof ordemFiltro !== 'undefined' && ordemFiltro) params.push('ordem=' + encodeURIComponent(ordemFiltro));
+          return '/admin' + (params.length ? '?' + params.join('&') : '');
+        }
+        %>
+
+        <% function renderPagination(position) { %>
+            <% if (typeof paginacao !== 'undefined' && paginacao.totalItems > 0) { %>
+                <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; padding: 0.75rem 1rem; background: var(--pico-card-background-color); border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color);">
+                    <div style="font-size: 0.9rem; color: var(--pico-muted-color);">
+                        Exibindo <strong><%= paginacao.startIndex %>–<%= paginacao.endIndex %></strong> de <strong><%= paginacao.totalItems %></strong> reservas
+                    </div>
+                    
+                    <% if (paginacao.totalPages > 1) { %>
+                        <nav aria-label="Navegação de páginas" style="margin: 0; display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                            <!-- Primeira -->
+                            <% if (paginacao.currentPage > 1) { %>
+                                <a href="<%= buildPageUrl(1) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Primeira página">&laquo; Primeira</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">&laquo; Primeira</span>
+                            <% } %>
+
+                            <!-- Anterior -->
+                            <% if (paginacao.hasPrev) { %>
+                                <a href="<%= buildPageUrl(paginacao.prevPage) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Página anterior">&lsaquo; Anterior</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">&lsaquo; Anterior</span>
+                            <% } %>
+
+                            <!-- Números de página com reticências -->
+                            <% paginacao.pages.forEach(p => { %>
+                                <% if (p === '...') { %>
+                                    <span style="padding: 0.25rem 0.4rem; font-size: 0.85rem; color: var(--pico-muted-color);">...</span>
+                                <% } else if (p === paginacao.currentPage) { %>
+                                    <span role="button" class="primary" style="padding: 0.25rem 0.6rem; font-size: 0.85rem; font-weight: bold; cursor: default;"><%= p %></span>
+                                <% } else { %>
+                                    <a href="<%= buildPageUrl(p) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.6rem; font-size: 0.85rem;"><%= p %></a>
+                                <% } %>
+                            <% }) %>
+
+                            <!-- Próxima -->
+                            <% if (paginacao.hasNext) { %>
+                                <a href="<%= buildPageUrl(paginacao.nextPage) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Próxima página">Próxima &rsaquo;</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">Próxima &rsaquo;</span>
+                            <% } %>
+
+                            <!-- Última -->
+                            <% if (paginacao.currentPage < paginacao.totalPages) { %>
+                                <a href="<%= buildPageUrl(paginacao.totalPages) %>" role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" title="Última página">Última &raquo;</a>
+                            <% } else { %>
+                                <span role="button" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; opacity: 0.4; pointer-events: none;">Última &raquo;</span>
+                            <% } %>
+                        </nav>
+
+                        <!-- Formulário 'Ir para' -->
+                        <form action="/admin" method="GET" style="display: inline-flex; align-items: center; gap: 0.35rem; margin: 0;">
+                            <% if (typeof q !== 'undefined' && q) { %><input type="hidden" name="q" value="<%= q %>"><% } %>
+                            <% if (typeof statusFiltro !== 'undefined' && statusFiltro) { %><input type="hidden" name="status" value="<%= statusFiltro %>"><% } %>
+                            <% if (typeof dataFiltro !== 'undefined' && dataFiltro) { %><input type="hidden" name="data" value="<%= dataFiltro %>"><% } else { %>
+                                <% if (typeof dataInicioFiltro !== 'undefined' && dataInicioFiltro) { %><input type="hidden" name="data_inicio" value="<%= dataInicioFiltro %>"><% } %>
+                                <% if (typeof dataFimFiltro !== 'undefined' && dataFimFiltro) { %><input type="hidden" name="data_fim" value="<%= dataFimFiltro %>"><% } %>
+                            <% } %>
+                            <% if (typeof blocoFiltro !== 'undefined' && blocoFiltro) { %><input type="hidden" name="bloco" value="<%= blocoFiltro %>"><% } %>
+                            <% if (typeof currentLimit !== 'undefined' && currentLimit) { %><input type="hidden" name="limit" value="<%= currentLimit %>"><% } %>
+                            <% if (typeof ordemFiltro !== 'undefined' && ordemFiltro) { %><input type="hidden" name="ordem" value="<%= ordemFiltro %>"><% } %>
+                            <label for="goto-page-<%= position %>" style="font-size: 0.85rem; margin: 0; white-space: nowrap;">Ir para:</label>
+                            <input type="number" id="goto-page-<%= position %>" name="page" min="1" max="<%= paginacao.totalPages %>" value="<%= paginacao.currentPage %>" style="width: 60px; padding: 0.2rem 0.4rem; font-size: 0.85rem; margin: 0; text-align: center;">
+                            <button type="submit" class="secondary outline" style="padding: 0.2rem 0.5rem; font-size: 0.85rem; margin: 0;">Ir</button>
+                        </form>
+                    <% } %>
+                </div>
+            <% } %>
+        <% } %>
+
+        <div style="background: var(--pico-card-background-color); padding: 1rem 1.5rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); margin: 0 auto 1.5rem auto; box-shadow: var(--pico-box-shadow);">
             <form action="/admin" method="GET" style="margin-bottom: 0;">
-                <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+                    <div style="margin-bottom: 0; flex: 1; min-width: 180px;">
+                        <label for="q" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Buscar Professor:</label>
+                        <input type="search" id="q" name="q" value="<%= typeof q !== 'undefined' ? q : '' %>" placeholder="Nome do professor..." style="margin-bottom: 0;">
+                    </div>
+                    <div style="margin-bottom: 0;">
+                        <label for="status" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Status:</label>
+                        <select name="status" id="status" style="margin-bottom: 0; min-width: 140px;" onchange="this.form.submit()">
+                            <option value="" <%= (!statusFiltro) ? 'selected' : '' %>>Ativas e Retiradas</option>
+                            <option value="Atrasada" <%= statusFiltro === 'Atrasada' ? 'selected' : '' %>>⚠️ Em atraso</option>
+                            <option value="Ativa" <%= statusFiltro === 'Ativa' ? 'selected' : '' %>>Ativa</option>
+                            <option value="Retirada" <%= statusFiltro === 'Retirada' ? 'selected' : '' %>>Retirada</option>
+                            <option value="Concluida" <%= statusFiltro === 'Concluida' ? 'selected' : '' %>>Concluída</option>
+                            <option value="Cancelada" <%= statusFiltro === 'Cancelada' ? 'selected' : '' %>>Cancelada</option>
+                        </select>
+                    </div>
                     <div style="margin-bottom: 0;">
                         <label for="limit" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Exibir:</label>
                         <select name="limit" id="limit" style="margin-bottom: 0; min-width: 80px;" onchange="this.form.submit()">
-                            <option value="10" <%= (typeof currentLimit !== 'undefined' && currentLimit == 10) ? 'selected' : '' %>>10</option>
                             <option value="20" <%= (typeof currentLimit === 'undefined' || currentLimit == 20) ? 'selected' : '' %>>20</option>
                             <option value="50" <%= (typeof currentLimit !== 'undefined' && currentLimit == 50) ? 'selected' : '' %>>50</option>
                             <option value="100" <%= (typeof currentLimit !== 'undefined' && currentLimit == 100) ? 'selected' : '' %>>100</option>
@@ -38,7 +139,7 @@
                     </div>
                     <div style="margin-bottom: 0;">
                         <label for="bloco" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Bloco:</label>
-                        <select name="bloco" id="bloco" style="margin-bottom: 0; min-width: 150px;" onchange="this.form.submit()">
+                        <select name="bloco" id="bloco" style="margin-bottom: 0; min-width: 140px;" onchange="this.form.submit()">
                             <option value="">Todos</option>
                             <% if (typeof blocosSalas !== 'undefined') { %>
                                 <% blocosSalas.forEach(bloco => { %>
@@ -54,7 +155,7 @@
                     <div style="margin-bottom: 0;">
                         <button type="submit" style="margin-bottom: 0;">Buscar</button>
                     </div>
-                    <% if ((typeof dataFiltro !== 'undefined' && dataFiltro) || (typeof blocoFiltro !== 'undefined' && blocoFiltro)) { %>
+                    <% if ((typeof q !== 'undefined' && q) || (typeof statusFiltro !== 'undefined' && statusFiltro) || (typeof dataFiltro !== 'undefined' && dataFiltro) || (typeof blocoFiltro !== 'undefined' && blocoFiltro) || (typeof ordemFiltro !== 'undefined' && ordemFiltro !== 'antigas') || (typeof currentLimit !== 'undefined' && currentLimit != 20)) { %>
                         <div style="margin-bottom: 0;">
                             <a href="/admin" role="button" class="secondary outline" style="margin-bottom: 0; display: block; text-align: center;">Limpar</a>
                         </div>
@@ -63,12 +164,14 @@
             </form>
         </div>
 
+        <% renderPagination('top'); %>
+
         <% if (reservas.length > 0) { %>
-            <input type="search" class="live-search" placeholder="Busca instantânea...">
             <div style="overflow-x: auto;">
                 <table>
                   <thead>
                     <tr>
+                      <th>ID</th>
                       <th>Professor</th>
                       <th>Qtde</th>
                       <th>Carrinho</th>
@@ -90,7 +193,14 @@
                 } %>
               
                     <% reservas.forEach(reserva => { %>
+                      <% const emAtraso = typeof estaEmAtraso === 'function' ? estaEmAtraso(reserva) : false; %>
                       <tr class="teste2">
+                        <td>
+                          <strong style="color: var(--pico-primary);"><%= reserva.id %></strong>
+                          <% if (emAtraso) { %>
+                            <span style="display: block; font-size: 0.7rem; background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700; text-transform: uppercase; margin-top: 0.2rem; width: fit-content;">Em atraso</span>
+                          <% } %>
+                        </td>
                         <td><%= reserva.nome_professor %></td>
                         <td><%= reserva.quantidade %></td>
                         <td><%= reserva.nome_carrinho %></td>
@@ -98,16 +208,47 @@
                         <td><%= formatarData(reserva.data_devolucao)%></td>
                         <td><%= reserva.sala %></td>
                         <td>
-                          <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0;" onsubmit="return confirm('Realmente deseja concluir esta reserva?');">
-                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                            <button type="submit" class="primary">Concluir</button>
-                          </form>
+                          <% if (reserva.status === 'Ativa') { %>
+                            <form action="/reservas/entregar/<%= reserva.id %>" method="POST" style="margin: 0; display: inline-block;">
+                              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                              <button type="submit" class="secondary" onclick="return confirm('Confirmar entrega do carrinho para o professor?');">Entregar</button>
+                            </form>
+                            <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0; display: inline-block;">
+                               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                               <button type="button" class="primary outline" onclick="document.getElementById('modal-concluir-<%= reserva.id %>').showModal()">Devolver</button>
+                            </form>
+                          <% } else if (reserva.status === 'Retirada') { %>
+                            <button type="button" class="primary" onclick="document.getElementById('modal-concluir-<%= reserva.id %>').showModal()">Receber (Checklist)</button>
+                          <% } else { %>
+                             <%= reserva.status %>
+                          <% } %>
+
+                          <dialog id="modal-concluir-<%= reserva.id %>">
+                            <article>
+                              <header>
+                                <button aria-label="Close" class="close" onclick="document.getElementById('modal-concluir-<%= reserva.id %>').close()" style="border: none; background: transparent; padding: 0;"></button>
+                                Checklist de Devolução
+                              </header>
+                              <p>Você está recebendo o <strong><%= reserva.nome_carrinho %></strong> do professor <strong><%= reserva.nome_professor %></strong>.</p>
+                              <form action="/reservas/concluir/<%= reserva.id %>" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <label for="observacoes_<%= reserva.id %>">Houve alguma avaria? (Deixe em branco se estiver tudo OK)</label>
+                                <textarea id="observacoes_<%= reserva.id %>" name="observacoes_devolucao" placeholder="Ex: Tela riscada no chromebook 15..."></textarea>
+                                <footer>
+                                  <button type="button" class="secondary" onclick="document.getElementById('modal-concluir-<%= reserva.id %>').close()">Cancelar</button>
+                                  <button type="submit" class="primary">Concluir Reserva</button>
+                                </footer>
+                              </form>
+                            </article>
+                          </dialog>
                         </td>
                       </tr>
                     <% }) %>
                   </tbody>
                 </table>
             </div>
+
+            <% renderPagination('bottom'); %>
         <% } else { %>
             <article class="empty-state">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -119,28 +260,6 @@
                 <h3>Nenhuma reserva encontrada</h3>
                 <p>Nao ha nenhuma reserva ativa para os filtros selecionados no momento.</p>
             </article>
-        <% } %>
-
-        <% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
-            <nav style="margin-top: 2rem; margin-bottom: 4rem; display: flex; justify-content: center;">
-                <div style="display: inline-flex; align-items: center; gap: 1rem; background: var(--pico-card-background-color); padding: 0.5rem 1rem; border-radius: 2rem; box-shadow: var(--pico-box-shadow); border: 1px solid var(--pico-muted-border-color);">
-                    <% if (currentPage > 1) { %>
-                        <a href="/admin?page=<%= currentPage - 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof blocoFiltro !== 'undefined' && blocoFiltro) ? '&bloco=' + encodeURIComponent(blocoFiltro) : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">&laquo; Anterior</a>
-                    <% } else { %>
-                        <span style="opacity: 0.5; font-size: 0.9rem;">&laquo; Anterior</span>
-                    <% } %>
-                    
-                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--pico-color);">
-                        Página <%= currentPage %> de <%= totalPages %>
-                    </span>
-                    
-                    <% if (currentPage < totalPages) { %>
-                        <a href="/admin?page=<%= currentPage + 1 %><%= (typeof dataFiltro !== 'undefined' && dataFiltro) ? '&data=' + dataFiltro : '' %><%= (typeof blocoFiltro !== 'undefined' && blocoFiltro) ? '&bloco=' + encodeURIComponent(blocoFiltro) : '' %><%= (typeof currentLimit !== 'undefined') ? '&limit=' + currentLimit : '' %><%= (typeof ordemFiltro !== 'undefined') ? '&ordem=' + ordemFiltro : '' %>" style="text-decoration: none; font-size: 0.9rem;">Próxima &raquo;</a>
-                    <% } else { %>
-                        <span style="opacity: 0.5; font-size: 0.9rem;">Próxima &raquo;</span>
-                    <% } %>
-                </div>
-            </nav>
         <% } %>
     </main>
     <%- include('partials/footer') %>

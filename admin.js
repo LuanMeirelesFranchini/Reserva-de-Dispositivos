@@ -4,6 +4,11 @@ const {
   calcularPicoBloqueado,
   calcularPicoDeUso,
 } = require("./services/reservation-service");
+const { montarSalasParaView } = require("./salas-data");
+const { escaparLike, calcularPaginacao } = require("./helpers/pagination-helper");
+const { podeAlterarOuDesativarAdmin } = require("./helpers/user-rules");
+const { processarFilaEspera } = require("./services/waitlist-service");
+
 
 const MONTH_NAMES_PT_BR = [
   "Janeiro",
@@ -218,57 +223,126 @@ module.exports = (db, middlewares, helpers) => {
     normalizarCarrinho,
     registrarAuditoria,
     toMySQLDateTime,
+    estaEmAtraso,
   } = helpers;
 
   router.get("/", canManageReservations, async (req, res) => {
     try {
-      const page = parseInt(req.query.page, 10) || 1;
-      const limit = parseInt(req.query.limit, 10) || 20;
-      const offset = (page - 1) * limit;
-      const dataFiltro = req.query.data || "";
+      const q = String(req.query.q || "").trim();
+      const statusFiltro = String(req.query.status || "").trim();
+      
+      // Trata parâmetro legado ?data=X como data_inicio=X e data_fim=X
+      const dataLegado = String(req.query.data || "").trim();
+      const dataInicioFiltro = String(req.query.data_inicio || dataLegado || "").trim();
+      const dataFimFiltro = String(req.query.data_fim || dataLegado || "").trim();
+      
+      const blocoFiltro = String(req.query.bloco || "").trim();
+      // Padrão de ordenação: 'antigas' (ASC: hoje ➔ futuro)
+      const ordemFiltro = req.query.ordem === "recentes" ? "recentes" : "antigas";
+      const ordemSql = ordemFiltro === "recentes" ? "DESC" : "ASC";
 
-      const params = [];
-      let countSql = "SELECT COUNT(*) as count FROM reservas r WHERE r.status = 'Ativa'";
-      let dataSql = `
+      const countParams = [];
+      const dataParams = [];
+      const whereClauses = [];
+
+      // Status
+      if (statusFiltro === "Atrasada") {
+        const agoraStr = toMySQLDateTime(new Date());
+        whereClauses.push("r.status IN ('Ativa', 'Retirada') AND r.data_devolucao < ?");
+        countParams.push(agoraStr);
+        dataParams.push(agoraStr);
+      } else if (statusFiltro && ["Ativa", "Retirada", "Concluida", "Cancelada"].includes(statusFiltro)) {
+        whereClauses.push("r.status = ?");
+        countParams.push(statusFiltro);
+        dataParams.push(statusFiltro);
+      } else {
+        whereClauses.push("r.status IN ('Ativa', 'Retirada')");
+      }
+
+      // Busca por professor com LIKE parametrizado
+      if (q) {
+        whereClauses.push("u.nome LIKE ?");
+        const likeTerm = `%${escaparLike(q)}%`;
+        countParams.push(likeTerm);
+        dataParams.push(likeTerm);
+      }
+
+      // Semântica de sobreposição de intervalos:
+      // [r.data_retirada, r.data_devolucao] intersecta [data_inicio, data_fim]
+      if (dataInicioFiltro && dataFimFiltro) {
+        whereClauses.push("DATE(r.data_retirada) <= DATE(?) AND DATE(r.data_devolucao) >= DATE(?)");
+        countParams.push(dataFimFiltro, dataInicioFiltro);
+        dataParams.push(dataFimFiltro, dataInicioFiltro);
+      } else if (dataInicioFiltro) {
+        whereClauses.push("DATE(r.data_devolucao) >= DATE(?)");
+        countParams.push(dataInicioFiltro);
+        dataParams.push(dataInicioFiltro);
+      } else if (dataFimFiltro) {
+        whereClauses.push("DATE(r.data_retirada) <= DATE(?)");
+        countParams.push(dataFimFiltro);
+        dataParams.push(dataFimFiltro);
+      }
+
+      // Bloco
+      if (blocoFiltro) {
+        whereClauses.push("r.sala LIKE ?");
+        const blocoTerm = `${escaparLike(blocoFiltro)}%`;
+        countParams.push(blocoTerm);
+        dataParams.push(blocoTerm);
+      }
+
+      const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+      const countSql = `
+        SELECT COUNT(*) as count
+        FROM reservas r
+        JOIN carrinhos c ON r.carrinho_id = c.id
+        JOIN usuarios u ON r.usuario_id = u.id
+        ${whereSql}
+      `;
+      const totalResult = await dbGet(db, countSql, countParams);
+      const totalCount = totalResult ? totalResult.count : 0;
+
+      const paginacao = calcularPaginacao({
+        totalItems: totalCount,
+        currentPage: req.query.page,
+        pageSize: req.query.limit,
+      });
+
+      const dataSql = `
         SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor
         FROM reservas r
         JOIN carrinhos c ON r.carrinho_id = c.id
         JOIN usuarios u ON r.usuario_id = u.id
-        WHERE r.status = 'Ativa'
+        ${whereSql}
+        ORDER BY r.data_retirada ${ordemSql}
+        LIMIT ${paginacao.pageSize} OFFSET ${paginacao.offset}
       `;
+      const reservas = await dbAll(db, dataSql, dataParams);
+      const blocosSalas = montarSalasParaView();
 
-      const ordem = req.query.ordem === 'recentes' ? 'DESC' : 'ASC';
-
-      if (dataFiltro) {
-        countSql += " AND DATE(r.data_retirada) = DATE(?)";
-        dataSql += " AND DATE(r.data_retirada) = DATE(?)";
-        params.push(dataFiltro);
-      }
-
-      dataSql += ` ORDER BY r.data_retirada ${ordem} LIMIT ${limit} OFFSET ${offset}`;
-
-      const totalResult = await dbGet(db, countSql, params);
-      const totalCount = totalResult ? totalResult.count : 0;
-      const totalPages = Math.ceil(totalCount / limit) || 1;
-
-      const reservas = await dbAll(db, dataSql, params);
-      
-      // Ensure we pass csrfToken if it exists in the app context, though it's usually res.locals.csrfToken
-      // We pass the new pagination data
       res.render("admin", {
         reservas,
         user: req.user,
-        dataFiltro,
-        currentPage: page,
-        totalPages,
-        currentLimit: limit,
-        ordemFiltro: req.query.ordem || 'antigas'
+        q,
+        statusFiltro,
+        dataFiltro: dataLegado,
+        dataInicioFiltro,
+        dataFimFiltro,
+        blocoFiltro,
+        blocosSalas,
+        paginacao,
+        currentPage: paginacao.currentPage,
+        totalPages: paginacao.totalPages,
+        currentLimit: paginacao.pageSize,
+        ordemFiltro,
+        estaEmAtraso,
       });
     } catch (err) {
       console.error("Erro interno em GET /admin:", err);
       res.status(500).send("Erro ao carregar a pagina de admin.");
     }
   });
+
 
   router.get("/users", isAdmin, async (req, res) => {
     try {
@@ -285,36 +359,79 @@ module.exports = (db, middlewares, helpers) => {
 
   router.get("/history", canManageReservations, async (req, res) => {
     try {
-      const page = parseInt(req.query.page, 10) || 1;
-      const limit = parseInt(req.query.limit, 10) || 20;
-      const offset = (page - 1) * limit;
-      const dataFiltro = req.query.data || "";
+      const q = String(req.query.q || "").trim();
+      const dataLegado = String(req.query.data || "").trim();
+      const dataInicioFiltro = String(req.query.data_inicio || dataLegado || "").trim();
+      const dataFimFiltro = String(req.query.data_fim || dataLegado || "").trim();
+      const ordemFiltro = req.query.ordem === 'antigas' ? 'antigas' : 'recentes';
+      const ordemSql = ordemFiltro === 'antigas' ? 'ASC' : 'DESC';
 
-      let countSql = "SELECT COUNT(*) as count FROM reservas r WHERE r.status = 'Concluida'";
-      let dataSql = `SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor
-         FROM reservas r
-         JOIN carrinhos c ON r.carrinho_id = c.id
-         JOIN usuarios u ON r.usuario_id = u.id
-         WHERE r.status = 'Concluida'`;
-      const params = [];
+      const countParams = [];
+      const dataParams = [];
+      const whereClauses = ["r.status = 'Concluida'"];
 
-      const ordem = req.query.ordem === 'antigas' ? 'ASC' : 'DESC';
-
-      if (dataFiltro) {
-        countSql += " AND DATE(r.data_retirada) = DATE(?)";
-        dataSql += " AND DATE(r.data_retirada) = DATE(?)";
-        params.push(dataFiltro);
+      if (q) {
+        whereClauses.push("(u.nome LIKE ? OR r.sala LIKE ?)");
+        const likeTerm = `%${escaparLike(q)}%`;
+        countParams.push(likeTerm, likeTerm);
+        dataParams.push(likeTerm, likeTerm);
       }
 
-      dataSql += ` ORDER BY r.data_devolucao ${ordem} LIMIT ${limit} OFFSET ${offset}`;
+      if (dataInicioFiltro && dataFimFiltro) {
+        whereClauses.push("DATE(r.data_retirada) <= DATE(?) AND DATE(r.data_devolucao) >= DATE(?)");
+        countParams.push(dataFimFiltro, dataInicioFiltro);
+        dataParams.push(dataFimFiltro, dataInicioFiltro);
+      } else if (dataInicioFiltro) {
+        whereClauses.push("DATE(r.data_devolucao) >= DATE(?)");
+        countParams.push(dataInicioFiltro);
+        dataParams.push(dataInicioFiltro);
+      } else if (dataFimFiltro) {
+        whereClauses.push("DATE(r.data_retirada) <= DATE(?)");
+        countParams.push(dataFimFiltro);
+        dataParams.push(dataFimFiltro);
+      }
 
-      const totalResult = await dbGet(db, countSql, params);
+      const whereSql = `WHERE ${whereClauses.join(" AND ")}`;
+      const countSql = `
+        SELECT COUNT(*) as count
+        FROM reservas r
+        JOIN carrinhos c ON r.carrinho_id = c.id
+        JOIN usuarios u ON r.usuario_id = u.id
+        ${whereSql}
+      `;
+      const totalResult = await dbGet(db, countSql, countParams);
       const totalCount = totalResult ? totalResult.count : 0;
-      const totalPages = Math.ceil(totalCount / limit) || 1;
 
-      const reservas = await dbAll(db, dataSql, params);
+      const paginacao = calcularPaginacao({
+        totalItems: totalCount,
+        currentPage: req.query.page,
+        pageSize: req.query.limit,
+      });
 
-      res.render("admin-history", { reservas, user: req.user, currentPage: page, totalPages, dataFiltro, currentLimit: limit, ordemFiltro: req.query.ordem || 'recentes' });
+      const dataSql = `
+        SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor
+        FROM reservas r
+        JOIN carrinhos c ON r.carrinho_id = c.id
+        JOIN usuarios u ON r.usuario_id = u.id
+        ${whereSql}
+        ORDER BY r.data_devolucao ${ordemSql}
+        LIMIT ${paginacao.pageSize} OFFSET ${paginacao.offset}
+      `;
+      const reservas = await dbAll(db, dataSql, dataParams);
+
+      res.render("admin-history", {
+        reservas,
+        user: req.user,
+        q,
+        dataFiltro: dataLegado,
+        dataInicioFiltro,
+        dataFimFiltro,
+        paginacao,
+        currentPage: paginacao.currentPage,
+        totalPages: paginacao.totalPages,
+        currentLimit: paginacao.pageSize,
+        ordemFiltro,
+      });
     } catch (err) {
       console.error("Erro interno em GET /admin/history:", err);
       res.status(500).send("Erro ao carregar historico.");
@@ -388,6 +505,7 @@ module.exports = (db, middlewares, helpers) => {
     const id = parseInt(req.body.id, 10);
     const capacidade = parseInt(req.body.capacidade, 10);
     const indisponiveis = parseInt(req.body.indisponiveis, 10);
+    const ativo = parseInt(req.body.ativo, 10) === 1 ? 1 : 0;
 
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ message: "Carrinho invalido." });
@@ -412,7 +530,7 @@ module.exports = (db, middlewares, helpers) => {
     try {
       const carrinhoAnterior = await dbGet(
         db,
-        "SELECT id, nome, capacidade, indisponiveis FROM carrinhos WHERE id = ?",
+        "SELECT id, nome, capacidade, indisponiveis, ativo FROM carrinhos WHERE id = ?",
         [id],
       );
 
@@ -422,8 +540,8 @@ module.exports = (db, middlewares, helpers) => {
 
       await dbRun(
         db,
-        "UPDATE carrinhos SET capacidade = ?, indisponiveis = ? WHERE id = ?",
-        [capacidade, indisponiveis, id],
+        "UPDATE carrinhos SET capacidade = ?, indisponiveis = ?, ativo = ? WHERE id = ?",
+        [capacidade, indisponiveis, ativo, id],
       );
 
       await registrarAuditoria(req, {
@@ -435,10 +553,32 @@ module.exports = (db, middlewares, helpers) => {
           antes: {
             capacidade: carrinhoAnterior.capacidade,
             indisponiveis: carrinhoAnterior.indisponiveis,
+            ativo: carrinhoAnterior.ativo,
           },
-          depois: { capacidade, indisponiveis },
+          depois: { capacidade, indisponiveis, ativo },
         },
       });
+
+      const capacidadeAumentou =
+        Number(capacidade) > Number(carrinhoAnterior.capacidade);
+      const indisponiveisDiminuiram =
+        Number(indisponiveis) < Number(carrinhoAnterior.indisponiveis);
+
+      if (capacidadeAumentou || indisponiveisDiminuiram) {
+        try {
+          await processarFilaEspera(db, id, {
+            id: req.user?.id,
+            nome: req.user?.nome,
+            role: req.user?.role,
+            ip: req.ip || req.socket?.remoteAddress || null,
+          });
+        } catch (filaErr) {
+          console.error(
+            "Erro ao processar fila de espera apos atualizar inventario:",
+            filaErr.message,
+          );
+        }
+      }
 
       res.json({
         message: "Sucesso!",
@@ -457,20 +597,24 @@ module.exports = (db, middlewares, helpers) => {
     const dataFim = new Date(req.body.data_fim);
 
     if (!Number.isInteger(carrinhoId) || carrinhoId <= 0) {
-      { req.session.erro = "Carrinho invalido."; return res.redirect("/admin/inventario"); }
+      req.session.erro = "Selecione um carrinho valido para o bloqueio.";
+      return res.redirect("/admin/inventario");
     }
     if (!Number.isInteger(quantidade) || quantidade <= 0) {
-      { req.session.erro = "Quantidade do bloqueio invalida."; return res.redirect("/admin/inventario"); }
+      req.session.erro = "A quantidade de dispositivos a bloquear deve ser maior que zero.";
+      return res.redirect("/admin/inventario");
     }
     if (!motivo) {
-      { req.session.erro = "Informe o motivo."; return res.redirect("/admin/inventario"); }
+      req.session.erro = "Informe o motivo do bloqueio para registro.";
+      return res.redirect("/admin/inventario");
     }
-    if (
-      isNaN(dataInicio.getTime()) ||
-      isNaN(dataFim.getTime()) ||
-      dataFim <= dataInicio
-    ) {
-      { req.session.erro = "Periodo invalido."; return res.redirect("/admin/inventario"); }
+    if (isNaN(dataInicio.getTime()) || isNaN(dataFim.getTime())) {
+      req.session.erro = "Datas de inicio ou fim invalidas.";
+      return res.redirect("/admin/inventario");
+    }
+    if (dataFim <= dataInicio) {
+      req.session.erro = "A data final do bloqueio deve ser posterior a data inicial.";
+      return res.redirect("/admin/inventario");
     }
 
     try {
@@ -481,10 +625,12 @@ module.exports = (db, middlewares, helpers) => {
       );
 
       if (!carrinho) {
-        { req.session.erro = "Carrinho nao encontrado."; return res.redirect("/admin/inventario"); }
+        req.session.erro = "Carrinho nao encontrado.";
+        return res.redirect("/admin/inventario");
       }
       if (quantidade > carrinho.capacidade) {
-        { req.session.erro = "Bloqueio nao pode ser maior que a capacidade total do carrinho."; return res.redirect("/admin/inventario"); }
+        req.session.erro = `A quantidade do bloqueio (${quantidade}) nao pode ser maior que a capacidade total do carrinho (${carrinho.capacidade}).`;
+        return res.redirect("/admin/inventario");
       }
 
       const result = await dbRun(
@@ -515,11 +661,15 @@ module.exports = (db, middlewares, helpers) => {
         },
       });
 
-      { req.session.sucesso = "Bloqueio programado salvo com sucesso."; res.redirect("/admin/inventario"); }
+      req.session.sucesso = "Bloqueio programado salvo com sucesso.";
+      res.redirect("/admin/inventario");
     } catch (err) {
-      { req.session.erro = "Nao foi possivel salvar o bloqueio."; res.redirect("/admin/inventario"); }
+      console.error("Erro interno ao salvar bloqueio programado:", err.message, err.stack);
+      req.session.erro = "Nao foi possivel salvar o bloqueio: " + err.message;
+      res.redirect("/admin/inventario");
     }
   });
+
 
   router.post("/inventario/bloqueios/:id/delete", isAdmin, async (req, res) => {
     const bloqueioId = parseInt(req.params.id, 10);
@@ -556,7 +706,23 @@ module.exports = (db, middlewares, helpers) => {
         },
       });
 
-      { req.session.sucesso = "Bloqueio removido com sucesso."; res.redirect("/admin/inventario"); }
+      // Processar fila de espera apos liberacao do carrinho por exclusao de bloqueio
+      try {
+        await processarFilaEspera(db, bloqueio.carrinho_id, {
+          id: req.user?.id,
+          nome: req.user?.nome,
+          role: req.user?.role,
+          ip: req.ip || req.socket?.remoteAddress || null,
+        });
+      } catch (filaErr) {
+        console.error(
+          "Erro ao processar fila de espera apos remover bloqueio:",
+          filaErr.message,
+        );
+      }
+
+      req.session.sucesso = "Bloqueio removido com sucesso.";
+      res.redirect("/admin/inventario");
     } catch (err) {
       { req.session.erro = "Nao foi possivel remover o bloqueio."; res.redirect("/admin/inventario"); }
     }
@@ -791,6 +957,25 @@ module.exports = (db, middlewares, helpers) => {
         return res.status(404).send("Utilizador nao encontrado.");
       }
 
+      if (usuarioAlterado.role === "admin" && role !== "admin") {
+        const outrosAdmins = await dbGet(
+          db,
+          "SELECT COUNT(*) as total FROM usuarios WHERE role = 'admin' AND ativo = 1 AND id != ?",
+          [userId],
+        );
+
+        const validacao = podeAlterarOuDesativarAdmin({
+          acao: "rebaixar",
+          roleAtual: usuarioAlterado.role,
+          novoRole: role,
+          outrosAdminsAtivos: outrosAdmins ? outrosAdmins.total : 0,
+        });
+
+        if (!validacao.permitido) {
+          return res.status(400).send(validacao.motivo);
+        }
+      }
+
       await dbRun(db, "UPDATE usuarios SET role = ? WHERE id = ?", [
         role,
         userId,
@@ -836,6 +1021,24 @@ module.exports = (db, middlewares, helpers) => {
         return res.status(404).send("Utilizador nao encontrado.");
       }
 
+      if (usuarioExcluido.role === "admin") {
+        const outrosAdmins = await dbGet(
+          db,
+          "SELECT COUNT(*) as total FROM usuarios WHERE role = 'admin' AND ativo = 1 AND id != ?",
+          [userId],
+        );
+
+        const validacao = podeAlterarOuDesativarAdmin({
+          acao: "desativar",
+          roleAtual: usuarioExcluido.role,
+          outrosAdminsAtivos: outrosAdmins ? outrosAdmins.total : 0,
+        });
+
+        if (!validacao.permitido) {
+          return res.status(400).send(validacao.motivo);
+        }
+      }
+
       const resumoReservas = await dbGet(
         db,
         `SELECT
@@ -846,19 +1049,28 @@ module.exports = (db, middlewares, helpers) => {
         [userId],
       );
 
-      const emailAnonimizado = `usuario-excluido-${usuarioExcluido.id}-${Date.now()}@local.invalid`;
+      // Cancela reservas ativas e pedidos na fila de espera para liberar os aparelhos
+      await dbRun(
+        db,
+        "UPDATE reservas SET status = 'Cancelada' WHERE usuario_id = ? AND status = 'Ativa'",
+        [userId],
+      );
+      await dbRun(
+        db,
+        "UPDATE lista_espera SET status = 'Cancelada' WHERE usuario_id = ? AND status = 'Aguardando'",
+        [userId],
+      );
 
+      // Mantem o email original com ativo = 0 para que tentativas futuras de login via Google encontrem o usuario inativo
       await dbRun(
         db,
         `UPDATE usuarios
          SET ativo = 0,
-             nome = ?,
-             email = ?,
              google_access_token = NULL,
              google_refresh_token = NULL,
              senha_hash = NULL
          WHERE id = ?`,
-        [`Usuario excluido #${usuarioExcluido.id}`, emailAnonimizado, userId],
+        [userId],
       );
 
       await registrarAuditoria(req, {
