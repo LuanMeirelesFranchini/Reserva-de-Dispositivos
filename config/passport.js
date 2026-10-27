@@ -13,7 +13,7 @@ function configurePassport(passport, db) {
 
   passport.deserializeUser((id, done) => {
     db.get(
-      `SELECT id, nome, email, role, ativo
+      `SELECT id, nome, email, role, ativo, patch_v1_1_visto
        FROM usuarios
        WHERE id = ? AND ativo = 1`,
       [id],
@@ -107,6 +107,7 @@ function configurePassport(passport, db) {
                   role: "professor",
                   google_refresh_token: refreshToken || null,
                   ativo: 1,
+                  patch_v1_1_visto: 0,
                 });
               },
             );

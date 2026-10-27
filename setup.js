@@ -39,7 +39,8 @@ async function main() {
             role VARCHAR(50) NOT NULL DEFAULT 'professor',
             ativo TINYINT(1) NOT NULL DEFAULT 1,
             google_access_token TEXT,
-            google_refresh_token TEXT
+            google_refresh_token TEXT,
+            patch_v1_1_visto TINYINT(1) NOT NULL DEFAULT 0
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log("Tabela 'usuarios' pronta.");
@@ -50,7 +51,8 @@ async function main() {
             nome VARCHAR(100) NOT NULL UNIQUE,
             localizacao VARCHAR(255) NOT NULL,
             capacidade INT NOT NULL,
-            indisponiveis INT NOT NULL DEFAULT 0
+            indisponiveis INT NOT NULL DEFAULT 0,
+            ativo TINYINT(1) NOT NULL DEFAULT 1
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log("Tabela 'carrinhos' pronta.");
@@ -85,6 +87,7 @@ async function main() {
             carrinho_id INT NOT NULL,
             usuario_id INT NOT NULL,
             recurrence_id VARCHAR(100),
+            observacoes_devolucao TEXT,
             FOREIGN KEY (carrinho_id) REFERENCES carrinhos(id),
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -126,6 +129,23 @@ async function main() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log("Tabela 'audit_logs' pronta.");
+
+    await run(`
+        CREATE TABLE IF NOT EXISTS lista_espera (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT NOT NULL,
+            carrinho_id INT NOT NULL,
+            quantidade INT NOT NULL,
+            data_retirada DATETIME NOT NULL,
+            data_devolucao DATETIME NOT NULL,
+            sala VARCHAR(255) NOT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'Aguardando',
+            criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+            FOREIGN KEY (carrinho_id) REFERENCES carrinhos(id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log("Tabela 'lista_espera' pronta.");
 
     await run(`
         CREATE TABLE IF NOT EXISTS carrinho_bloqueios (

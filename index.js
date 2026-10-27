@@ -112,7 +112,7 @@ function securityHeaders(req, res, next) {
       "frame-ancestors 'none'",
       "img-src 'self' data:",
       "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://npmcdn.com",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://npmcdn.com https://unpkg.com",
       "connect-src 'self'",
       "form-action 'self'",
     ].join("; "),
@@ -243,10 +243,10 @@ app.get(
   "/auth/google/callback",
   authRateLimiter,
   (req, res, next) => {
-    passport.authenticate("google", (err, user) => {
+    passport.authenticate("google", (err, user, info) => {
       if (err) return next(err);
       if (!user) {
-        req.session.erro = "Falha na autenticacao com o Google.";
+        req.session.erro = info?.message || "Falha na autenticacao com o Google.";
         return res.redirect("/login");
       }
 
@@ -262,6 +262,22 @@ app.get(
     })(req, res, next);
   },
 );
+
+app.post("/api/patch-notes-seen", authMiddlewares.isAuthenticated, async (req, res) => {
+  try {
+    const { version } = req.body;
+    if (version === 'patch_v1_1') {
+      await db.run("UPDATE usuarios SET patch_v1_1_visto = 1 WHERE id = ?", [req.user.id]);
+      req.user.patch_v1_1_visto = 1; // atualiza objeto em memoria
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: "Versao desconhecida" });
+    }
+  } catch (err) {
+    console.error("Erro ao registrar patch note visto:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
 
 app.post("/logout", (req, res, next) => {
   req.logout((err) => {

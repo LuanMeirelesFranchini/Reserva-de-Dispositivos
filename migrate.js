@@ -61,6 +61,11 @@ async function main() {
   );
 
   await runIgnoringDuplicateColumn(
+    `ALTER TABLE usuarios ADD COLUMN patch_v1_1_visto TINYINT(1) NOT NULL DEFAULT 0`,
+    "patch_v1_1_visto",
+  );
+
+  await runIgnoringDuplicateColumn(
     `ALTER TABLE carrinhos ADD COLUMN indisponiveis INT NOT NULL DEFAULT 0`,
     "indisponiveis",
   );
@@ -70,7 +75,17 @@ async function main() {
     "ativo",
   );
 
-  await run(`
+  await runIgnoringDuplicateColumn(
+    `ALTER TABLE carrinhos ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 1`,
+    "ativo_carrinhos",
+  );
+
+  await runIgnoringDuplicateColumn(
+    `ALTER TABLE reservas ADD COLUMN observacoes_devolucao TEXT`,
+    "observacoes_devolucao",
+  );
+
+    await run(`
         CREATE TABLE IF NOT EXISTS audit_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
             usuario_id INT,
@@ -87,6 +102,23 @@ async function main() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
   console.log("Tabela 'audit_logs' pronta para uso.");
+
+  await run(`
+        CREATE TABLE IF NOT EXISTS lista_espera (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT NOT NULL,
+            carrinho_id INT NOT NULL,
+            quantidade INT NOT NULL,
+            data_retirada DATETIME NOT NULL,
+            data_devolucao DATETIME NOT NULL,
+            sala VARCHAR(255) NOT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'Aguardando',
+            criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+            FOREIGN KEY (carrinho_id) REFERENCES carrinhos(id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+  console.log("Tabela 'lista_espera' pronta para uso.");
 
   await run(`
         CREATE TABLE IF NOT EXISTS carrinho_bloqueios (
