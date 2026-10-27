@@ -11,6 +11,9 @@ data/
 *.sqlite
 *.sqlite3
 *.db
+*.sql
+backups/
+backups
 
 # Test/browser artifacts
 auth/
@@ -31,3 +34,4 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+video-tutorial/

@@ -1,6 +1,18 @@
 const nodemailer = require("nodemailer");
 
 function createEmailService() {
+  const isEmailEnabled = process.env.EMAIL_ENABLED !== "false" && process.env.DISABLE_EMAIL !== "true";
+
+  if (!isEmailEnabled) {
+    console.log("ℹ️  Envio de e-mail DESATIVADO localmente (EMAIL_ENABLED=false). Operando em modo de simulação (dry-run).");
+    return {
+      sendReservationEmail: async ({ to, subject }) => {
+        console.log(`[SIMULAÇÃO DE E-MAIL] Para: ${to} | Assunto: ${subject}`);
+        return { messageId: "simulated-dev-email" };
+      },
+    };
+  }
+
   const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
   const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
   const hasSmtpAuth = Boolean(smtpUser && smtpPass);
