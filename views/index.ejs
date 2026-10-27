@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
 </head>
 <body>
     <main class="container-fluid">
@@ -35,6 +36,66 @@
                 </tbody>
             </table>
         </div>
+        <hr>
+
+        <details>
+            <summary role="button" class="outline">Calendário de Reservas</summary>
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; margin-bottom: 1rem; gap: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="calendar-block-filter" style="margin: 0; font-weight: 600;">Ver ocupação de:</label>
+                    <select id="calendar-block-filter" style="width: auto; margin: 0; padding: 0.3rem 2rem 0.3rem 1rem; height: auto;">
+                        <option value="all" selected>Todos os Blocos</option>
+                        <option value="Bloco A">Bloco A</option>
+                        <option value="Bloco C">Bloco C/E</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="calendar-month-selector" style="margin: 0; font-weight: 600;">Mês:</label>
+                    <div style="position: relative; display: inline-block;">
+                        <input type="month" id="calendar-month-selector" onclick="this.showPicker()" style="width: auto; margin: 0; padding: 0.3rem 2rem 0.3rem 0.5rem; height: auto; cursor: pointer;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--pico-muted-color);"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                </div>
+            </div>
+                <div id="calendar" style="margin-bottom: 2rem; background: var(--pico-background-color); padding: 1rem; border: 1px solid var(--pico-muted-border-color); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+            </div>
+            <style>
+                /* Força os três blocos do cabeçalho a terem a mesma largura, centralizando perfeitamente o título */
+                .fc-toolbar { justify-content: space-between !important; }
+                .fc-toolbar-chunk { flex: 1; display: flex; align-items: center; }
+                .fc-toolbar-chunk:nth-child(1) { justify-content: flex-start; }
+                .fc-toolbar-chunk:nth-child(2) { justify-content: center; }
+                .fc-toolbar-chunk:nth-child(3) { justify-content: flex-end; }
+                
+                .fc-toolbar-title {
+                    text-transform: capitalize;
+                    font-size: 1.5rem !important; /* Menor que antes */
+                }
+                
+                /* Melhorando os dias da semana */
+                .fc-col-header-cell-cushion {
+                    text-transform: capitalize;
+                    font-weight: 600;
+                    color: var(--pico-h1-color);
+                    padding: 0.5rem !important;
+                }
+                
+                /* Esconde os textos de eventos na visao de mes para deixar apenas o mapa de calor */
+                .fc-daygrid-event {
+                    display: none !important;
+                }
+                .fc-daygrid-day {
+                    cursor: pointer;
+                    transition: filter 0.2s;
+                }
+                .fc-daygrid-day:hover {
+                    filter: brightness(0.9);
+                }
+            </style>
+        </details>
+        
         <hr>
 
         <details open>
@@ -84,14 +145,67 @@
                 <button type="submit" id="btnReservar">Reservar</button>
             </form>
         </details>
+
+        <dialog id="calendar-day-modal">
+            <article style="width: 800px; max-width: 100%;">
+                <header>
+                    <a aria-label="Close" class="close" onclick="event.preventDefault(); document.getElementById('calendar-day-modal').close()" href="#"></a>
+                    <h3 id="calendar-modal-title" style="margin-bottom: 0;">Eventos do Dia</h3>
+                    <p style="font-size: 0.85rem; color: var(--pico-muted-color); margin-top: 0.2rem;">A cor do evento representa o tipo.</p>
+                </header>
+                <div id="calendar-modal-content" style="display: flex; flex-direction: column; gap: 1rem; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1rem;">
+                </div>
+                <footer>
+                    <button type="button" class="secondary" onclick="document.getElementById('calendar-day-modal').close()">Fechar</button>
+                </footer>
+            </article>
+        </dialog>
+
+        <!-- PATCH NOTES MODAL (Oculto por padrao) -->
+        <dialog id="patch-notes-modal">
+            <article style="max-width: 700px; width: 100%;">
+                <header style="background: var(--pico-primary-background); color: var(--pico-primary-inverse); padding-bottom: 1rem;">
+                    <a aria-label="Close" class="close" onclick="event.preventDefault(); closePatchNotes()" href="#" style="color: var(--pico-primary-inverse);"></a>
+                    <h3 style="margin-bottom: 0; color: white;">🚀 Novidades do Sistema (v1.1)</h3>
+                </header>
+                <div style="max-height: 50vh; overflow-y: auto; padding: 1rem 0;">
+                    <h4>Fila de Espera Inteligente (Waitlist)</h4>
+                    <ul>
+                        <li>Agora o sistema permite que professores entrem em uma <b>Fila de Espera</b> caso não haja Chromebooks suficientes no horário desejado.</li>
+                        <li>O botão de "Reservar" se adapta automaticamente para "Entrar na Fila" quando esgotar a capacidade.</li>
+                    </ul>
+                    <h4>Alocação Automática e E-mails</h4>
+                    <ul>
+                        <li>Quando uma reserva é cancelada, o sistema verifica a fila instantaneamente. Se houver vaga, a reserva é gerada e confirmada de forma 100% automática!</li>
+                        <li>O layout dos e-mails de confirmação (incluindo fila de espera) foi atualizado para conter todos os detalhes e o atalho para o <b>Google Calendar</b>.</li>
+                        <li>Datas e horários em todo o sistema agora adotam o padrão amigável (Dia/Mês/Ano).</li>
+                    </ul>
+                    <h4>Melhorias no Calendário</h4>
+                    <ul>
+                        <li>Agora o calendário de ocupação está muito mais completo e fornece uma visão mais detalhada dos dados e reservas.</li>
+                    </ul>
+                    <h4>Devoluções e Segurança</h4>
+                    <ul>
+                        <li><b>Checklist de Avarias:</b> Ao devolver um carrinho, agora é possível registrar se houve danos aos equipamentos, disparando um alerta imediato para a TI.</li>
+                        <li><b>Segurança Reforçada:</b> Aprimoramos o armazenamento das credenciais do Google no banco de dados com criptografia forte.</li>
+                    </ul>
+                </div>
+                <footer>
+                    <button type="button" onclick="closePatchNotes()">Entendi, muito legal!</button>
+                </footer>
+            </article>
+        </dialog>
+
     </main>
     <%- include('partials/footer') %>
     
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
     <script src="/menu.js"></script>
     <script src="/front-end.js"></script>
+    <script src="/calendar.js"></script>
     <script id="salas-por-bloco-data" type="application/json"><%- safeJson(blocosSalas) %></script>
+    <script id="carrinhos-data" type="application/json"><%- safeJson(carrinhos) %></script>
     
     <script>
         const selectCarrinho = document.getElementById('carrinho');
@@ -147,15 +261,30 @@
             preencherSalasDoBloco(this.value);
         });
 
-        const form = document.getElementById('formReserva');
-        const btn = document.getElementById('btnReservar');
+        // --- PATCH NOTES MODAL ---
+        const patchModal = document.getElementById('patch-notes-modal');
+        const patchVisto = <%= user.patch_v1_1_visto ? 'true' : 'false' %>;
+        
+        if (patchModal && !patchVisto) {
+            patchModal.showModal();
+        }
 
-        if (form && btn) {
-            form.addEventListener('submit', function() {
-                btn.setAttribute('aria-busy', 'true');
-                btn.disabled = true;
-                btn.textContent = 'Processando sua reserva...';
-            });
+        async function closePatchNotes() {
+            if (patchModal) patchModal.close();
+            
+            try {
+                const csrf = document.querySelector('input[name="_csrf"]')?.value || '';
+                await fetch('/api/patch-notes-seen', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrf // Dependendo de como o middleware csrf funciona, pode precisar de form-data ou json com body._csrf. Vamos enviar no json e header
+                    },
+                    body: JSON.stringify({ version: 'patch_v1_1', _csrf: csrf })
+                });
+            } catch (err) {
+                console.error("Erro ao fechar patch notes", err);
+            }
         }
     </script>
 </body>

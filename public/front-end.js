@@ -119,27 +119,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
             disponibilidadeResultEl.textContent = `${data.disponiveis} Chromebooks disponiveis`;
             if (inputQuantidade) {
-                inputQuantidade.max = data.disponiveis;
+                const maxDoCarrinho = document.getElementById('carrinho').options[document.getElementById('carrinho').selectedIndex].getAttribute('data-max');
+                inputQuantidade.max = maxDoCarrinho; // Restaura max para a capacidade total do carrinho
                 inputQuantidade.placeholder = data.disponiveis > 0
-                    ? `Maximo neste horario: ${data.disponiveis}`
-                    : 'Sem disponibilidade neste horario';
-
-                if (quantidadeAtual > data.disponiveis && data.disponiveis >= 0) {
-                    inputQuantidade.value = data.disponiveis > 0 ? String(data.disponiveis) : '';
-                    quantidadeAtual = parseInt(inputQuantidade.value || '0', 10);
-                }
+                    ? `Disponível: ${data.disponiveis} | Max: ${maxDoCarrinho}`
+                    : 'Sem disponibilidade neste horario (Fila de espera)';
             }
 
-            if (data.disponiveis <= 0) {
-                disponibilidadeResultEl.style.color = 'red';
-                if (btnReservar) btnReservar.disabled = true;
-            } else if (quantidadeAtual > data.disponiveis) {
-                disponibilidadeResultEl.textContent += '. Ajuste a quantidade para seguir.';
+            const formReserva = document.getElementById('formReserva');
+
+            if (data.disponiveis < quantidadeAtual && quantidadeAtual > 0) {
+                disponibilidadeResultEl.textContent = `${data.disponiveis} disponíveis. Você entrará na fila de espera.`;
                 disponibilidadeResultEl.style.color = '#d97706';
-                if (btnReservar) btnReservar.disabled = true;
+                if (btnReservar) {
+                    btnReservar.disabled = false;
+                    btnReservar.textContent = 'Entrar na Fila de Espera';
+                    btnReservar.classList.add('secondary');
+                }
+                if (formReserva) formReserva.action = '/reservas/fila';
+            } else if (data.disponiveis <= 0) {
+                disponibilidadeResultEl.style.color = 'red';
+                disponibilidadeResultEl.textContent = 'Sem disponibilidade. Você entrará na fila de espera.';
+                if (btnReservar) {
+                    btnReservar.disabled = false;
+                    btnReservar.textContent = 'Entrar na Fila de Espera';
+                    btnReservar.classList.add('secondary');
+                }
+                if (formReserva) formReserva.action = '/reservas/fila';
             } else {
                 disponibilidadeResultEl.style.color = 'green';
-                if (btnReservar) btnReservar.disabled = false;
+                if (btnReservar) {
+                    btnReservar.disabled = false;
+                    btnReservar.textContent = 'Reservar';
+                    btnReservar.classList.remove('secondary');
+                }
+                if (formReserva) formReserva.action = '/reservar';
             }
         } catch (error) {
             disponibilidadeResultEl.textContent = 'Erro de ligacao.';
@@ -153,5 +167,33 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('carrinho').addEventListener('change', verificarDisponibilidade);
     if (inputQuantidade) {
         inputQuantidade.addEventListener('input', verificarDisponibilidade);
+    }
+
+    // Prevenção contra duplo clique e reenvio concorrente de formulário (CSP friendly)
+    const formReservaEl = document.getElementById('formReserva');
+    if (formReservaEl && btnReservar) {
+        formReservaEl.addEventListener('submit', (e) => {
+            if (e.defaultPrevented) return;
+            if (formReservaEl.dataset.submitting === 'true') {
+                e.preventDefault();
+                return false;
+            }
+            formReservaEl.dataset.submitting = 'true';
+            btnReservar.setAttribute('aria-busy', 'true');
+            btnReservar.disabled = true;
+            btnReservar.textContent = formReservaEl.action.includes('/reservas/fila')
+                ? 'Entrando na fila de espera...'
+                : 'Processando sua reserva...';
+        });
+
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                delete formReservaEl.dataset.submitting;
+                btnReservar.removeAttribute('aria-busy');
+                btnReservar.disabled = false;
+                const isFila = formReservaEl.action.includes('/reservas/fila');
+                btnReservar.textContent = isFila ? 'Entrar na Fila de Espera' : 'Reservar';
+            }
+        });
     }
 });
