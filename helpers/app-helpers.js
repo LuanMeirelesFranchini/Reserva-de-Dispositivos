@@ -26,7 +26,71 @@ function appendFlashMessage(urlBase, field, message) {
  */
 function toMySQLDateTime(value) {
   if (!value) return null;
+  if (
+    typeof value === "string" &&
+    (/Z$/i.test(value.trim()) || /[+-]\d{2}:\d{2}$/.test(value.trim()))
+  ) {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) {
+      value = d;
+    }
+  }
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return null;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`;
+  }
   return String(value).slice(0, 19).replace("T", " ");
+}
+
+/**
+ * Determina se uma reserva está em atraso com base no status e data de devolução.
+ * Regra: status deve ser 'Ativa' ou 'Retirada' E data_devolucao estritamente menor que agora.
+ *
+ * @param {Object} reserva - Objeto contendo status e data_devolucao.
+ * @param {Date|string} [agora=new Date()] - Data/hora de corte para comparação.
+ * @returns {boolean} True se a reserva estiver em atraso.
+ */
+function estaEmAtraso(reserva, agora = new Date()) {
+  if (!reserva || !reserva.status || !reserva.data_devolucao) return false;
+  if (!["Ativa", "Retirada"].includes(reserva.status)) return false;
+
+  let dataDevolucao = reserva.data_devolucao;
+  if (typeof dataDevolucao === "string") {
+    dataDevolucao = new Date(dataDevolucao.trim().replace(" ", "T"));
+  } else if (!(dataDevolucao instanceof Date)) {
+    dataDevolucao = new Date(dataDevolucao);
+  }
+  if (isNaN(dataDevolucao.getTime())) return false;
+
+  let refAgora = agora;
+  if (typeof refAgora === "string") {
+    refAgora = new Date(refAgora.trim().replace(" ", "T"));
+  } else if (!(refAgora instanceof Date)) {
+    refAgora = new Date(refAgora);
+  }
+  if (isNaN(refAgora.getTime())) return false;
+
+  return dataDevolucao.getTime() < refAgora.getTime();
+}
+
+
+
+/**
+ * Converte uma data padrão ISO/MySQL para o formato brasileiro (DD/MM/YYYY HH:MM).
+ *
+ * @param {string|Date} value - A data a ser convertida.
+ * @returns {string} A data formatada em PT-BR.
+ */
+function formatarDataBR(value) {
+  if (!value) return '';
+  const str = String(value);
+  // Espera formato YYYY-MM-DD HH:MM:SS ou similar
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]} ${match[4]}:${match[5]}`;
+  }
+  return str;
 }
 
 /**
@@ -110,6 +174,7 @@ function createAppHelpers(db) {
   return {
     appendFlashMessage,
     formatarLocal,
+    formatarDataBR,
     gerarICS,
     gerarLinkGoogleCalendar,
     montarSalasParaView,
@@ -117,7 +182,31 @@ function createAppHelpers(db) {
     registrarAuditoria,
     sendReservationEmail,
     toMySQLDateTime,
+    estaEmAtraso,
+    escapeHtml,
   };
 }
 
+/**
+ * Escapa caracteres HTML perigosos para evitar Cross-Site Scripting (XSS) e HTML Injection.
+ *
+ * @param {string} str - Texto a ser escapado.
+ * @returns {string} Texto seguro com caracteres especiais substituídos por entidades HTML.
+ */
+function escapeHtml(str) {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+createAppHelpers.toMySQLDateTime = toMySQLDateTime;
+createAppHelpers.normalizarCarrinho = normalizarCarrinho;
+createAppHelpers.estaEmAtraso = estaEmAtraso;
+createAppHelpers.formatarDataBR = formatarDataBR;
+createAppHelpers.escapeHtml = escapeHtml;
 module.exports = createAppHelpers;
+
