@@ -1,5 +1,18 @@
 require("dotenv").config();
 const { MySQLDatabase } = require("../database");
+
+// --- GUARDA-CORPOS DE SEGURANÇA ---
+if (process.env.NODE_ENV === "production") {
+  console.error("❌ ERRO: O seeder de testes NÃO pode ser executado em ambiente de produção!");
+  process.exit(1);
+}
+
+const host = (process.env.DB_HOST || "localhost").trim().toLowerCase();
+if (host !== "localhost" && host !== "127.0.0.1") {
+  console.error(`❌ ERRO: DB_HOST deve ser 'localhost' ou '127.0.0.1' para executar testes locais. Atual: "${host}"`);
+  process.exit(1);
+}
+
 const db = new MySQLDatabase();
 
 const salas = [
@@ -10,9 +23,9 @@ const salas = [
 ];
 const status = ["Ativa", "Concluida", "Cancelada"];
 const emailsTeste = [
-  "prof.paulo@lasalle.org.br",
-  "admin.teste@lasalle.org.br",
-  "ana.tecnologia@prof.soulasalle.com.br",
+  "prof.paulo@teste.invalid",
+  "admin.teste@teste.invalid",
+  "ana.tecnologia@teste.invalid",
 ];
 
 function getRandomDate(daysAgo) {
