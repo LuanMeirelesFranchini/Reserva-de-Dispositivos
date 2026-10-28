@@ -11,6 +11,10 @@ const {
   validarConflitoReserva,
 } = require("./services/reservation-service");
 const { processarFilaEspera } = require("./services/waitlist-service");
+const {
+  deveEnviarEmailCancelamento,
+  sanitizarDestinoCancelamento,
+} = require("./helpers/user-rules");
 
 const logDir = path.join(__dirname, "logs");
 const logFilePath = path.join(logDir, "shadow-divergences.log");
@@ -91,17 +95,25 @@ module.exports = (db, middlewares, helpers) => {
       return res.status(400).send("Reserva invalida.");
     }
 
+    const voltarPara = sanitizarDestinoCancelamento({
+      voltarPara: req.body.voltar_para,
+      usuarioRole: req.user.role,
+    });
+
     try {
       const reserva = await dbGet(
         db,
-        "SELECT r.*, c.nome as nome_carrinho FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id WHERE r.id = ?",
+        "SELECT r.*, c.nome as nome_carrinho, u.nome as nome_professor, u.email as email_professor FROM reservas r LEFT JOIN carrinhos c ON r.carrinho_id = c.id LEFT JOIN usuarios u ON r.usuario_id = u.id WHERE r.id = ?",
         [reservaId],
       );
-      if (
-        !reserva ||
-        (Number(reserva.usuario_id) !== Number(req.user.id) &&
-          req.user.role !== "admin")
-      ) {
+      if (!reserva) {
+        return res.status(404).send("Reserva nao encontrada.");
+      }
+
+      const ehDono = Number(reserva.usuario_id) === Number(req.user.id);
+      const ehAdminOuOperacional = ["admin", "operacional"].includes(req.user.role);
+
+      if (!ehDono && !ehAdminOuOperacional) {
         return res
           .status(403)
           .send("Voce nao tem permissao para cancelar esta reserva.");
@@ -112,6 +124,14 @@ module.exports = (db, middlewares, helpers) => {
           .status(409)
           .send("Apenas reservas ativas podem ser canceladas.");
       }
+
+      // Motivo obrigatório apenas para cancelamento de terceiros
+      const motivoRaw = typeof req.body.motivo === "string" ? req.body.motivo.trim() : "";
+      if (!ehDono && !motivoRaw) {
+        req.session.erro = "O motivo do cancelamento e obrigatorio.";
+        return res.redirect(voltarPara);
+      }
+      const motivo = (motivoRaw || "Cancelado pelo proprio usuario").slice(0, 500);
 
       const result = await dbRun(
         db,
@@ -134,26 +154,71 @@ module.exports = (db, middlewares, helpers) => {
           data_devolucao: reserva.data_devolucao,
           sala: reserva.sala,
           usuario_reserva_id: reserva.usuario_id,
+          cancelado_por_terceiro: !ehDono,
+          motivo,
         },
       });
 
-      // Processar fila de espera com lock transacional e tratamento isolado de erro
-      try {
-        await processarFilaEspera(db, reserva.carrinho_id, {
-          id: req.user.id,
-          nome: req.user.nome,
-          role: req.user.role,
-          ip: req.ip || req.socket?.remoteAddress || null,
-        });
-      } catch (filaErr) {
-        console.error(
-          "Erro ao processar fila de espera apos cancelamento:",
-          filaErr.message,
-        );
+      // E-mail de cancelamento ao professor (somente se houver e-mail cadastrado e deveEnviarEmailCancelamento for true)
+      const agora = new Date();
+      if (
+        Boolean(reserva.email_professor) &&
+        deveEnviarEmailCancelamento({
+          ehDono,
+          dataRetirada: reserva.data_retirada,
+          agora,
+        })
+      ) {
+        try {
+          await sendReservationEmail({
+            to: reserva.email_professor,
+            subject: "Cancelamento da sua reserva",
+            text: `Olá ${reserva.nome_professor},\n\nSua reserva foi cancelada por um administrador/operacional (${req.user.nome}).\n\nDetalhes:\nCarrinho: ${reserva.nome_carrinho}\nQuantidade: ${reserva.quantidade}\nData de Retirada: ${formatarDataBR(reserva.data_retirada)}\nData de Devolução: ${formatarDataBR(reserva.data_devolucao)}\nSala: ${reserva.sala}\nMotivo: ${motivo}\n\nObservação: Caso este evento esteja na sua agenda pessoal, por favor, remova-o manualmente.`,
+            html: `
+<p>Olá <b>${escapeHtml(reserva.nome_professor)}</b>,</p>
+<p>Sua reserva foi cancelada por um administrador/operacional (<b>${escapeHtml(req.user.nome)}</b>).</p>
+<p><b>Detalhes da Reserva Cancelada:</b><br>
+Carrinho: ${escapeHtml(reserva.nome_carrinho)}<br>
+Quantidade: ${escapeHtml(reserva.quantidade)}<br>
+Data de Retirada: ${escapeHtml(formatarDataBR(reserva.data_retirada))}<br>
+Data de Devolução: ${escapeHtml(formatarDataBR(reserva.data_devolucao))}<br>
+Sala: ${escapeHtml(reserva.sala)}<br>
+<b>Motivo do cancelamento:</b> ${escapeHtml(motivo)}</p>
+<p style="color: #666; font-size: 0.9em;"><i>Observação: Caso este evento esteja sincronizado em sua agenda pessoal, lembre-se de excluí-lo manualmente.</i></p>
+<br>
+<p><b>Equipe de Tecnologia - Colégio La Salle</b><br>
+(11) 2793.1444<br>
+<a href="https://www.lasalle.edu.br/saopaulo">https://www.lasalle.edu.br/saopaulo</a></p>`,
+          });
+        } catch (emailErr) {
+          console.error(
+            "Falha ao enviar e-mail de cancelamento ao professor:",
+            emailErr.message,
+          );
+        }
       }
 
-      { req.session.sucesso = "Reserva cancelada com sucesso."; res.redirect("/minhas-reservas"); }
+      // Processar fila de espera somente se a reserva cancelada ainda não havia terminado
+      if (new Date(reserva.data_devolucao) > agora) {
+        try {
+          await processarFilaEspera(db, reserva.carrinho_id, {
+            id: req.user.id,
+            nome: req.user.nome,
+            role: req.user.role,
+            ip: req.ip || req.socket?.remoteAddress || null,
+          });
+        } catch (filaErr) {
+          console.error(
+            "Erro ao processar fila de espera apos cancelamento:",
+            filaErr.message,
+          );
+        }
+      }
+
+      req.session.sucesso = "Reserva cancelada com sucesso.";
+      res.redirect(voltarPara);
     } catch (err) {
+      console.error("Erro ao cancelar reserva:", err.message);
       res.status(500).send("Erro ao cancelar reserva.");
     }
   });

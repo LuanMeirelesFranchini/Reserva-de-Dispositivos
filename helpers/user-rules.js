@@ -40,6 +40,92 @@ function podeAlterarOuDesativarAdmin({
   return { permitido: true };
 }
 
+/**
+ * Regras:
+ * 1. Se quem cancelou é o próprio dono da reserva (ehDono === true), NÃO envia e-mail (retorna false).
+ * 2. Se for cancelada por terceiro (ehDono === false):
+ *    - Se a reserva for estritamente futura (dataRetirada > agora), ENVIA e-mail (retorna true).
+ *    - Se a reserva já iniciou ou é passada (dataRetirada <= agora), NÃO envia e-mail (retorna false).
+ * 3. Se dataRetirada for inválida ou nula, retorna false.
+ *
+ * @param {Object} params
+ * @param {boolean} params.ehDono - Se o usuário logado é o dono da reserva
+ * @param {Date|string} params.dataRetirada - Data de retirada prevista da reserva
+ * @param {Date|string} [params.agora=new Date()] - Referência temporal
+ * @returns {boolean}
+ */
+function deveEnviarEmailCancelamento({
+  ehDono,
+  dataRetirada,
+  agora = new Date(),
+}) {
+  if (ehDono) return false;
+  if (!dataRetirada) return false;
+
+  let retirada = dataRetirada;
+  if (typeof retirada === "string") {
+    retirada = new Date(retirada.trim().replace(" ", "T"));
+  } else if (!(retirada instanceof Date)) {
+    retirada = new Date(retirada);
+  }
+
+  let refAgora = agora;
+  if (typeof refAgora === "string") {
+    refAgora = new Date(refAgora.trim().replace(" ", "T"));
+  } else if (!(refAgora instanceof Date)) {
+    refAgora = new Date(refAgora);
+  }
+
+  if (isNaN(retirada.getTime()) || isNaN(refAgora.getTime())) return false;
+
+  return retirada.getTime() > refAgora.getTime();
+}
+
+/**
+ * Determina com segurança o destino de redirecionamento após o cancelamento de uma reserva.
+ *
+ * Regras:
+ * - Se o usuário gerencia reservas (admin ou operacional):
+ *   - Padrão é "/admin".
+ *   - Aceita voltarPara se for exatamente "/admin", iniciar com "/admin?" ou "/admin/", ou for "/minhas-reservas".
+ *   - Qualquer outro destino cai no padrão "/admin".
+ * - Se o usuário NÃO gerencia reservas (ex: professor):
+ *   - Padrão é "/minhas-reservas".
+ *   - Nunca é redirecionado para "/admin..." nem destinos externos.
+ *
+ * @param {Object} params
+ * @param {string} [params.voltarPara] - URL ou caminho solicitado para retorno
+ * @param {string} params.usuarioRole - Papel do usuário logado ('admin', 'operacional', 'professor')
+ * @returns {string} URL segura para redirecionamento
+ */
+function sanitizarDestinoCancelamento({ voltarPara, usuarioRole }) {
+  const podeGerenciar = usuarioRole === "admin" || usuarioRole === "operacional";
+  const solicitado = typeof voltarPara === "string" ? voltarPara.trim() : "";
+
+  if (podeGerenciar) {
+    if (
+      solicitado === "/admin" ||
+      solicitado.startsWith("/admin?") ||
+      solicitado.startsWith("/admin/")
+    ) {
+      return solicitado;
+    }
+    if (solicitado === "/minhas-reservas") {
+      return "/minhas-reservas";
+    }
+    return "/admin";
+  }
+
+  // Usuário comum (ex: professor) nunca acessa /admin
+  if (solicitado === "/minhas-reservas") {
+    return "/minhas-reservas";
+  }
+  return "/minhas-reservas";
+}
+
 module.exports = {
   podeAlterarOuDesativarAdmin,
+  deveEnviarEmailCancelamento,
+  sanitizarDestinoCancelamento,
 };
+

@@ -66,6 +66,7 @@
                                     <% if (reserva.status === 'Ativa') { %>
                                         <form action="/reservas/cancelar/<%= reserva.id %>" method="POST" style="margin: 0;" onsubmit="return confirm('Deseja realmente cancelar esta reserva?');">
                                             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <input type="hidden" name="voltar_para" value="/minhas-reservas">
                                             <button type="submit" class="contrast outline" style="padding: 5px 10px; margin: 0;">Cancelar</button>
                                         </form>
                                     <% } %>

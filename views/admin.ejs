@@ -213,6 +213,9 @@
                               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                               <button type="submit" class="secondary" onclick="return confirm('Confirmar entrega do carrinho para o professor?');">Entregar</button>
                             </form>
+                            <% if (['admin', 'operacional'].includes(user.role)) { %>
+                              <button type="button" class="contrast outline" style="margin: 0; display: inline-block;" onclick="document.getElementById('modal-cancelar-<%= reserva.id %>').showModal()">Cancelar</button>
+                            <% } %>
                             <form action="/reservas/concluir/<%= reserva.id %>" method="POST" style="margin: 0; display: inline-block;">
                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                <button type="button" class="primary outline" onclick="document.getElementById('modal-concluir-<%= reserva.id %>').showModal()">Devolver</button>
@@ -221,6 +224,38 @@
                             <button type="button" class="primary" onclick="document.getElementById('modal-concluir-<%= reserva.id %>').showModal()">Receber (Checklist)</button>
                           <% } else { %>
                              <%= reserva.status %>
+                          <% } %>
+
+                          <% if (reserva.status === 'Ativa' && ['admin', 'operacional'].includes(user.role)) { %>
+                            <% const reservaJaIniciou = new Date(reserva.data_retirada) <= new Date(); %>
+                            <dialog id="modal-cancelar-<%= reserva.id %>">
+                              <article>
+                                <header>
+                                  <button aria-label="Close" class="close" onclick="document.getElementById('modal-cancelar-<%= reserva.id %>').close()" style="border: none; background: transparent; padding: 0;"></button>
+                                  Cancelar Reserva #<%= reserva.id %>
+                                </header>
+                                <p>Deseja cancelar a reserva de <strong><%= reserva.nome_professor %></strong> (<%= reserva.nome_carrinho %>, <%= reserva.quantidade %> dispositivos)?</p>
+                                <% if (reservaJaIniciou) { %>
+                                  <p style="background: var(--pico-card-background-color); border-left: 4px solid var(--pico-del-color); padding: 0.5rem; font-size: 0.85rem; color: var(--pico-del-color);">
+                                    ⚠️ <strong>Atenção:</strong> esta reserva já iniciou. O cancelamento não enviará e-mail ao professor.
+                                  </p>
+                                <% } else { %>
+                                  <p style="font-size: 0.85rem; color: var(--pico-muted-color);">
+                                    O professor receberá uma notificação por e-mail com os detalhes e o motivo do cancelamento.
+                                  </p>
+                                <% } %>
+                                <form action="/reservas/cancelar/<%= reserva.id %>" method="POST">
+                                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                  <input type="hidden" name="voltar_para" value="<%= typeof paginacao !== 'undefined' ? buildPageUrl(paginacao.currentPage) : '/admin' %>">
+                                  <label for="motivo_cancelar_<%= reserva.id %>">Motivo do cancelamento (obrigatório):</label>
+                                  <textarea id="motivo_cancelar_<%= reserva.id %>" name="motivo" maxlength="500" required placeholder="Informe o motivo do cancelamento..."></textarea>
+                                  <footer>
+                                    <button type="button" class="secondary" onclick="document.getElementById('modal-cancelar-<%= reserva.id %>').close()">Voltar</button>
+                                    <button type="submit" class="contrast">Confirmar Cancelamento</button>
+                                  </footer>
+                                </form>
+                              </article>
+                            </dialog>
                           <% } %>
 
                           <dialog id="modal-concluir-<%= reserva.id %>">
