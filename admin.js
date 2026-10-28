@@ -445,8 +445,12 @@ module.exports = (db, middlewares, helpers) => {
       let sql = "SELECT * FROM audit_logs";
 
       if (acaoFiltro) {
-        sql += " WHERE acao = ?";
-        params.push(acaoFiltro);
+        if (acaoFiltro === "ENTROU_FILA_ESPERA" || acaoFiltro === "ENTROU_FILA_ESPERa") {
+          sql += " WHERE acao IN ('ENTROU_FILA_ESPERA', 'ENTROU_FILA_ESPERa')";
+        } else {
+          sql += " WHERE acao = ?";
+          params.push(acaoFiltro);
+        }
       }
 
       sql += " ORDER BY criado_em DESC, id DESC LIMIT 300";
@@ -456,7 +460,15 @@ module.exports = (db, middlewares, helpers) => {
         db,
         "SELECT DISTINCT acao FROM audit_logs ORDER BY acao ASC",
       );
-      const acoes = acoesRows.map((row) => row.acao);
+      const acoesSet = new Set();
+      acoesRows.forEach((row) => {
+        if (row.acao === "ENTROU_FILA_ESPERa") {
+          acoesSet.add("ENTROU_FILA_ESPERA");
+        } else {
+          acoesSet.add(row.acao);
+        }
+      });
+      const acoes = Array.from(acoesSet).sort();
 
       res.render("admin-audit", { logs, acoes, acaoFiltro, user: req.user });
     } catch (err) {

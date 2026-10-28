@@ -36,7 +36,7 @@
                         <select id="acao" name="acao" style="margin-bottom: 0; min-width: 200px;" onchange="this.form.submit()">
                             <option value="">Todas as acoes</option>
                             <% acoes.forEach(acao => { %>
-                                <option value="<%= acao %>" <%= acaoFiltro === acao ? 'selected' : '' %>><%= acao %></option>
+                                <option value="<%= acao %>" <%= (acaoFiltro === acao || (acao === 'ENTROU_FILA_ESPERA' && acaoFiltro === 'ENTROU_FILA_ESPERa')) ? 'selected' : '' %>><%= acao %></option>
                             <% }) %>
                         </select>
                     </div>

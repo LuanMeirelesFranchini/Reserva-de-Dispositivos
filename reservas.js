@@ -623,7 +623,7 @@ Sala: ${escapeHtml(reserva.sala)}<br>
       }
       const salaFormatada = `${formatarLocal(salaRows[0].bloco)} - ${formatarLocal(salaRows[0].nome)}`;
 
-      await dbRun(
+      const insertResult = await dbRun(
         db,
         "INSERT INTO lista_espera (usuario_id, carrinho_id, quantidade, data_retirada, data_devolucao, sala, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
@@ -638,9 +638,9 @@ Sala: ${escapeHtml(reserva.sala)}<br>
       );
 
       await registrarAuditoria(req, {
-        acao: "ENTROU_FILA_ESPERa",
+        acao: "ENTROU_FILA_ESPERA",
         entidade: "lista_espera",
-        entidadeId: null, // we don't have insertId from dbRun easily without db.pool.execute, but it's fine for now. Wait, dbRun does return this! Let's just pass null to save time or use db.pool.
+        entidadeId: insertResult?.lastID || null,
         detalhes: {
           carrinho_id: carrinhoId,
           quantidade: quantidadeNum,
